@@ -3,8 +3,12 @@ import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { nonEmptyPatch } from "@/server/shared/schema";
 
-/** Puck editor data. Stored as-is; only the top-level shape is checked. */
-export const puckDataSchema = z.looseObject({ content: z.array(z.any()), root: z.any().optional(), zones: z.any().optional() });
+/**
+ * Puck editor data. Stored as-is; only the top-level shape is checked.
+ * Either one Puck document, or `{ pages }` = several A4 sheets, each a Puck document (what the editor saves).
+ */
+const puckDocumentSchema = z.looseObject({ content: z.array(z.any()), root: z.any().optional(), zones: z.any().optional() });
+export const puckDataSchema = z.union([puckDocumentSchema, z.looseObject({ pages: z.array(puckDocumentSchema).min(1).max(30) })]);
 export type IPuckData = z.infer<typeof puckDataSchema>;
 
 /** One entry of `agreement_templates.versions` (append-only). */

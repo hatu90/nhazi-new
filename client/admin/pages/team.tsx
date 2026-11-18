@@ -1,16 +1,16 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
-import { Card } from "@astryxdesign/core/Card";
+import { Heading } from "@astryxdesign/core/Heading";
 import { Text } from "@astryxdesign/core/Text";
-import { VStack } from "@astryxdesign/core/Stack";
+import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMe } from "@/client/auth/auth-provider";
 import { formatDate, isValidPhone, label, normalizePhone } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IInvitationResponse, IMemberResponse, IPaginated, PropertyRole } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, PageSpinner, Section, SelectField, StatusBadge } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, PageSpinner, SelectField, StatusBadge } from "@/client/ui";
 import { FSelect, FText, FormBody, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
 
@@ -28,10 +28,16 @@ export function TeamPage() {
   const [inviting, setInviting] = useState(false);
 
   return (
-    <VStack gap={5}>
+    <VStack gap={4}>
+      <HStack justify="between" align="center" gap={3} wrap="wrap">
+        <VStack gap={0.5}>
+          <Heading level={2}>Team</Heading>
+          <Text size="sm" color="secondary">People who can manage this property. A new member signs in with their phone number.</Text>
+        </VStack>
+        {isOwner && <Button label="Add team member" onClick={() => setInviting(true)} />}
+      </HStack>
       {members.isPending ? <PageSpinner /> : members.error ? <ErrorBox error={members.error} /> : (
-        <Card>
-          {members.data.length === 0 ? <Empty title="No members" /> : (
+        members.data.length === 0 ? <Empty title="No members" /> : (
             <DataTable<IMemberResponse & { id: string }>
               query={{ isPending: false, error: null, refetch: () => {}, data: { items: members.data.map((m) => ({ ...m, id: m.accountId })), page: 1, pageSize: 1000, total: members.data.length } }}
               empty={null}
@@ -47,14 +53,14 @@ export function TeamPage() {
                 { key: "rm", header: "", align: "end", render: (m) => isOwner && m.accountId !== me.id && <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm(`Remove ${m.displayName} from this property?`) && remove.mutate(m.accountId)} /> },
               ]}
             />
-          )}
-        </Card>
+          )
       )}
       {(changeRole.error || remove.error) && <ErrorBox error={changeRole.error ?? remove.error} />}
 
       {isOwner ? (
-        <Section title="Invitations" action={<Button label="Invite someone" size="sm" onClick={() => setInviting(true)} />}>
-          {invitations.data && invitations.data.items.length > 0 ? (
+        invitations.data && invitations.data.items.length > 0 && (
+          <VStack gap={2}>
+            <Heading level={3}>Invitations</Heading>
             <DataTable<IInvitationResponse>
               query={{ isPending: false, error: null, refetch: () => {}, data: invitations.data }}
               empty={null}
@@ -66,10 +72,10 @@ export function TeamPage() {
                 { key: "rv", header: "", align: "end", render: (i) => i.status === "pending" && <Button label="Revoke" size="sm" variant="ghost" onClick={() => revoke.mutate(i.id)} /> },
               ]}
             />
-          ) : <Text color="secondary">No invitations sent.</Text>}
-        </Section>
+          </VStack>
+        )
       ) : <Text color="secondary">Only owners can invite people or change roles.</Text>}
-      <Modal open={inviting} onClose={() => setInviting(false)} title="Invite someone to the team">{inviting && <InviteForm onDone={() => setInviting(false)} />}</Modal>
+      <Modal open={inviting} onClose={() => setInviting(false)} title="Add team member">{inviting && <InviteForm onDone={() => setInviting(false)} />}</Modal>
     </VStack>
   );
 }

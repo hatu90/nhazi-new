@@ -23,7 +23,7 @@ interface Values {
 }
 
 /** Create (`method: POST`, `path: /api/admin/properties`) or edit (`PATCH`, `/api/admin/properties/:id`) a property. */
-export function PropertyForm({ initial, method, path, onDone, onCancel }: { initial?: IAdminPropertyResponse; method: "POST" | "PATCH"; path: string; onDone: (p: IAdminPropertyResponse) => void; onCancel: () => void }) {
+export function PropertyForm({ initial, method, path, onDone, onCancel, inline }: { initial?: IAdminPropertyResponse; method: "POST" | "PATCH"; path: string; onDone: (p: IAdminPropertyResponse) => void; onCancel: () => void; inline?: boolean }) {
   const form = useForm<Values>({
     defaultValues: {
       name: initial?.name ?? "",
@@ -63,7 +63,7 @@ export function PropertyForm({ initial, method, path, onDone, onCancel }: { init
   );
 
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel={initial ? "Save changes" : "Create property"} onCancel={onCancel}>
+    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel={initial ? "Save changes" : "Create property"} onCancel={onCancel} inline={inline}>
       <FText control={form.control} name="name" label="Name" required width="100%" />
       <FSelect control={form.control} name="category" label="Category" options={categories.map((c) => ({ value: c, label: label(c) }))} width="100%" />
       <FText control={form.control} name="street" label="Street address" required width="100%" />

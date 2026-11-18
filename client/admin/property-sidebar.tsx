@@ -14,6 +14,7 @@ const items = [
   { id: "meters", label: "Meters" },
   { id: "requests", label: "Requests" },
   { id: "invoices", label: "Invoices" },
+  { id: "agreements", label: "Agreements" },
   { id: "settings", label: "Settings" },
 ];
 

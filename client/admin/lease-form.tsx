@@ -3,10 +3,11 @@
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { endOfMonthIso, isValidPhone, normalizePhone, todayIso } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
-import type { IUnitListResponse } from "@/client/lib/types";
+import type { ITemplateListResponse, IUnitListResponse } from "@/client/lib/types";
 import { num } from "@/client/ui/form";
 import { FDate, FNumber, FormBody, FSelect, FText, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "./property-layout";
@@ -20,16 +21,23 @@ interface Values {
   firstPeriodEnd: string;
   billingCycleDay: string;
   tenants: { name: string; phone: string }[];
+  templateId: string;
 }
 
 /** Creates a draft lease; start it from its page. */
 export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => void; onCancel: () => void }) {
   const { apiPath } = useProperty();
   const units = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 });
+  const templates = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { pageSize: 100 });
   const create = useSend<object, { id: string }>("POST", apiPath("/leases"), [apiPath("/leases")]);
   const form = useForm<Values>({
-    defaultValues: { unitId: "", startDate: todayIso(), endDate: "", rent: "", depositAmount: "", firstPeriodEnd: endOfMonthIso(todayIso()), billingCycleDay: "1", tenants: [{ name: "", phone: "" }] },
+    defaultValues: { unitId: "", startDate: todayIso(), endDate: "", rent: "", depositAmount: "", firstPeriodEnd: endOfMonthIso(todayIso()), billingCycleDay: "1", tenants: [{ name: "", phone: "" }], templateId: "" },
   });
+  // preselect the property's default template once the list arrives
+  const defaultTemplate = templates.data?.items.find((t) => t.isDefault)?.id;
+  useEffect(() => {
+    if (defaultTemplate && !form.getValues("templateId")) form.setValue("templateId", defaultTemplate);
+  }, [defaultTemplate, form]);
   const tenants = useFieldArray({ control: form.control, name: "tenants" });
 
   const submit = useSubmit(
@@ -43,6 +51,7 @@ export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => v
       rent: num(v.rent),
       depositAmount: num(v.depositAmount) ?? 0,
       billingCycleDay: num(v.billingCycleDay) ?? 1,
+      ...(v.templateId && { agreement: { templateId: v.templateId, values: {} } }),
       tenants: v.tenants.map((t) => ({ phoneNumber: normalizePhone(t.phone), displayName: t.name.trim() })),
     }),
     (l) => onDone(l.id),
@@ -69,6 +78,15 @@ export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => v
       <FNumber control={form.control} name="depositAmount" label="Deposit (₫)" width="100%" />
       <FDate control={form.control} name="firstPeriodEnd" label="First billing period ends" required width="100%" />
       <FNumber control={form.control} name="billingCycleDay" label="Billing cycle day (1–28)" required rules={{ validate: (v) => (Number(v) >= 1 && Number(v) <= 28) || "Between 1 and 28" }} width="100%" />
+
+      <FSelect
+        control={form.control}
+        name="templateId"
+        label="Agreement template"
+        hint="Optional. The current version is pinned to this lease."
+        options={[{ value: "", label: "None" }, ...(templates.data?.items ?? []).map((t) => ({ value: t.id, label: t.isDefault ? `${t.name} (default)` : t.name }))]}
+        width="100%"
+      />
 
       <VStack gap={3}>
         <VStack gap={0.5}>

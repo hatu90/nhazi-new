@@ -1,0 +1,82 @@
+"use client";
+
+import { Card } from "@astryxdesign/core/Card";
+import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { Pagination } from "@astryxdesign/core/Pagination";
+import { Table, type TableColumn } from "@astryxdesign/core/Table";
+import { Text } from "@astryxdesign/core/Text";
+import type { ReactNode } from "react";
+import { ErrorBox } from "./error-box";
+import { PageSpinner } from "./page-spinner";
+import { Raised } from "./raised";
+import { useInSection } from "./section-context";
+import { useIsMobile } from "./use-is-mobile";
+
+/** Edge-to-edge data table inside a Card, with loading / error / empty states and optional pagination. */
+export function DataTable<T extends { id: string }>({
+  columns,
+  query,
+  empty,
+  paging,
+}: {
+  columns: { key: string; header: string; render: (row: T) => ReactNode; align?: "start" | "end" }[];
+  query: { isPending: boolean; error: unknown; refetch: () => unknown; data?: { items: T[]; page: number; pageSize: number; total: number } };
+  empty: ReactNode;
+  paging?: (page: number) => void;
+}) {
+  const mobile = useIsMobile();
+  const nested = useInSection();
+  // Inside a Section the surrounding card is already the surface: no second bordered card.
+  const variant = nested ? "transparent" : "default";
+  const { isPending, error, data } = query;
+  if (isPending) return <Card variant={variant}><PageSpinner /></Card>;
+  if (error) return <ErrorBox error={error} retry={() => void query.refetch()} />;
+  if (!data || data.items.length === 0) return <Card padding={4} variant={variant}>{empty}</Card>;
+  const pager = paging && data.total > data.pageSize && (
+    <HStack justify="end" padding={3}>
+      <Pagination page={data.page} onChange={paging} totalItems={data.total} pageSize={data.pageSize} />
+    </HStack>
+  );
+  // Phones: one card per row (first column is the title, the rest are label/value pairs) instead of a wide table.
+  if (mobile) {
+    const [first, ...rest] = columns;
+    return (
+      <VStack gap={2}>
+        {data.items.map((row) => (
+          <MobileRow key={row.id} nested={nested}>
+            <VStack gap={1.5}>
+              <Text weight="semibold">{first.render(row)}</Text>
+              {rest.map((c) =>
+                c.header ? (
+                  <HStack key={c.key} justify="between" align="center" gap={3}>
+                    <Text size="sm" color="secondary">{c.header}</Text>
+                    <Text size="sm" as="div">{c.render(row)}</Text>
+                  </HStack>
+                ) : (
+                  <HStack key={c.key} justify="end">{c.render(row)}</HStack>
+                ),
+              )}
+            </VStack>
+          </MobileRow>
+        ))}
+        {pager}
+      </VStack>
+    );
+  }
+  const cols: TableColumn<T & Record<string, unknown>>[] = columns.map((c) => ({
+    key: c.key,
+    header: c.header,
+    align: c.align,
+    renderCell: (row) => c.render(row as T),
+  }));
+  return (
+    <Card variant={variant} padding={nested ? 0 : undefined}>
+      <Table data={data.items as (T & Record<string, unknown>)[]} columns={cols} idKey="id" hasHover />
+      {pager}
+    </Card>
+  );
+}
+
+function MobileRow({ nested, children }: { nested: boolean; children: ReactNode }) {
+  return nested ? <Raised>{children}</Raised> : <Card padding={3}>{children}</Card>;
+}

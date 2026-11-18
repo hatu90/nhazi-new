@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
-import { Card } from "@astryxdesign/core/Card";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
@@ -9,7 +8,7 @@ import { useParams } from "react-router";
 import { formatDateTime, formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse, RequestStatus } from "@/client/lib/types";
-import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Section, SelectField, StatusBadge } from "@/client/ui";
+import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, SelectField, StatusBadge } from "@/client/ui";
 import { ReplyForm } from "@/client/ui/reply-form";
 import { useProperty } from "../property-layout";
 
@@ -41,7 +40,7 @@ export function RequestDetailPage() {
         <VStack gap={3}>
           {r.comments.length === 0 && <Text color="secondary">No comments yet.</Text>}
           {r.comments.map((c) => (
-            <Card key={c.id} padding={3}><VStack gap={1}><HStack justify="between"><Text weight="semibold">{c.author.displayName}</Text><Text size="sm" color="secondary">{formatDateTime(c.createdAt)}</Text></HStack><Text>{c.body}</Text></VStack></Card>
+            <Raised key={c.id}><VStack gap={1}><HStack justify="between"><Text weight="semibold">{c.author.displayName}</Text><Text size="sm" color="secondary">{formatDateTime(c.createdAt)}</Text></HStack><Text>{c.body}</Text></VStack></Raised>
           ))}
           {role !== "viewer" && <HStack><Button label="Reply" onClick={() => setReplying(true)} /></HStack>}
         </VStack>

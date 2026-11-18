@@ -59,3 +59,4 @@ export type { IMemberResponse } from "@/server/modules/member/member.schema";
 export type { IInvitationResponse } from "@/server/modules/invitation/invitation.schema";
 export type { IPlanResponse } from "@/server/modules/plan/plan.schema";
 export type { IPropertyStatsResponse } from "@/server/modules/stats/stats.schema";
+export type { ITemplateListResponse, ITemplateSummaryResponse, ITemplateDetailResponse, ITemplateVersionResponse } from "@/server/modules/agreement/agreement.schema";

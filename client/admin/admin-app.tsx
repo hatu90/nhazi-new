@@ -7,6 +7,8 @@ import { NotFound } from "@/client/spa/not-found";
 import { SpaProviders } from "@/client/spa/providers";
 import { RequireAccount } from "@/client/spa/require-account";
 import { SpaShell } from "@/client/spa/topbar";
+import { AgreementEditorPage } from "./pages/agreement-editor";
+import { AgreementsPage } from "./pages/agreements";
 import { InvoiceDetailPage } from "./pages/invoice-detail";
 import { InvoicesPage } from "./pages/invoices";
 import { LeaseDetailPage } from "./pages/lease-detail";
@@ -59,6 +61,8 @@ export default function AdminApp() {
                 <Route path="invoices/:invoiceId" element={<InvoiceDetailPage />} />
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:requestId" element={<RequestDetailPage />} />
+                <Route path="agreements" element={<AgreementsPage />} />
+                <Route path="agreements/:templateId" element={<AgreementEditorPage />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>

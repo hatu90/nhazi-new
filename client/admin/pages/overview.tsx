@@ -10,7 +10,7 @@ import { useNavigate } from "react-router";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IPropertyStatsResponse, ITenancyListResponse, ITenancySummaryResponse, IUnitListResponse, IUnitResponse } from "@/client/lib/types";
-import { ErrorBox, PageSpinner, Section, Tag } from "@/client/ui";
+import { ErrorBox, Kpi, PageSpinner, Section, Tag } from "@/client/ui";
 import { useProperty } from "../property-layout";
 
 const DAY = 86_400_000;
@@ -69,18 +69,6 @@ function UnitsByFloor() {
         </VStack>
       ))}
     </VStack>
-  );
-}
-
-function Kpi({ title, value, detail, onClick }: { title: string; value: string | number; detail: string; onClick: () => void }) {
-  return (
-    <ClickableCard label={title} padding={4} onClick={onClick}>
-      <VStack gap={1}>
-        <Text size="sm" color="secondary">{title}</Text>
-        <Heading level={1}>{value}</Heading>
-        <Text size="sm" color="secondary">{detail}</Text>
-      </VStack>
-    </ClickableCard>
   );
 }
 

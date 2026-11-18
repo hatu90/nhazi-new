@@ -7,14 +7,33 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate, useParams } from "react-router";
 import { formatDate, formatMoney, isValidPhone, label, normalizePhone, todayIso } from "@/client/lib/format";
+import { AgreementSection } from "@/client/agreement/section";
 import { useGet, useSend } from "@/client/lib/hooks";
-import type { IMeterListResponse, IServiceListResponse, ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
+import type { ITemplateVersionResponse, IMeterListResponse, IServiceListResponse, ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge } from "@/client/ui";
 import { num, text } from "@/client/ui/form";
 import { FArea, FDate, FNumber, FSelect, FText, FormBody, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
 
 type Dialog = "end" | "rent" | "tenant" | "member" | "service" | null;
+
+function LeaseAgreement({ lease, path }: { lease: ITenancyDetailResponse; path: string }) {
+  const { apiPath, canManage, property } = useProperty();
+  const a = lease.agreement!;
+  const version = useGet<ITemplateVersionResponse>(apiPath(`/agreement-templates/${a.templateId}/versions/${a.version}`));
+  const saveValues = useSend<{ agreementValues: Record<string, string> }>("PATCH", path, [path]);
+  if (version.isPending) return <PageSpinner />;
+  if (version.error) return <ErrorBox error={version.error} retry={() => void version.refetch()} />;
+  return (
+    <AgreementSection
+      title={`Agreement · ${a.templateName} v${a.version}`}
+      content={version.data.data}
+      facts={{ propertyName: property.name, unitName: lease.unitName, tenantNames: lease.tenants.map((t) => t.displayName), startDate: lease.startDate, endDate: lease.endDate, rent: lease.currentRent, deposit: lease.depositAmount, billingDay: lease.billingCycleDay }}
+      values={a.values}
+      onSaveValues={canManage ? (agreementValues) => saveValues.mutateAsync({ agreementValues }) : undefined}
+    />
+  );
+}
 
 export function LeaseDetailPage() {
   const { leaseId = "" } = useParams();
@@ -58,6 +77,8 @@ export function LeaseDetailPage() {
           ...(l.terminatedAt ? ([["Ended on", `${formatDate(l.terminatedAt)}${l.terminationReason ? ` — ${l.terminationReason}` : ""}`]] as [string, string][]) : []),
         ]} />
       </Section>
+
+      {l.agreement && <LeaseAgreement lease={l} path={path} />}
 
       <Section title="Rent history" action={canManage && l.status !== "ended" && <Button label="Add rent version" size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
         <DataTable<{ id: string; effectiveDate: string; amount: number }>
