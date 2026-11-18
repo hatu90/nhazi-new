@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { IActor } from "@/server/shared/actor";
+import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import type { IUnitResponse } from "../unit/unit.schema";
 import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole } from "@/server/shared/schema";
@@ -66,6 +66,31 @@ export const toCreatePropertyCommand = (payload: ICreatePropertyPayload, actor: 
   ...payload,
   actor,
 });
+
+// ── PATCH /api/admin/properties/:propertyId  (setup: images, header image, rules, address ...) ──
+// omitted = unchanged, null = clear. Province and ward travel together.
+export const updatePropertyPayloadSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    category: propertyCategorySchema,
+    street: z.string().trim().min(1).max(300),
+    province: provinceSchema,
+    ward: wardSchema,
+    rentPriceFrom: vndSchema.nullable(),
+    rentPriceTo: vndSchema.nullable(),
+    rentNegotiable: z.boolean(),
+    headerImage: storageKey.nullable(),
+    images: z.array(storageKey).max(50),
+    rules: z.array(z.string().trim().min(1).max(500)).max(100),
+  })
+  .partial()
+  .refine((v) => Object.values(v).some((x) => x !== undefined), "Nothing to update")
+  .refine((v) => (v.province === undefined) === (v.ward === undefined), { message: "Send province and ward together", path: ["ward"] })
+  .refine((v) => !v.province || !v.ward || v.ward.provinceCode === v.province.code, { message: "Ward does not belong to the province", path: ["ward"] })
+  .refine(priceRange, { message: "rentPriceFrom must be <= rentPriceTo", path: ["rentPriceTo"] });
+export type IUpdatePropertyPayload = z.infer<typeof updatePropertyPayloadSchema>;
+export interface IUpdatePropertyCommand extends IUpdatePropertyPayload, IPropertyScope {}
+export const toUpdatePropertyCommand = (p: IUpdatePropertyPayload, s: IPropertyScope): IUpdatePropertyCommand => ({ ...p, ...s });
 
 // ── responses ───────────────────────────────────────────────────────────────────────
 export interface IPropertySummaryResponse {

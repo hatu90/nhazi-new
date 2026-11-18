@@ -1,10 +1,11 @@
 import type { IPriceVersion } from "@/lib/billing/pricing";
-import type { IBillingRepository, ICloseContext, INewPeriod, IOpenContext } from "@/server/modules/billing/billing.repository";
+import type { IBillingRepository, INewPeriod, IOpenContext } from "@/server/modules/billing/billing.repository";
 import type { IBillingPeriodDetailRecord, IBillingPeriodListQuery, IBillingPeriodResponse, IReadingRef } from "@/server/modules/billing/billing.schema";
 import type { IRentVersion } from "@/server/modules/lease/lease.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { Prisma, PrismaClient } from "../client";
-import { isoDate, isoDateOrNull, num, numOrNull, orConflict, toJson } from "../mappers";
+import { isoDate, isoDateOrNull, num, numOrNull, orConflict } from "../mappers";
+import { createPeriodTx } from "../writers";
 
 const d = (s: string) => new Date(s);
 const include = { lease: { select: { unit: { select: { unitName: true } } } } } satisfies Prisma.BillingPeriodInclude;
@@ -78,12 +79,20 @@ export class PrismaBillingRepository implements IBillingRepository {
     const last = lease.billingPeriods[0];
     return {
       lease: {
+        id: lease.id,
+        unitId: lease.unitId,
         startDate: isoDate(lease.startDate),
         endDate: isoDateOrNull(lease.endDate),
         terminatedAt: isoDateOrNull(lease.terminatedAt),
+        activatedAt: lease.activatedAt && lease.activatedAt.toISOString(),
+        firstPeriodEnd: isoDateOrNull(lease.firstPeriodEnd),
+        depositAmount: num(lease.depositAmount),
         rentVersions: lease.prices as unknown as IRentVersion[],
+        lastMemberJoinedAt: lease.leaseMembers.reduce<string | null>((m, x) => (m === null || isoDate(x.joinedAt) > m ? isoDate(x.joinedAt) : m), null),
       },
-      lastPeriod: last ? { endDate: isoDate(last.endDate), status: last.status } : null,
+      lastPeriod: last
+        ? { id: last.id, startDate: isoDate(last.startDate), endDate: isoDate(last.endDate), status: last.status, rentAmount: num(last.rentAmount) }
+        : null,
       subscriptions: lease.serviceSubscriptions.map((s) => ({
         id: s.id,
         quantity: s.quantity,
@@ -103,62 +112,10 @@ export class PrismaBillingRepository implements IBillingRepository {
 
   createPeriod(c: INewPeriod) {
     return orConflict(
-      () =>
-        this.db.$transaction(async (tx) => {
-          const period = await tx.billingPeriod.create({
-            data: { propertyId: c.propertyId, leaseId: c.leaseId, startDate: d(c.startDate), endDate: d(c.endDate), rentAmount: c.rentAmount },
-            select: { id: true },
-          });
-          await tx.usage.createMany({
-            data: c.usages.map((u) => ({
-              propertyId: c.propertyId,
-              leaseId: c.leaseId,
-              billingPeriodId: period.id,
-              subscriptionId: u.subscriptionId,
-              openingReadingId: u.openingReadingId,
-              quantity: u.quantity,
-              price: toJson(u.price),
-            })),
-          });
-          return period.id;
-        }),
+      () => this.db.$transaction((tx) => createPeriodTx(tx, c)),
       "The lease already has an active or overlapping billing period",
       "PERIOD_ACTIVE",
     );
-  }
-
-  async getCloseContext(propertyId: string, periodId: string): Promise<ICloseContext | null> {
-    const r = await this.db.billingPeriod.findFirst({
-      where: { id: periodId, propertyId },
-      include: {
-        usages: {
-          where: { serviceSubscription: { service: { usageBase: "meter" } } },
-          include: { serviceSubscription: { include: { service: { select: { serviceName: true } } } }, openingReading: true },
-        },
-      },
-    });
-    if (!r) return null;
-    return {
-      period: { id: r.id, leaseId: r.leaseId, status: r.status, startDate: isoDate(r.startDate), endDate: isoDate(r.endDate) },
-      meterUsages: r.usages.map((u) => ({
-        id: u.id,
-        serviceName: u.serviceSubscription.service.serviceName,
-        meterId: u.serviceSubscription.meterId ?? "",
-        subscriptionEndDate: isoDateOrNull(u.serviceSubscription.endDate),
-        openingValue: u.openingReading ? num(u.openingReading.readingValue) : 0,
-      })),
-    };
-  }
-
-  closePeriod(periodId: string, closings: { usageId: string; closingReadingId: string; quantity: number }[]) {
-    return this.db.$transaction(async (tx) => {
-      const closed = await tx.billingPeriod.updateMany({ where: { id: periodId, status: "active" }, data: { status: "closed" } });
-      if (closed.count === 0) return false;
-      for (const c of closings) {
-        await tx.usage.update({ where: { id: c.usageId }, data: { closingReadingId: c.closingReadingId, quantity: c.quantity } });
-      }
-      return true;
-    });
   }
 
   async findUsage(propertyId: string, periodId: string, usageId: string) {

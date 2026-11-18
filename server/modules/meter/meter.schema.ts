@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bulkSchema } from "@/server/shared/bulk";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { idSchema, isoDateSchema, nonEmptyPatch } from "@/server/shared/schema";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
@@ -31,6 +32,13 @@ export const createMeterPayloadSchema = z.object({
 export type ICreateMeterPayload = z.infer<typeof createMeterPayloadSchema>;
 export interface ICreateMeterCommand extends ICreateMeterPayload, IPropertyScope {}
 export const toCreateMeterCommand = (p: ICreateMeterPayload, s: IPropertyScope): ICreateMeterCommand => ({ ...p, ...s });
+
+export const bulkMetersPayloadSchema = bulkSchema(createMeterPayloadSchema);
+export type IBulkMetersPayload = z.infer<typeof bulkMetersPayloadSchema>;
+export interface IBulkMetersCommand extends IPropertyScope {
+  items: ICreateMeterPayload[];
+}
+export const toBulkMetersCommand = (p: IBulkMetersPayload, s: IPropertyScope): IBulkMetersCommand => ({ ...p, ...s });
 
 export const updateMeterPayloadSchema = z
   .object({

@@ -4,6 +4,7 @@ import type {
   IAdminPropertyListQuery,
   IAdminPropertySummaryResponse,
   ICreatePropertyCommand,
+  IUpdatePropertyCommand,
   IPropertyDetailResponse,
   IPropertySearchQuery,
   IPropertySummaryResponse,
@@ -18,4 +19,5 @@ export interface IPropertyRepository {
   findAdminById(propertyId: string): Promise<IAdminPropertyDetail | null>;
   /** Creates the property and makes the actor its `owner`, atomically. */
   create(command: ICreatePropertyCommand): Promise<IAdminPropertyDetail>;
+  update(command: IUpdatePropertyCommand): Promise<IAdminPropertyDetail>;
 }

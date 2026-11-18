@@ -6,8 +6,21 @@ import type { IBillingPeriodDetailRecord, IBillingPeriodListQuery, IBillingPerio
 
 /** Everything the usecase needs to open the next period of a lease. */
 export interface IOpenContext {
-  lease: { startDate: string; endDate: string | null; terminatedAt: string | null; rentVersions: IRentVersion[] };
-  lastPeriod: { endDate: string; status: "active" | "closed" } | null;
+  lease: {
+    id: string;
+    unitId: string;
+    startDate: string;
+    endDate: string | null;
+    terminatedAt: string | null;
+    /** null = draft */
+    activatedAt: string | null;
+    firstPeriodEnd: string | null;
+    depositAmount: number;
+    rentVersions: IRentVersion[];
+    /** A lease cannot end before someone moved in. */
+    lastMemberJoinedAt: string | null;
+  };
+  lastPeriod: { id: string; startDate: string; endDate: string; status: "active" | "closed"; rentAmount: number } | null;
   subscriptions: {
     id: string;
     quantity: number;
@@ -20,7 +33,8 @@ export interface IOpenContext {
 }
 export interface INewUsage {
   subscriptionId: string;
-  openingReadingId: string | null;
+  /** Meter usages: the reading (meter + date) the usage starts from; resolved to a row when stored. */
+  opening: { meterId: string; on: string } | null;
   quantity: number | null;
   price: IPriceVersion;
 }
@@ -31,16 +45,6 @@ export interface INewPeriod {
   endDate: string;
   rentAmount: number;
   usages: INewUsage[];
-}
-export interface ICloseContext {
-  period: { id: string; leaseId: string; status: "active" | "closed"; startDate: string; endDate: string };
-  meterUsages: {
-    id: string;
-    serviceName: string;
-    meterId: string;
-    subscriptionEndDate: string | null;
-    openingValue: number;
-  }[];
 }
 export interface IReadingPoint {
   id: string;
@@ -55,10 +59,6 @@ export interface IBillingRepository {
   findReading(meterId: string, on: string): Promise<IReadingPoint | null>;
   /** Period + usages in one transaction. ConflictError PERIOD_ACTIVE / PERIOD_OVERLAP. Returns the new id. */
   createPeriod(c: INewPeriod): Promise<string>;
-
-  getCloseContext(propertyId: string, periodId: string): Promise<ICloseContext | null>;
-  /** Sets closing readings + quantities and the status, only while the period is active. false = it was not. */
-  closePeriod(periodId: string, closings: { usageId: string; closingReadingId: string; quantity: number }[]): Promise<boolean>;
 
   findUsage(propertyId: string, periodId: string, usageId: string): Promise<{ usageBase: ServiceUsageBase; billed: boolean; periodStatus: "active" | "closed" } | null>;
   setUsageQuantity(usageId: string, quantity: number): Promise<void>;

@@ -1,10 +1,12 @@
 import type { IPaginated } from "@/server/shared/pagination";
 import type { ServiceUsageBase } from "@/server/shared/schema";
-import type { ICreateMeterCommand, IMeterListQuery, IMeterResponse, IUpdateMeterCommand } from "./meter.schema";
+import type { IBulkMetersCommand, ICreateMeterCommand, IMeterListQuery, IMeterResponse, IUpdateMeterCommand } from "./meter.schema";
 
 export interface IMeterRepository {
   list(propertyId: string, query: IMeterListQuery): Promise<IPaginated<IMeterResponse>>;
   findById(propertyId: string, meterId: string): Promise<IMeterResponse | null>;
+  /** All or nothing. */
+  createMany(command: IBulkMetersCommand): Promise<IMeterResponse[]>;
   create(command: ICreateMeterCommand): Promise<IMeterResponse>;
   update(command: IUpdateMeterCommand): Promise<IMeterResponse | null>;
   unitExists(propertyId: string, unitId: string): Promise<boolean>;

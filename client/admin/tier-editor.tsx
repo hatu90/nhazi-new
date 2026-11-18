@@ -1,0 +1,39 @@
+"use client";
+
+import { Button } from "@astryxdesign/core/Button";
+import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { Text } from "@astryxdesign/core/Text";
+import { useFieldArray, type Control, type FieldValues, type Path } from "react-hook-form";
+import { FNumber } from "@/client/ui/rhf";
+
+export interface TierRow {
+  upTo: string;
+  rate: string;
+}
+export const emptyTier = (): TierRow => ({ upTo: "", rate: "" });
+
+/** Rows -> API tiers. The last tier is always unbounded. */
+export const toTiers = (rows: TierRow[]) => rows.map((r, i) => ({ upTo: i === rows.length - 1 ? null : Number(r.upTo), rate: Number(r.rate) }));
+
+/** Price tiers as a react-hook-form field array (`name` must point at a `TierRow[]`). Single-column. */
+export function TierFields<T extends FieldValues>({ control, name, multi, unit }: { control: Control<T>; name: string; multi: boolean; unit: string }) {
+  const { fields, append, remove } = useFieldArray({ control, name: name as never });
+  return (
+    <VStack gap={3}>
+      {fields.map((f, i) => {
+        const last = i === fields.length - 1;
+        return (
+          <VStack key={f.id} gap={1}>
+            {multi && last && <Text size="sm" color="secondary">Tier {i + 1}: above previous</Text>}
+            <HStack gap={2} align="end">
+              {multi && !last && <FNumber control={control} name={`${name}.${i}.upTo` as Path<T>} label={`Tier ${i + 1} up to (${unit})`} required width="100%" />}
+              <FNumber control={control} name={`${name}.${i}.rate` as Path<T>} label={multi ? `Rate (₫ per ${unit})` : `Price (₫ per ${unit})`} required width="100%" />
+              {multi && fields.length > 1 && <Button label={`Remove tier ${i + 1}`} variant="ghost" size="sm" isIconOnly icon="✕" onClick={() => remove(i)} />}
+            </HStack>
+          </VStack>
+        );
+      })}
+      {multi && <HStack><Button label="Add tier" size="sm" variant="secondary" onClick={() => append(emptyTier() as never)} /></HStack>}
+    </VStack>
+  );
+}

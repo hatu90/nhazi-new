@@ -55,6 +55,7 @@ const toSummary = (r: SummaryRow): ITenancySummaryRecord => ({
   startDate: isoDate(r.startDate),
   endDate: isoDateOrNull(r.endDate),
   terminatedAt: isoDateOrNull(r.terminatedAt),
+  activatedAt: r.activatedAt && r.activatedAt.toISOString(),
   depositAmount: num(r.depositAmount),
   rentVersions: rentVersionsSchema.parse(r.prices),
   tenants: r.accountLeases.map(toTenant),
@@ -78,6 +79,7 @@ const toDetail = (r: DetailRow): ITenancyDetailRecord => {
   const { rentVersions, ...summary } = toSummary(r);
   return {
     ...summary,
+    firstPeriodEnd: isoDateOrNull(r.firstPeriodEnd),
     billingCycleDay: r.billingCycleDay,
     terminationReason: r.terminationReason,
     rentVersions,
@@ -114,8 +116,17 @@ export class PrismaTenancyRepository implements ITenancyRepository {
   async list(propertyId: string, q: ITenancyListQuery, today: string) {
     const t = d(today);
     const ended: Prisma.LeaseWhereInput = { OR: [{ terminatedAt: { lt: t } }, { terminatedAt: null, endDate: { lt: t } }] };
+    const started: Prisma.LeaseWhereInput = { activatedAt: { not: null } };
     const status: Prisma.LeaseWhereInput =
-      q.status === "upcoming" ? { startDate: { gt: t } } : q.status === "ended" ? ended : q.status === "active" ? { startDate: { lte: t }, NOT: ended } : {};
+      q.status === "draft"
+        ? { activatedAt: null }
+        : q.status === "upcoming"
+          ? { ...started, startDate: { gt: t } }
+          : q.status === "ended"
+            ? { ...started, ...ended }
+            : q.status === "active"
+              ? { ...started, startDate: { lte: t }, NOT: ended }
+              : {};
     const where: Prisma.LeaseWhereInput = { propertyId, deletedAt: null, ...(q.unitId && { unitId: q.unitId }), ...status };
     const [rows, total] = await Promise.all([
       this.db.lease.findMany({ where, include: summaryInclude, orderBy: [{ startDate: "desc" }, { id: "asc" }], ...toSkipTake(q) }),
@@ -140,6 +151,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         startDate: isoDate(r.startDate),
         endDate: isoDateOrNull(r.endDate),
         terminatedAt: isoDateOrNull(r.terminatedAt),
+        activatedAt: r.activatedAt && r.activatedAt.toISOString(),
         hasAgreement: r.agreementTemplateId !== null,
         rentVersions: rentVersionsSchema.parse(r.prices),
       }
@@ -188,6 +200,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               prices: toJson([{ effectiveDate: c.startDate, amount: c.rent }]),
               billingCycleDay: c.billingCycleDay,
               depositAmount: c.depositAmount,
+              firstPeriodEnd: d(c.firstPeriodEnd),
               documents: c.documents,
               ...(c.agreement && templateVersion !== null && {
                 agreementTemplateId: c.agreement.templateId,
@@ -224,10 +237,17 @@ export class PrismaTenancyRepository implements ITenancyRepository {
       data: {
         endDate: dn(c.endDate),
         billingCycleDay: c.billingCycleDay,
+        depositAmount: c.depositAmount,
+        firstPeriodEnd: dn(c.firstPeriodEnd),
         documents: c.documents,
         ...(c.agreementValues && { agreementData: toJson(c.agreementValues) }),
       },
     });
+  }
+
+  async softDeleteDraft(propertyId: string, leaseId: string) {
+    const r = await this.db.lease.updateMany({ where: { id: leaseId, propertyId, deletedAt: null, activatedAt: null }, data: { deletedAt: new Date() } });
+    return r.count > 0;
   }
 
   async terminate(c: ITerminateLeaseCommand) {

@@ -1,5 +1,5 @@
 import type { IActor } from "@/server/shared/actor";
-import { NotFoundError } from "@/server/shared/errors";
+import { NotFoundError, ValidationError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IPropertyRepository } from "./property.repository";
@@ -8,6 +8,7 @@ import type {
   IAdminPropertyListResponse,
   IAdminPropertyResponse,
   ICreatePropertyCommand,
+  IUpdatePropertyCommand,
   IPropertyDetailResponse,
   IPropertySearchQuery,
   IPropertySearchResponse,
@@ -58,5 +59,25 @@ export class CreatePropertyUseCase implements IUseCase<ICreatePropertyCommand, I
   async execute(command: ICreatePropertyCommand) {
     const property = await this.properties.create(command);
     return { ...property, role: "owner" as const };
+  }
+}
+
+/** Setup / edit: images, header image, rules, address, price range. Owners and admins. */
+export class UpdatePropertyUseCase implements IUseCase<IUpdatePropertyCommand, IAdminPropertyResponse> {
+  constructor(
+    private readonly properties: IPropertyRepository,
+    private readonly policy: AccessPolicy,
+  ) {}
+  async execute(c: IUpdatePropertyCommand) {
+    const role = await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    const current = await this.properties.findAdminById(c.propertyId);
+    if (!current) throw new NotFoundError("Property");
+    // a one-sided price change must still respect the other side
+    const from = c.rentPriceFrom === undefined ? current.rentPriceFrom : c.rentPriceFrom;
+    const to = c.rentPriceTo === undefined ? current.rentPriceTo : c.rentPriceTo;
+    if (from !== null && to !== null && from > to) {
+      throw new ValidationError("rentPriceFrom must be <= rentPriceTo", { fieldErrors: { rentPriceTo: ["rentPriceFrom must be <= rentPriceTo"] } });
+    }
+    return { ...(await this.properties.update(c)), role };
   }
 }

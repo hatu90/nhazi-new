@@ -11,7 +11,7 @@ const money = vndSchema;
 // ── list ────────────────────────────────────────────────────────────────────────────
 export const tenancyListQuerySchema = paginationQuerySchema.extend({
   unitId: idSchema.optional(),
-  status: z.enum(["upcoming", "active", "ended"]).optional(),
+  status: z.enum(["draft", "upcoming", "active", "ended"]).optional(),
 });
 export type ITenancyListQuery = z.infer<typeof tenancyListQuerySchema>;
 
@@ -22,6 +22,8 @@ export const createLeasePayloadSchema = z
     startDate: isoDateSchema,
     endDate: isoDateSchema.optional(),
     rent: money,
+    /** Where the first billing period ends (it starts on startDate). Prefilled by the frontend, e.g. the end of that month. */
+    firstPeriodEnd: isoDateSchema,
     billingCycleDay: z.number().int().min(1).max(28).default(1),
     depositAmount: money.default(0),
     /** Accounts that can log in and see the lease. Unregistered phones get a placeholder account they claim on sign-up. */
@@ -33,7 +35,11 @@ export const createLeasePayloadSchema = z
     agreement: z.object({ templateId: idSchema, values: z.record(z.string(), z.unknown()).default({}) }).optional(),
     documents: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
   })
-  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "endDate must be on/after startDate", path: ["endDate"] });
+  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "endDate must be on/after startDate", path: ["endDate"] })
+  .refine((v) => v.firstPeriodEnd >= v.startDate && (!v.endDate || v.firstPeriodEnd <= v.endDate), {
+    message: "firstPeriodEnd must be within the lease",
+    path: ["firstPeriodEnd"],
+  });
 export type ICreateLeasePayload = z.infer<typeof createLeasePayloadSchema>;
 export interface ICreateLeaseCommand extends ICreateLeasePayload, IPropertyScope {}
 export const toCreateLeaseCommand = (p: ICreateLeasePayload, s: IPropertyScope): ICreateLeaseCommand => ({ ...p, ...s });
@@ -43,6 +49,10 @@ export const updateLeasePayloadSchema = z
   .object({
     endDate: isoDateSchema.nullable(),
     billingCycleDay: z.number().int().min(1).max(28),
+    /** Draft only. */
+    depositAmount: money,
+    /** Draft only. */
+    firstPeriodEnd: isoDateSchema,
     documents: z.array(z.string().trim().min(1).max(500)).max(50),
     agreementValues: z.record(z.string(), z.unknown()),
   })
@@ -111,15 +121,16 @@ export const toUpdateLeaseMemberCommand = (p: IUpdateLeaseMemberPayload, s: IPro
 });
 
 // ── subscriptions ───────────────────────────────────────────────────────────────────
+export const subscriptionFields = {
+  serviceId: idSchema,
+  meterId: idSchema.optional(),
+  quantity: z.number().int().min(1).max(100).default(1),
+  details: z.string().trim().max(500).optional(),
+  startDate: isoDateSchema.optional(),
+  endDate: isoDateSchema.optional(),
+};
 export const createSubscriptionPayloadSchema = z
-  .object({
-    serviceId: idSchema,
-    meterId: idSchema.optional(),
-    quantity: z.number().int().min(1).max(100).default(1),
-    details: z.string().trim().max(500).optional(),
-    startDate: isoDateSchema.optional(),
-    endDate: isoDateSchema.optional(),
-  })
+  .object(subscriptionFields)
   .refine((v) => !v.startDate || !v.endDate || v.endDate >= v.startDate, { message: "endDate must be on/after startDate", path: ["endDate"] });
 export type ICreateSubscriptionPayload = z.infer<typeof createSubscriptionPayloadSchema>;
 export interface ICreateSubscriptionCommand extends ICreateSubscriptionPayload, IPropertyScope {
@@ -173,6 +184,8 @@ export interface ITenancySummaryResponse {
   startDate: string;
   endDate: string | null;
   terminatedAt: string | null;
+  /** null = draft */
+  activatedAt: string | null;
   status: LeaseStatus;
   currentRent: number | null;
   depositAmount: number;
@@ -191,6 +204,7 @@ export interface ISubscriptionResponse {
   endDate: string | null;
 }
 export interface ITenancyDetailResponse extends ITenancySummaryResponse {
+  firstPeriodEnd: string | null;
   billingCycleDay: number;
   terminationReason: string | null;
   rentVersions: IRentVersion[];

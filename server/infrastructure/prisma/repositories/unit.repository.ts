@@ -1,5 +1,5 @@
 import type { IUnitRepository } from "@/server/modules/unit/unit.repository";
-import type { ICreateUnitCommand, IUnitListQuery, IUnitResponse, IUpdateUnitCommand } from "@/server/modules/unit/unit.schema";
+import type { IBulkUnitsCommand, ICreateUnitCommand, IUnitListQuery, IUnitResponse, IUpdateUnitCommand } from "@/server/modules/unit/unit.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { Prisma, PrismaClient } from "../client";
 import { num, numOrNull, orConflict } from "../mappers";
@@ -40,6 +40,36 @@ export class PrismaUnitRepository implements IUnitRepository {
   async findById(propertyId: string, unitId: string) {
     const row = await this.db.unit.findFirst({ where: { id: unitId, propertyId, deletedAt: null } });
     return row ? toUnit(row) : null;
+  }
+
+  createMany(c: IBulkUnitsCommand) {
+    return orConflict(
+      () =>
+        this.db.$transaction(async (tx) => {
+          const out: IUnitResponse[] = [];
+          for (const u of c.items) {
+            out.push(
+              toUnit(
+                await tx.unit.create({
+                  data: {
+                    propertyId: c.propertyId,
+                    unitName: u.name,
+                    area: u.area,
+                    floor: u.floor,
+                    bathrooms: u.bathrooms,
+                    bedrooms: u.bedrooms,
+                    rentPrice: u.rentPrice,
+                    rentNegotiable: u.rentNegotiable,
+                    description: u.description,
+                  },
+                }),
+              ),
+            );
+          }
+          return out;
+        }),
+      ...NAME_TAKEN,
+    );
   }
 
   create(c: ICreateUnitCommand) {

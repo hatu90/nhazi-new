@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bulkSchema } from "@/server/shared/bulk";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { nonEmptyPatch, vndSchema } from "@/server/shared/schema";
@@ -30,6 +31,13 @@ export const createUnitPayloadSchema = z.object({
 export type ICreateUnitPayload = z.infer<typeof createUnitPayloadSchema>;
 export interface ICreateUnitCommand extends ICreateUnitPayload, IPropertyScope {}
 export const toCreateUnitCommand = (p: ICreateUnitPayload, s: IPropertyScope): ICreateUnitCommand => ({ ...p, ...s });
+
+export const bulkUnitsPayloadSchema = bulkSchema(createUnitPayloadSchema, (u) => u.name);
+export type IBulkUnitsPayload = z.infer<typeof bulkUnitsPayloadSchema>;
+export interface IBulkUnitsCommand extends IPropertyScope {
+  items: ICreateUnitPayload[];
+}
+export const toBulkUnitsCommand = (p: IBulkUnitsPayload, s: IPropertyScope): IBulkUnitsCommand => ({ ...p, ...s });
 
 /** PATCH: omitted = unchanged, null = clear. */
 export const updateUnitPayloadSchema = z

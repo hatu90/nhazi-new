@@ -1,11 +1,13 @@
 import { z } from "zod";
 import type { IPriceVersion } from "@/lib/billing/pricing";
-import type { IPropertyScope } from "@/server/shared/actor";
+import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { idSchema, invoiceKindSchema, invoiceStatusSchema, isoDateSchema, vndSchema, type InvoiceKind, type InvoiceStatus } from "@/server/shared/schema";
 
 export const paymentMethodSchema = z.enum(["cash", "bank_transfer"]);
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
+/** pending = reported by the tenant, counts only once an admin confirms it. */
+export type PaymentStatus = "pending" | "confirmed" | "rejected";
 export const invoiceItemKindSchema = z.enum(["rent", "service", "meter", "deposit", "credit", "other"]);
 export type InvoiceItemKind = z.infer<typeof invoiceItemKindSchema>;
 
@@ -60,8 +62,11 @@ export interface ICreateInvoiceCommand extends ICreateInvoicePayload, IPropertyS
 export interface IUsageDetail {
   quantity: number;
   price: IPriceVersion;
-  /** quantity × frozen price. `amount` may differ: that is the negotiated figure. */
+  /** quantity × frozen price (the full monthly cost for an advance line). `amount` may differ: prorated or negotiated. */
   calculatedAmount: number;
+  /** Advance lines: the days of the period the service was live. */
+  from?: string;
+  to?: string;
 }
 export interface INewInvoice extends Omit<ICreateInvoiceCommand, "items"> {
   items: (ICreateInvoiceCommand["items"][number] & { detail: IUsageDetail | null })[];
@@ -82,11 +87,26 @@ export interface IRecordPaymentCommand extends IRecordPaymentPayload, IPropertyS
 }
 export const toRecordPaymentCommand = (p: IRecordPaymentPayload, s: IPropertyScope, invoiceId: string): IRecordPaymentCommand => ({ ...p, ...s, invoiceId });
 
+export type IReportPaymentPayload = IRecordPaymentPayload;
+export interface IReportPaymentCommand extends IReportPaymentPayload {
+  actor: IActor;
+  leaseId: string;
+  invoiceId: string;
+}
+export const toReportPaymentCommand = (p: IReportPaymentPayload, actor: IActor, leaseId: string, invoiceId: string): IReportPaymentCommand => ({ ...p, actor, leaseId, invoiceId });
+export type PaymentDecision = "confirm" | "reject";
+export interface IReviewPaymentCommand extends IPropertyScope {
+  invoiceId: string;
+  paymentId: string;
+  decision: PaymentDecision;
+}
+
 export interface IPaymentResponse {
   id: string;
   invoiceId: string;
   amount: number;
   method: PaymentMethod;
+  status: PaymentStatus;
   paidOn: string;
   reference: string | null;
   notes: string | null;

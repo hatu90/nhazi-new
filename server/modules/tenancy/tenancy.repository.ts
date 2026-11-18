@@ -25,6 +25,8 @@ export interface ILeaseCore {
   startDate: string;
   endDate: string | null;
   terminatedAt: string | null;
+  /** null = draft */
+  activatedAt: string | null;
   hasAgreement: boolean;
   /** Latest member join date (null = no members): a lease cannot end before someone moved in. */
   lastMemberJoinedAt: string | null;
@@ -44,6 +46,8 @@ export interface ITenancyRepository {
   /** One transaction: tenants (accounts found/created by phone), members, handover snapshot of the unit, the lease. Returns its id. */
   create(command: ICreateLeaseCommand, templateVersion: number | null): Promise<string>;
   update(command: IUpdateLeaseCommand): Promise<void>;
+  /** Draft leases only (nothing was ever billed). */
+  softDeleteDraft(propertyId: string, leaseId: string): Promise<boolean>;
   /** One transaction: sets termination, ends open subscriptions and members at that date. */
   terminate(command: ITerminateLeaseCommand): Promise<void>;
   addRent(command: IAddRentCommand, versions: IRentVersion[]): Promise<void>;

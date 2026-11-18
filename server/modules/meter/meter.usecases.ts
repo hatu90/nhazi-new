@@ -3,7 +3,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/e
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IMeterRepository } from "./meter.repository";
-import type { ICreateMeterCommand, IMeterListQuery, IMeterListResponse, IMeterResponse, IUpdateMeterCommand } from "./meter.schema";
+import type { IBulkMetersCommand, ICreateMeterCommand, IMeterListQuery, IMeterListResponse, IMeterResponse, IUpdateMeterCommand } from "./meter.schema";
 
 type Mtr = { meterId: string };
 abstract class Base {
@@ -37,6 +37,21 @@ export class CreateMeterUseCase extends Base implements IUseCase<ICreateMeterCom
       throw new ValidationError("Only services billed by meter can have meters", { fieldErrors: { serviceId: ["Not a meter service"] } });
     }
     return this.meters.create(c);
+  }
+}
+/** Every unit must be in the property and every service must be a meter service. */
+export class BulkCreateMetersUseCase extends Base implements IUseCase<IBulkMetersCommand, IMeterResponse[]> {
+  async execute(c: IBulkMetersCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    for (const unitId of new Set(c.items.map((i) => i.unitId))) {
+      if (!(await this.meters.unitExists(c.propertyId, unitId))) throw new NotFoundError("Unit");
+    }
+    for (const serviceId of new Set(c.items.map((i) => i.serviceId))) {
+      const base = await this.meters.findServiceUsageBase(c.propertyId, serviceId);
+      if (!base) throw new NotFoundError("Service");
+      if (base !== "meter") throw new ValidationError("Only services billed by meter can have meters", { fieldErrors: { serviceId: ["Not a meter service"] } });
+    }
+    return this.meters.createMany(c);
   }
 }
 export class UpdateMeterUseCase extends Base implements IUseCase<IUpdateMeterCommand, IMeterResponse> {

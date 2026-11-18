@@ -3,7 +3,7 @@ import type { IPropertyScope } from "@/server/shared/actor";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IUnitRepository } from "./unit.repository";
-import type { ICreateUnitCommand, IUnitListQuery, IUnitListResponse, IUnitResponse, IUpdateUnitCommand } from "./unit.schema";
+import type { IBulkUnitsCommand, ICreateUnitCommand, IUnitListQuery, IUnitListResponse, IUnitResponse, IUpdateUnitCommand } from "./unit.schema";
 
 type Unit = { unitId: string };
 
@@ -30,6 +30,14 @@ export class CreateUnitUseCase implements IUseCase<ICreateUnitCommand, IUnitResp
   async execute(command: ICreateUnitCommand) {
     await this.policy.assertPropertyRole(command.actor, command.propertyId, ROLES.manage);
     return this.units.create(command);
+  }
+}
+
+export class BulkCreateUnitsUseCase implements IUseCase<IBulkUnitsCommand, IUnitResponse[]> {
+  constructor(private readonly units: IUnitRepository, private readonly policy: AccessPolicy) {}
+  async execute(command: IBulkUnitsCommand) {
+    await this.policy.assertPropertyRole(command.actor, command.propertyId, ROLES.manage);
+    return this.units.createMany(command);
   }
 }
 

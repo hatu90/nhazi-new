@@ -7,6 +7,8 @@ import type {
   INewInvoice,
   IPaymentResponse,
   IRecordPaymentCommand,
+  IReportPaymentCommand,
+  IReviewPaymentCommand,
 } from "./invoice.schema";
 
 export interface IInvoiceRepository {
@@ -24,6 +26,13 @@ export interface IInvoiceRepository {
    * null = no such invoice in the property.
    */
   recordPayment(command: IRecordPaymentCommand): Promise<IPaymentResponse | null>;
+  /**
+   * Tenant-reported payment, stored as pending (does not change the invoice). ConflictError INVOICE_CANCELLED / OVERPAYMENT.
+   * null = no such invoice on that lease.
+   */
+  reportPayment(command: IReportPaymentCommand): Promise<IPaymentResponse | null>;
+  /** Pending -> confirmed (re-checks OVERPAYMENT, recomputes the status) or rejected. ConflictError PAYMENT_NOT_PENDING. null = not found. */
+  reviewPayment(command: IReviewPaymentCommand): Promise<IPaymentResponse | null>;
   /** Soft-deletes the payment and recomputes the status. false = not found. */
   deletePayment(propertyId: string, invoiceId: string, paymentId: string): Promise<boolean>;
   /** Atomic: ConflictError INVOICE_HAS_PAYMENTS / ALREADY_CANCELLED; voids the items. null = not found. */

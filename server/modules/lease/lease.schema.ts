@@ -15,7 +15,8 @@ export const invoiceListQuerySchema = paginationQuerySchema.extend({ status: inv
 export type IInvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
 
 // ── responses ───────────────────────────────────────────────────────────────────────
-export type LeaseStatus = "upcoming" | "active" | "ended";
+/** draft = written but not started (nothing billed, hidden from the tenant). */
+export type LeaseStatus = "draft" | "upcoming" | "active" | "ended";
 
 export interface ILeaseSummaryResponse {
   id: string;
@@ -54,7 +55,7 @@ export interface IInvoiceResponse {
 
 export interface IInvoiceDetailResponse extends IInvoiceResponse {
   items: { id: string; kind: string; title: string; amount: number }[];
-  payments: { id: string; amount: number; method: string; paidOn: string }[];
+  payments: { id: string; amount: number; method: string; status: "pending" | "confirmed" | "rejected"; paidOn: string }[];
 }
 
 export type ILeaseListResponse = IPaginated<ILeaseSummaryResponse>;

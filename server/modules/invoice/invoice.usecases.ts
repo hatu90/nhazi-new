@@ -3,6 +3,7 @@ import type { IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
+import type { ILeaseRepository } from "../lease/lease.repository";
 import type { IInvoiceRepository } from "./invoice.repository";
 import type {
   IAdminInvoiceDetailResponse,
@@ -11,6 +12,8 @@ import type {
   ICreateInvoiceCommand,
   IPaymentResponse,
   IRecordPaymentCommand,
+  IReportPaymentCommand,
+  IReviewPaymentCommand,
 } from "./invoice.schema";
 
 type Inv = { invoiceId: string };
@@ -61,6 +64,24 @@ export class RecordPaymentUseCase extends Base implements IUseCase<IRecordPaymen
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
     const p = await this.invoices.recordPayment(c);
     if (!p) throw new NotFoundError("Invoice");
+    return p;
+  }
+}
+/** Tenant: report that an invoice was paid. Stays pending until an admin confirms it. */
+export class ReportPaymentUseCase implements IUseCase<IReportPaymentCommand, IPaymentResponse> {
+  constructor(private readonly invoices: IInvoiceRepository, private readonly leases: ILeaseRepository) {}
+  async execute(c: IReportPaymentCommand) {
+    if (!(await this.leases.isTenant(c.actor.accountId, c.leaseId))) throw new NotFoundError("Lease");
+    const p = await this.invoices.reportPayment(c);
+    if (!p) throw new NotFoundError("Invoice");
+    return p;
+  }
+}
+export class ReviewPaymentUseCase extends Base implements IUseCase<IReviewPaymentCommand, IPaymentResponse> {
+  async execute(c: IReviewPaymentCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    const p = await this.invoices.reviewPayment(c);
+    if (!p) throw new NotFoundError("Payment");
     return p;
   }
 }

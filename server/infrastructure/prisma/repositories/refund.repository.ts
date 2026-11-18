@@ -56,7 +56,7 @@ export class PrismaRefundRepository implements IRefundRepository {
     const [invoices, refunded] = await Promise.all([
       this.db.invoice.findMany({
         where: { id: { in: invoiceIds }, propertyId, deletedAt: null },
-        include: { payments: { where: { deletedAt: null }, select: { amount: true } }, invoiceItems: { select: { id: true, amount: true } } },
+        include: { payments: { where: { deletedAt: null, status: "confirmed" }, select: { amount: true } }, invoiceItems: { select: { id: true, amount: true } } },
       }),
       this.db.refundItem.findMany({
         where: { invoiceId: { in: invoiceIds }, refund: { status: { not: "cancelled" } } },

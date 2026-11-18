@@ -8,12 +8,15 @@ import type {
   IUsageDetail,
   IPaymentResponse,
   IRecordPaymentCommand,
+  IReportPaymentCommand,
+  IReviewPaymentCommand,
 } from "@/server/modules/invoice/invoice.schema";
 import { ConflictError } from "@/server/shared/errors";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { InvoiceStatus } from "@/server/shared/schema";
 import type { Prisma, PrismaClient } from "../client";
-import { isoDate, isoDateTime, num, numOrNull, orConflict, toJson } from "../mappers";
+import { isoDate, isoDateTime, num, numOrNull, orConflict } from "../mappers";
+import { createInvoiceTx } from "../writers";
 
 type Tx = Prisma.TransactionClient;
 const include = {
@@ -23,6 +26,8 @@ const include = {
 type Row = Prisma.InvoiceGetPayload<{ include: typeof include }>;
 
 const sum = (xs: { amount: { toNumber(): number } }[]) => xs.reduce((s, x) => s + x.amount.toNumber(), 0);
+/** Only confirmed payments count towards an invoice. */
+const confirmed = <T extends { status: string }>(xs: T[]) => xs.filter((x) => x.status === "confirmed");
 
 const toInvoice = (r: Row): IAdminInvoiceResponse => ({
   id: r.id,
@@ -31,7 +36,7 @@ const toInvoice = (r: Row): IAdminInvoiceResponse => ({
   kind: r.kind,
   title: r.title,
   amount: num(r.amount),
-  paidAmount: sum(r.payments),
+  paidAmount: sum(confirmed(r.payments)),
   dueDate: isoDate(r.dueDate),
   status: r.status,
   cancelledAt: r.cancelledAt ? isoDateTime(r.cancelledAt) : null,
@@ -43,6 +48,7 @@ const toPayment = (p: Prisma.PaymentGetPayload<object>): IPaymentResponse => ({
   invoiceId: p.invoiceId,
   amount: num(p.amount),
   method: p.method,
+  status: p.status,
   paidOn: isoDate(p.paidOn),
   reference: p.reference,
   notes: p.notes,
@@ -53,7 +59,7 @@ const toPayment = (p: Prisma.PaymentGetPayload<object>): IPaymentResponse => ({
 
 /** pending / partial / paid from the live payments. Call inside the transaction that changed them. */
 const recomputeStatus = async (tx: Tx, invoiceId: string, total: number) => {
-  const paid = sum(await tx.payment.findMany({ where: { invoiceId, deletedAt: null }, select: { amount: true } }));
+  const paid = sum(await tx.payment.findMany({ where: { invoiceId, deletedAt: null, status: "confirmed" }, select: { amount: true } }));
   const status: InvoiceStatus = paid <= 0 ? "pending" : paid >= total ? "paid" : "partial";
   await tx.invoice.update({ where: { id: invoiceId }, data: { status } });
 };
@@ -120,35 +126,8 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
   }
 
   create(c: INewInvoice) {
-    const total = c.items.reduce((s, i) => s + i.amount, 0);
     return orConflict(
-      async () =>
-        (
-          await this.db.invoice.create({
-            data: {
-              propertyId: c.propertyId,
-              leaseId: c.leaseId,
-              kind: c.kind,
-              billingPeriodId: c.billingPeriodId,
-              title: c.title,
-              amount: total,
-              dueDate: new Date(c.dueDate),
-              targetMetadata: toJson({ source: c.kind === "other" ? "manual" : "billing" }),
-              createdBy: c.actor.accountId,
-              invoiceItems: {
-                create: c.items.map((it, seq) => ({
-                  seq,
-                  kind: it.kind,
-                  title: it.title,
-                  amount: it.amount,
-                  usageId: it.usageId,
-                  detail: it.detail ? toJson(it.detail) : undefined,
-                })),
-              },
-            },
-            select: { id: true },
-          })
-        ).id,
+      () => this.db.$transaction((tx) => createInvoiceTx(tx, c)),
       "This lease already has an invoice for that event, or a usage is already billed",
       "EVENT_INVOICED",
     );
@@ -159,7 +138,7 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
       await lock(tx, c.invoiceId);
       const inv = await tx.invoice.findFirst({
         where: { id: c.invoiceId, propertyId: c.propertyId, deletedAt: null },
-        include: { payments: { where: { deletedAt: null }, select: { amount: true } } },
+        include: { payments: { where: { deletedAt: null, status: "confirmed" }, select: { amount: true } } },
       });
       if (!inv) return null;
       if (inv.status === "cancelled") throw new ConflictError("The invoice is cancelled", "INVOICE_CANCELLED");
@@ -179,6 +158,55 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
         },
       });
       await recomputeStatus(tx, c.invoiceId, total);
+      return toPayment(p);
+    });
+  }
+
+  reportPayment(c: IReportPaymentCommand): Promise<IPaymentResponse | null> {
+    return this.db.$transaction(async (tx) => {
+      await lock(tx, c.invoiceId);
+      const inv = await tx.invoice.findFirst({
+        where: { id: c.invoiceId, leaseId: c.leaseId, deletedAt: null },
+        include: { payments: { where: { deletedAt: null, status: "confirmed" }, select: { amount: true } } },
+      });
+      if (!inv) return null;
+      if (inv.status === "cancelled") throw new ConflictError("The invoice is cancelled", "INVOICE_CANCELLED");
+      const owed = num(inv.amount) - sum(inv.payments);
+      if (c.amount > owed) throw new ConflictError(`Payment exceeds the amount still owed (${owed})`, "OVERPAYMENT");
+      const p = await tx.payment.create({
+        data: {
+          invoiceId: c.invoiceId,
+          amount: c.amount,
+          method: c.method,
+          status: "pending",
+          paidOn: new Date(c.paidOn),
+          reference: c.reference,
+          notes: c.notes,
+          evidence: c.evidence,
+          createdBy: c.actor.accountId,
+        },
+      });
+      return toPayment(p);
+    });
+  }
+
+  reviewPayment(c: IReviewPaymentCommand): Promise<IPaymentResponse | null> {
+    return this.db.$transaction(async (tx) => {
+      await lock(tx, c.invoiceId);
+      const inv = await tx.invoice.findFirst({
+        where: { id: c.invoiceId, propertyId: c.propertyId, deletedAt: null },
+        include: { payments: { where: { deletedAt: null }, select: { id: true, amount: true, status: true } } },
+      });
+      const pay = inv?.payments.find((p) => p.id === c.paymentId);
+      if (!inv || !pay) return null;
+      if (pay.status !== "pending") throw new ConflictError("This payment has already been reviewed", "PAYMENT_NOT_PENDING");
+      if (c.decision === "confirm") {
+        if (inv.status === "cancelled") throw new ConflictError("The invoice is cancelled", "INVOICE_CANCELLED");
+        const owed = num(inv.amount) - sum(confirmed(inv.payments));
+        if (num(pay.amount) > owed) throw new ConflictError(`Payment exceeds the amount still owed (${owed})`, "OVERPAYMENT");
+      }
+      const p = await tx.payment.update({ where: { id: c.paymentId }, data: { status: c.decision === "confirm" ? "confirmed" : "rejected" } });
+      if (c.decision === "confirm") await recomputeStatus(tx, c.invoiceId, num(inv.amount));
       return toPayment(p);
     });
   }

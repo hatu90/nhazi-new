@@ -45,8 +45,11 @@ export default async function part3({ owner, tenant, lease: endedLease, P }, { a
   await register(guest, "Guest");
   expect("ended lease", await api("POST", `${P}/leases/${endedLease.id}/invitations`, { token: owner.token, body: { phoneNumber: guest.phone } }), 409);
   const unit2 = expect("second unit", await api("POST", `${P}/units`, { token: owner.token, body: { name: "B2", area: 30, floor: 2 } }), 201);
-  const lease = expect("active lease", await api("POST", `${P}/leases`, { token: owner.token, body: { unitId: unit2.id, startDate: "2026-11-01", rent: 4000000, tenants: [{ phoneNumber: tenant.local, displayName: "T" }] } }), 201);
+  const lease = expect("active lease", await api("POST", `${P}/leases`, { token: owner.token, body: { unitId: unit2.id, startDate: "2026-11-01", firstPeriodEnd: "2026-11-30", rent: 4000000, tenants: [{ phoneNumber: tenant.local, displayName: "T" }] } }), 201);
   const L = `${P}/leases/${lease.id}`;
+  const inviteDraft = expect("invite to a draft is fine", await api("POST", `${L}/invitations`, { token: owner.token, body: { phoneNumber: stranger.phone } }), 201);
+  expect("revoke it", await api("POST", `${P}/invitations/${inviteDraft.id}/revoke`, { token: owner.token }), 200);
+  expect("start", await api("POST", `${L}/start`, { token: owner.token, body: {} }), 200);
   expect("existing tenant", await api("POST", `${L}/invitations`, { token: owner.token, body: { phoneNumber: tenant.phone } }), 409);
   expect("unknown lease", await api("POST", `${P}/leases/00000000-0000-4000-8000-000000000000/invitations`, { token: owner.token, body: { phoneNumber: guest.phone } }), 404);
   const ti = expect("invite tenant", await api("POST", `${L}/invitations`, { token: admin.token, body: { phoneNumber: guest.local } }), 201);
@@ -56,7 +59,7 @@ export default async function part3({ owner, tenant, lease: endedLease, P }, { a
   expect("tenant cannot accept someone else's", await api("POST", `/me/invitations/${ti.id}/accept`, { token: tenant.token }), 404);
   expect("accept", await api("POST", `/me/invitations/${ti.id}/accept`, { token: guest.token }), 200);
   expect("guest now sees the lease", await api("GET", `/lease/${lease.id}`, { token: guest.token }), 200);
-  check("lease invitation list", (await api("GET", `${L}/invitations`, { token: owner.token })).body.data.total === 1);
+  check("lease invitation list", (await api("GET", `${L}/invitations`, { token: owner.token })).body.data.total === 2);
   expect("invite a tenant who accepted", await api("POST", `${L}/invitations`, { token: owner.token, body: { phoneNumber: guest.phone } }), 409);
 
 }

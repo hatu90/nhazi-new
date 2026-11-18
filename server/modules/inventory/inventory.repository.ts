@@ -1,5 +1,6 @@
 import type { IPaginated } from "@/server/shared/pagination";
 import type {
+  IBulkItemsCommand,
   ICreateHandoverCommand,
   ICreateItemCommand,
   IHandoverResponse,
@@ -13,6 +14,8 @@ export interface IInventoryRepository {
   listItems(propertyId: string, query: IItemListQuery): Promise<IPaginated<IItemResponse>>;
   findItem(propertyId: string, itemId: string): Promise<IItemResponse | null>;
   /** ConflictError ITEM_NAME_TAKEN. */
+  /** All or nothing. ConflictError ITEM_NAME_TAKEN. */
+  createItems(command: IBulkItemsCommand): Promise<IItemResponse[]>;
   createItem(command: ICreateItemCommand): Promise<IItemResponse>;
   updateItem(command: IUpdateItemCommand): Promise<IItemResponse | null>;
   itemInUse(itemId: string): Promise<boolean>;

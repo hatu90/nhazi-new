@@ -6,6 +6,7 @@ import type { IServiceRepository } from "./service.repository";
 import {
   tiersFitUsageBase,
   type IAddPriceCommand,
+  type IBulkServicesCommand,
   type ICreateServiceCommand,
   type IServiceListQuery,
   type IServiceListResponse,
@@ -33,6 +34,17 @@ export class GetServiceUseCase extends Base implements IUseCase<IPropertyScope &
   async execute({ actor, propertyId, serviceId }: IPropertyScope & Svc) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.read);
     return this.get(propertyId, serviceId);
+  }
+}
+export class BulkCreateServicesUseCase extends Base implements IUseCase<IBulkServicesCommand, IServiceResponse[]> {
+  async execute(c: IBulkServicesCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    c.items.forEach((it, i) => {
+      if (!tiersFitUsageBase(it.usageBase, it.prices)) {
+        throw new ValidationError("This usage base takes a single flat tier", { fieldErrors: { [`items.${i}.prices`]: ["This usage base takes a single flat tier"] } });
+      }
+    });
+    return this.services.createMany(c);
   }
 }
 export class CreateServiceUseCase extends Base implements IUseCase<ICreateServiceCommand, IServiceResponse> {

@@ -29,8 +29,16 @@ Dependency direction (never reversed, so no cycles):
 - structure: units · handovers (default list per unit) · inventory-items · services (+ price versions) · meters · readings
 - team: members (owner only) · agreement-templates (+ append-only versions)
 - invitations: admin invites a phone to the team (owner only, with a role) or to a lease (as tenant); `/api/me/invitations` lists what was sent to my phone, accept / decline; admin can revoke. The account's phone number is the only credential, there is no token. Accepting adds `account_properties` / `account_leases` (an existing one is kept). Open invitations are unique per phone and target.
-- billing: `lib/billing/pricing.ts` is the pure calculator (no imports; the frontend runs the same file for its live calculator). Price = tiers over usage: plain (1 tier) or step (cost = Σ usage in tier × rate). Opening a period (`POST …/leases/:id/billing-periods {endDate, rentAmount?}`) freezes one usage per live subscription with the price version in force on the period's first day; closing needs the closing reading of every meter. Amounts on invoices are always typed by the admin (proration and the calculator only pre-fill); usage lines keep `calculatedAmount` next to the charged `amount`.
-- leases: create (tenants by phone, members, handover snapshot, pinned template version) · terminate · rent versions · tenants · members · subscriptions · handovers
+- billing calculator: `lib/billing/pricing.ts` is pure (no imports; the frontend runs the same file for its live calculator). Price = tiers over usage: plain (1 tier) or step (cost = Σ usage in tier × rate). Proration is a *suggestion* (`suggestAmount`: billing months from the period start's day-of-month; `prorate` by days for credits / refunds). The server never recomputes an amount the admin typed.
+- lease lifecycle (one atomic step each, every suggested line overridable by key, see `lifecycle.schema.ts`):
+  1. `POST …/leases` writes a **draft** (unit, start, rent, deposit, `firstPeriodEnd`, tenants); members / subscriptions / handovers / readings are added to it; `DELETE` throws a draft away; the tenant does not see it.
+  2. `POST …/leases/:id/start` opens the first period (usages with frozen prices) + the `move_in` invoice (deposit, rent, non-meter services).
+  3. `POST …/billing-periods/:id/close` closes at `endDate` (mid-term allowed) with closing `readings`; with `next` it opens the next period + `transition` invoice (next rent, services, this period's meter usage, credit for unused advance days).
+  4. `POST …/leases/:id/subscriptions` mid-term: also creates the running period's usage and an invoice for the days left (non-meter).
+  5. `POST …/leases/:id/close` ends the lease: closes the period, closing invoice, ends subscriptions + members, prefilled pending refund (unused rent / services by days + deposit, capped by what was paid).
+  Price version of a usage = the one in force on its period's first day, frozen in `usages.price`.
+- setup: `PATCH …/properties/:id` (images, header, rules, address), `POST …/{units,meters,services,inventory-items}/bulk` (1..200, all or nothing).
+- leases: create draft (tenants by phone, members, handover snapshot, pinned template version) · rent versions · tenants · members · subscriptions · handovers
 - money: invoices (manual) · payments · cancel · refunds (+ pay / cancel) · billing-periods (read)
 - requests: list · update (status / assignee / priority) · comments
 
@@ -44,7 +52,7 @@ Dependency direction (never reversed, so no cycles):
 
 ## Smoke test
     AUTH_DEV_BYPASS=1 npm run dev -- -p 3100      # in one terminal
-    PART2=./smoke-part2.mjs,./smoke-part3.mjs,./smoke-part4.mjs node scripts/smoke.mjs  # in another (needs the local database)
+    PART2=./smoke-part2.mjs,./smoke-part3.mjs,./smoke-part4.mjs,./smoke-part5.mjs node scripts/smoke.mjs  # in another (needs the local database)
 
 ## Add an endpoint
 1. schema: add the Query/Payload zod schema, `I*` types and (for writes) `toXxxCommand`.

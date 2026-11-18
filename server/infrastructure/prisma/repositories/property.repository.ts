@@ -5,6 +5,7 @@ import {
   type IAdminPropertyDetail,
   type IAdminPropertyListQuery,
   type ICreatePropertyCommand,
+  type IUpdatePropertyCommand,
   type IPropertyDetailResponse,
   type IPropertySearchQuery,
   type IPropertySummaryResponse,
@@ -144,6 +145,27 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         images: c.images,
         rules: c.rules,
         accountProperties: { create: { accountId: c.actor.accountId, role: "owner" } },
+      },
+      select: detailSelect,
+    });
+    return toAdminDetail(row);
+  }
+
+  async update(c: IUpdatePropertyCommand) {
+    const row = await this.db.property.update({
+      where: { id: c.propertyId },
+      data: {
+        propertyName: c.name,
+        category: c.category,
+        street: c.street,
+        province: c.province,
+        ward: c.ward,
+        rentPriceFrom: c.rentPriceFrom,
+        rentPriceTo: c.rentPriceTo,
+        rentNegotiable: c.rentNegotiable,
+        headerImage: c.headerImage,
+        images: c.images,
+        rules: c.rules,
       },
       select: detailSelect,
     });

@@ -4,6 +4,7 @@ import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IInventoryRepository } from "./inventory.repository";
 import type {
+  IBulkItemsCommand,
   ICreateHandoverCommand,
   ICreateItemCommand,
   IHandoverResponse,
@@ -31,6 +32,12 @@ export class CreateItemUseCase extends Base implements IUseCase<ICreateItemComma
   async execute(c: ICreateItemCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
     return this.inventory.createItem(c);
+  }
+}
+export class BulkCreateItemsUseCase extends Base implements IUseCase<IBulkItemsCommand, IItemResponse[]> {
+  async execute(c: IBulkItemsCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    return this.inventory.createItems(c);
   }
 }
 export class UpdateItemUseCase extends Base implements IUseCase<IUpdateItemCommand, IItemResponse> {

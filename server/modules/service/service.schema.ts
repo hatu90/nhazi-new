@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bulkSchema } from "@/server/shared/bulk";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { isoDateSchema, nonEmptyPatch, serviceUsageBaseSchema, vndSchema, type ServiceUsageBase } from "@/server/shared/schema";
@@ -38,6 +39,12 @@ export const createServicePayloadSchema = z
   .refine((v) => tiersFitUsageBase(v.usageBase, v.prices), { message: "This usage base takes a single flat tier", path: ["prices"] });
 export type ICreateServicePayload = z.infer<typeof createServicePayloadSchema>;
 export interface ICreateServiceCommand extends ICreateServicePayload, IPropertyScope {}
+export const bulkServicesPayloadSchema = bulkSchema(createServicePayloadSchema, (v) => v.name);
+export type IBulkServicesPayload = z.infer<typeof bulkServicesPayloadSchema>;
+export interface IBulkServicesCommand extends IPropertyScope {
+  items: ICreateServicePayload[];
+}
+export const toBulkServicesCommand = (p: IBulkServicesPayload, s: IPropertyScope): IBulkServicesCommand => ({ ...p, ...s });
 export const toCreateServiceCommand = (p: ICreateServicePayload, s: IPropertyScope): ICreateServiceCommand => ({ ...p, ...s });
 
 export const updateServicePayloadSchema = z

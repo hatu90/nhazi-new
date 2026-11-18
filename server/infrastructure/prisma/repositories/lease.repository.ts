@@ -45,7 +45,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   constructor(private readonly db: PrismaClient) {}
 
   async listByTenant(accountId: string, query: ILeaseListQuery) {
-    const where: Prisma.LeaseWhereInput = { deletedAt: null, accountLeases: { some: { accountId } } };
+    const where: Prisma.LeaseWhereInput = { deletedAt: null, activatedAt: { not: null }, accountLeases: { some: { accountId } } };
     const [rows, total] = await Promise.all([
       this.db.lease.findMany({
         where,
@@ -60,7 +60,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
 
   async findByTenant(accountId: string, leaseId: string): Promise<ILeaseDetailRecord | null> {
     const row = await this.db.lease.findFirst({
-      where: { id: leaseId, deletedAt: null, accountLeases: { some: { accountId } } },
+      where: { id: leaseId, deletedAt: null, activatedAt: { not: null }, accountLeases: { some: { accountId } } },
       select: {
         ...summarySelect,
         billingCycleDay: true,
@@ -104,7 +104,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
   }
 
   async isTenant(accountId: string, leaseId: string) {
-    const n = await this.db.accountLease.count({ where: { accountId, leaseId, lease: { deletedAt: null } } });
+    const n = await this.db.accountLease.count({ where: { accountId, leaseId, lease: { deletedAt: null, activatedAt: { not: null } } } });
     return n > 0;
   }
 
@@ -123,12 +123,12 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       kind: r.kind,
       title: r.title,
       amount: num(r.amount),
-      paidAmount: r.payments.reduce((sum, p) => sum + num(p.amount), 0),
+      paidAmount: r.payments.filter((p) => p.status === "confirmed").reduce((sum, p) => sum + num(p.amount), 0),
       dueDate: isoDate(r.dueDate),
       status: r.status,
       createdAt: isoDateTime(r.createdAt),
       items: r.invoiceItems.map((i) => ({ id: i.id, kind: i.kind, title: i.title, amount: num(i.amount) })),
-      payments: r.payments.map((x) => ({ id: x.id, amount: num(x.amount), method: x.method, paidOn: isoDate(x.paidOn) })),
+      payments: r.payments.map((x) => ({ id: x.id, amount: num(x.amount), method: x.method, status: x.status, paidOn: isoDate(x.paidOn) })),
     };
   }
 
@@ -137,7 +137,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
     const [rows, total] = await Promise.all([
       this.db.invoice.findMany({
         where,
-        include: { payments: { where: { deletedAt: null }, select: { amount: true } } },
+        include: { payments: { where: { deletedAt: null, status: "confirmed" }, select: { amount: true } } },
         orderBy: [{ dueDate: "desc" }, { id: "asc" }],
         ...toSkipTake(query),
       }),

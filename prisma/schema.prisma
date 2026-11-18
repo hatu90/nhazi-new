@@ -121,6 +121,15 @@ enum AuthProvider {
   @@map("auth_provider")
 }
 
+/// pending = reported by the tenant, not counted until the admin confirms it; admin-recorded payments are confirmed at once.
+enum PaymentStatus {
+  pending
+  confirmed
+  rejected
+
+  @@map("payment_status")
+}
+
 enum PaymentMethod {
   cash
   bank_transfer
@@ -446,6 +455,8 @@ model Lease {
   billingCycleDay          Int                   @default(1) @map("billing_cycle_day") @db.SmallInt
   depositAmount            Decimal               @default(0) @map("deposit_amount") @db.Decimal(14, 0)
   terminatedAt             DateTime?             @map("terminated_at") @db.Date
+  activatedAt              DateTime?             @map("activated_at") @db.Timestamptz(6)
+  firstPeriodEnd           DateTime?             @map("first_period_end") @db.Date
   terminationReason        String?               @map("termination_reason")
   agreementTemplateId      String?               @map("agreement_template_id") @db.Uuid
   agreementTemplateVersion Int?                  @map("agreement_template_version")
@@ -681,6 +692,7 @@ model Payment {
   invoiceId    String        @map("invoice_id") @db.Uuid
   amount       Decimal       @map("amount") @db.Decimal(14, 0)
   method       PaymentMethod @map("method")
+  status       PaymentStatus @default(confirmed) @map("status")
   paidOn       DateTime      @map("paid_on") @db.Date
   reference    String?       @map("reference")
   evidence     String[]      @default([]) @map("evidence")

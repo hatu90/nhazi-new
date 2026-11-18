@@ -1,5 +1,5 @@
 import type { IMeterRepository } from "@/server/modules/meter/meter.repository";
-import type { ICreateMeterCommand, IMeterListQuery, IMeterResponse, IUpdateMeterCommand } from "@/server/modules/meter/meter.schema";
+import type { IBulkMetersCommand, ICreateMeterCommand, IMeterListQuery, IMeterResponse, IUpdateMeterCommand } from "@/server/modules/meter/meter.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { Prisma, PrismaClient } from "../client";
 import { isoDateOrNull, numOrNull } from "../mappers";
@@ -44,6 +44,32 @@ export class PrismaMeterRepository implements IMeterRepository {
   async findById(propertyId: string, meterId: string) {
     const r = await this.db.meter.findFirst({ where: { id: meterId, propertyId, deletedAt: null }, include });
     return r ? toMeter(r) : null;
+  }
+
+  createMany(c: IBulkMetersCommand) {
+    return this.db.$transaction(async (tx) => {
+      const out: IMeterResponse[] = [];
+      for (const m of c.items) {
+        out.push(
+          toMeter(
+            await tx.meter.create({
+              data: {
+                propertyId: c.propertyId,
+                unitId: m.unitId,
+                serviceId: m.serviceId,
+                meterName: m.name,
+                serialNumber: m.serialNumber,
+                installedAt: day(m.installedAt),
+                maxValue: m.maxValue,
+                description: m.description,
+              },
+              include,
+            }),
+          ),
+        );
+      }
+      return out;
+    });
   }
 
   async create(c: ICreateMeterCommand) {

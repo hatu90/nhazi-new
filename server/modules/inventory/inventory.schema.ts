@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bulkSchema } from "@/server/shared/bulk";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { itemConditionSchema, nonEmptyPatch, type ItemCondition } from "@/server/shared/schema";
@@ -13,6 +14,12 @@ export interface ICreateItemCommand extends IItemPayload, IPropertyScope {}
 export interface IUpdateItemCommand extends IItemPayload, IPropertyScope {
   itemId: string;
 }
+export const bulkItemsPayloadSchema = bulkSchema(itemPayloadSchema, (v) => v.name);
+export type IBulkItemsPayload = z.infer<typeof bulkItemsPayloadSchema>;
+export interface IBulkItemsCommand extends IPropertyScope {
+  items: IItemPayload[];
+}
+export const toBulkItemsCommand = (p: IBulkItemsPayload, s: IPropertyScope): IBulkItemsCommand => ({ ...p, ...s });
 export const toCreateItemCommand = (p: IItemPayload, s: IPropertyScope): ICreateItemCommand => ({ ...p, ...s });
 export const toUpdateItemCommand = (p: IItemPayload, s: IPropertyScope, itemId: string): IUpdateItemCommand => ({ ...p, ...s, itemId });
 

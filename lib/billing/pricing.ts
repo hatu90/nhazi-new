@@ -113,9 +113,40 @@ export const prorate = (amount: number, days: number, totalDays: number): number
   if (totalDays <= 0 || days < 0) throw new RangeError("Invalid proration days");
   return Math.round((amount * Math.min(days, totalDays)) / totalDays);
 };
-/** Suggested rent of a period that covers only part of a billing cycle. */
-export const suggestRent = (monthlyRent: number, cycle: { start: string; end: string }, covered: { start: string; end: string }): number =>
-  prorate(monthlyRent, daysInclusive(covered.start, covered.end), daysInclusive(cycle.start, cycle.end));
+const daysIn = (y: number, m0: number) => new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
+const ymd = (y: number, m0: number, day: number) => new Date(Date.UTC(y, m0, day)).toISOString().slice(0, 10);
+
+/**
+ * How many billing months [start, end] covers. A month runs from one day-of-month anniversary of `start` to the day
+ * before the next (18 Nov - 17 Dec = 1 month); a leftover part counts as days / days of that month window.
+ * 1 Nov - 30 Nov = 1 · 18 Nov - 30 Nov = 13/30 · 1 Nov - 15 Dec = 1 + 15/31.
+ * Anchors on a missing day (31st) fall back to the month's last day.
+ */
+export function monthsCovered(start: string, end: string): number {
+  if (end < start) throw new RangeError("end is before start");
+  const y0 = +start.slice(0, 4);
+  const m0 = +start.slice(5, 7) - 1;
+  const anchor = +start.slice(8, 10);
+  let whole = 0;
+  let cursor = start;
+  for (;;) {
+    const idx = m0 + whole + 1;
+    const y = y0 + Math.floor(idx / 12);
+    const m = ((idx % 12) + 12) % 12;
+    const clamped = anchor > daysIn(y, m);
+    const windowEnd = clamped ? ymd(y, m, daysIn(y, m)) : addDays(ymd(y, m, anchor), -1);
+    if (windowEnd <= end) {
+      whole++;
+      cursor = addDays(windowEnd, 1);
+      continue;
+    }
+    if (cursor > end) return whole;
+    return whole + daysInclusive(cursor, end) / daysInclusive(cursor, windowEnd);
+  }
+}
+
+/** Suggested charge for a monthly amount over [start, end] (whole VND, half up). Always editable by the admin. */
+export const suggestAmount = (monthly: number, start: string, end: string): number => Math.round(monthly * monthsCovered(start, end));
 
 // ── a whole bill ────────────────────────────────────────────────────────────────────
 

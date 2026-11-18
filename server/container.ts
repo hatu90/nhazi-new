@@ -9,20 +9,23 @@ import {
 import { GetMyInvoiceUseCase, GetMyLeaseUseCase, ListMyLeaseInvoicesUseCase, ListMyLeasesUseCase } from "./modules/lease/lease.usecases";
 import {
   CreatePropertyUseCase,
+  UpdatePropertyUseCase,
   GetManagedPropertyUseCase,
   GetPublicPropertyUseCase,
   ListManagedPropertiesUseCase,
   SearchPropertiesUseCase,
 } from "./modules/property/property.usecases";
-import { CreateUnitUseCase, DeleteUnitUseCase, GetUnitUseCase, ListUnitsUseCase, UpdateUnitUseCase } from "./modules/unit/unit.usecases";
-import { AddServicePriceUseCase, CreateServiceUseCase, DeleteServiceUseCase, GetServiceUseCase, ListServicesUseCase, UpdateServiceUseCase } from "./modules/service/service.usecases";
-import { CreateMeterUseCase, DeleteMeterUseCase, GetMeterUseCase, ListMetersUseCase, UpdateMeterUseCase } from "./modules/meter/meter.usecases";
+import { BulkCreateUnitsUseCase, CreateUnitUseCase, DeleteUnitUseCase, GetUnitUseCase, ListUnitsUseCase, UpdateUnitUseCase } from "./modules/unit/unit.usecases";
+import { AddServicePriceUseCase, BulkCreateServicesUseCase, CreateServiceUseCase, DeleteServiceUseCase, GetServiceUseCase, ListServicesUseCase, UpdateServiceUseCase } from "./modules/service/service.usecases";
+import { BulkCreateMetersUseCase, CreateMeterUseCase, DeleteMeterUseCase, GetMeterUseCase, ListMetersUseCase, UpdateMeterUseCase } from "./modules/meter/meter.usecases";
 import { CreateReadingUseCase, DeleteReadingUseCase, ListReadingsUseCase } from "./modules/reading/reading.usecases";
-import { CreateHandoverUseCase, CreateItemUseCase, DeleteHandoverUseCase, DeleteItemUseCase, ListHandoversUseCase, ListItemsUseCase, UpdateHandoverUseCase, UpdateItemUseCase } from "./modules/inventory/inventory.usecases";
+import { BulkCreateItemsUseCase, CreateHandoverUseCase, CreateItemUseCase, DeleteHandoverUseCase, DeleteItemUseCase, ListHandoversUseCase, ListItemsUseCase, UpdateHandoverUseCase, UpdateItemUseCase } from "./modules/inventory/inventory.usecases";
 import { AddTemplateVersionUseCase, CreateTemplateUseCase, DeleteTemplateUseCase, GetTemplateUseCase, GetTemplateVersionUseCase, ListTemplatesUseCase, UpdateTemplateUseCase } from "./modules/agreement/agreement.usecases";
 import { AddMemberUseCase, ChangeMemberRoleUseCase, ListMembersUseCase, RemoveMemberUseCase } from "./modules/member/member.usecases";
 import { InvitePropertyUseCase, InviteTenantUseCase, ListInvitationsUseCase, ListMyInvitationsUseCase, RespondInvitationUseCase, RevokeInvitationUseCase } from "./modules/invitation/invitation.usecases";
 import { PrismaInvitationRepository } from "./infrastructure/prisma/repositories/invitation.repository";
+import { AddSubscriptionUseCase, CloseLeaseUseCase, ClosePeriodUseCase, StartLeaseUseCase } from "./modules/lifecycle/lifecycle.usecases";
+import { PrismaLifecycleRepository } from "./infrastructure/prisma/repositories/lifecycle.repository";
 import { PrismaUnitRepository } from "./infrastructure/prisma/repositories/unit.repository";
 import { PrismaServiceRepository } from "./infrastructure/prisma/repositories/service.repository";
 import { PrismaMeterRepository } from "./infrastructure/prisma/repositories/meter.repository";
@@ -30,13 +33,15 @@ import { PrismaReadingRepository } from "./infrastructure/prisma/repositories/re
 import { PrismaInventoryRepository } from "./infrastructure/prisma/repositories/inventory.repository";
 import { PrismaAgreementRepository } from "./infrastructure/prisma/repositories/agreement.repository";
 import { PrismaMemberRepository } from "./infrastructure/prisma/repositories/member.repository";
-import { AddLeaseMemberUseCase, AddRentVersionUseCase, AddTenantUseCase, CreateSubscriptionUseCase, CreateTenancyUseCase, DeleteSubscriptionUseCase, GetTenancyUseCase, ListTenanciesUseCase, RemoveTenantUseCase, TerminateTenancyUseCase, UpdateLeaseHandoverUseCase, UpdateLeaseMemberUseCase, UpdateSubscriptionUseCase, UpdateTenancyUseCase } from "./modules/tenancy/tenancy.usecases";
+import { AddLeaseMemberUseCase, DeleteDraftTenancyUseCase, AddRentVersionUseCase, AddTenantUseCase, CreateSubscriptionUseCase, CreateTenancyUseCase, DeleteSubscriptionUseCase, GetTenancyUseCase, ListTenanciesUseCase, RemoveTenantUseCase, UpdateLeaseHandoverUseCase, UpdateLeaseMemberUseCase, UpdateSubscriptionUseCase, UpdateTenancyUseCase } from "./modules/tenancy/tenancy.usecases";
 import { PrismaTenancyRepository } from "./infrastructure/prisma/repositories/tenancy.repository";
-import { CancelInvoiceUseCase, CreateInvoiceUseCase, DeletePaymentUseCase, GetInvoiceUseCase, ListInvoicesUseCase, RecordPaymentUseCase } from "./modules/invoice/invoice.usecases";
+import { CancelInvoiceUseCase, CreateInvoiceUseCase, DeletePaymentUseCase, GetInvoiceUseCase, ListInvoicesUseCase, RecordPaymentUseCase, ReportPaymentUseCase, ReviewPaymentUseCase } from "./modules/invoice/invoice.usecases";
 import { CancelRefundUseCase, CreateRefundUseCase, GetRefundUseCase, ListRefundsUseCase, PayRefundUseCase } from "./modules/refund/refund.usecases";
 import { AddMyCommentUseCase, AddStaffCommentUseCase, CancelMyRequestUseCase, CreateMyRequestUseCase, GetMyRequestUseCase, GetRequestUseCase, ListMyRequestsUseCase, ListRequestsUseCase, UpdateRequestUseCase } from "./modules/request/request.usecases";
 import { GetMySubscriptionUseCase, ListPlansUseCase } from "./modules/plan/plan.usecases";
-import { CloseBillingPeriodUseCase, GetBillingPeriodUseCase, ListBillingPeriodsUseCase, OpenBillingPeriodUseCase, UpdateUsageUseCase } from "./modules/billing/billing.usecases";
+import { GetBillingPeriodUseCase, ListBillingPeriodsUseCase, OpenBillingPeriodUseCase, UpdateUsageUseCase } from "./modules/billing/billing.usecases";
+import { PrismaStatsRepository } from "./infrastructure/prisma/repositories/stats.repository";
+import { GetPropertyStatsUseCase } from "./modules/stats/stats.usecases";
 import { PrismaInvoiceRepository } from "./infrastructure/prisma/repositories/invoice.repository";
 import { PrismaRefundRepository } from "./infrastructure/prisma/repositories/refund.repository";
 import { PrismaRequestRepository } from "./infrastructure/prisma/repositories/request.repository";
@@ -71,12 +76,15 @@ function build() {
   const invitations = new PrismaInvitationRepository(db);
   const tenancies = new PrismaTenancyRepository(db);
   const invoices = new PrismaInvoiceRepository(db);
+  const stats = new PrismaStatsRepository(db);
   const refunds = new PrismaRefundRepository(db);
   const requests = new PrismaRequestRepository(db);
   const plans = new PrismaPlanRepository(db);
   const billing = new PrismaBillingRepository(db);
   const access = new PrismaAccessRepository(db);
   const policy = new AccessPolicy(access);
+  const lifecycle = new PrismaLifecycleRepository(db, billing);
+  const subscriptionRules = new CreateSubscriptionUseCase(tenancies, policy);
 
   return {
     // identity
@@ -92,16 +100,19 @@ function build() {
     listManagedProperties: new ListManagedPropertiesUseCase(properties),
     getManagedProperty: new GetManagedPropertyUseCase(properties, policy),
     createProperty: new CreatePropertyUseCase(properties),
+    updateProperty: new UpdatePropertyUseCase(properties, policy),
     // units
     listUnits: new ListUnitsUseCase(units, policy),
     getUnit: new GetUnitUseCase(units, policy),
     createUnit: new CreateUnitUseCase(units, policy),
+    bulkCreateUnits: new BulkCreateUnitsUseCase(units, policy),
     updateUnit: new UpdateUnitUseCase(units, policy),
     deleteUnit: new DeleteUnitUseCase(units, policy),
     // services
     listServices: new ListServicesUseCase(services, policy),
     getService: new GetServiceUseCase(services, policy),
     createService: new CreateServiceUseCase(services, policy),
+    bulkCreateServices: new BulkCreateServicesUseCase(services, policy),
     updateService: new UpdateServiceUseCase(services, policy),
     addServicePrice: new AddServicePriceUseCase(services, policy),
     deleteService: new DeleteServiceUseCase(services, policy),
@@ -109,6 +120,7 @@ function build() {
     listMeters: new ListMetersUseCase(meters, policy),
     getMeter: new GetMeterUseCase(meters, policy),
     createMeter: new CreateMeterUseCase(meters, policy),
+    bulkCreateMeters: new BulkCreateMetersUseCase(meters, policy),
     updateMeter: new UpdateMeterUseCase(meters, policy),
     deleteMeter: new DeleteMeterUseCase(meters, policy),
     listReadings: new ListReadingsUseCase(readings, policy),
@@ -117,6 +129,7 @@ function build() {
     // inventory + handovers
     listItems: new ListItemsUseCase(inventory, policy),
     createItem: new CreateItemUseCase(inventory, policy),
+    bulkCreateItems: new BulkCreateItemsUseCase(inventory, policy),
     updateItem: new UpdateItemUseCase(inventory, policy),
     deleteItem: new DeleteItemUseCase(inventory, policy),
     listHandovers: new ListHandoversUseCase(inventory, policy),
@@ -136,13 +149,13 @@ function build() {
     getTenancy: new GetTenancyUseCase(tenancies, policy),
     createTenancy: new CreateTenancyUseCase(tenancies, policy),
     updateTenancy: new UpdateTenancyUseCase(tenancies, policy),
-    terminateTenancy: new TerminateTenancyUseCase(tenancies, policy),
+    deleteDraftTenancy: new DeleteDraftTenancyUseCase(tenancies, policy),
     addRentVersion: new AddRentVersionUseCase(tenancies, policy),
     addTenant: new AddTenantUseCase(tenancies, policy),
     removeTenant: new RemoveTenantUseCase(tenancies, policy),
     addLeaseMember: new AddLeaseMemberUseCase(tenancies, policy),
     updateLeaseMember: new UpdateLeaseMemberUseCase(tenancies, policy),
-    createSubscription: new CreateSubscriptionUseCase(tenancies, policy),
+    createSubscription: subscriptionRules,
     updateSubscription: new UpdateSubscriptionUseCase(tenancies, policy),
     deleteSubscription: new DeleteSubscriptionUseCase(tenancies, policy),
     updateLeaseHandover: new UpdateLeaseHandoverUseCase(tenancies, policy),
@@ -150,13 +163,18 @@ function build() {
     listBillingPeriods: new ListBillingPeriodsUseCase(billing, policy),
     getBillingPeriod: new GetBillingPeriodUseCase(billing, policy),
     openBillingPeriod: new OpenBillingPeriodUseCase(billing, policy),
-    closeBillingPeriod: new CloseBillingPeriodUseCase(billing, policy),
+    startLease: new StartLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
+    closeBillingPeriod: new ClosePeriodUseCase(lifecycle, billing, invoices, refunds, policy),
+    closeLease: new CloseLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
+    addSubscription: new AddSubscriptionUseCase(lifecycle, billing, invoices, refunds, policy, subscriptionRules, tenancies),
     updateUsage: new UpdateUsageUseCase(billing, policy),
+    getPropertyStats: new GetPropertyStatsUseCase(stats, policy),
     listInvoices: new ListInvoicesUseCase(invoices, policy),
     getInvoice: new GetInvoiceUseCase(invoices, policy),
     createInvoice: new CreateInvoiceUseCase(invoices, policy),
     cancelInvoice: new CancelInvoiceUseCase(invoices, policy),
     recordPayment: new RecordPaymentUseCase(invoices, policy),
+    reviewPayment: new ReviewPaymentUseCase(invoices, policy),
     deletePayment: new DeletePaymentUseCase(invoices, policy),
     listRefunds: new ListRefundsUseCase(refunds, policy),
     getRefund: new GetRefundUseCase(refunds, policy),
@@ -193,6 +211,7 @@ function build() {
     getMyLease: new GetMyLeaseUseCase(leases),
     listMyLeaseInvoices: new ListMyLeaseInvoicesUseCase(leases),
     getMyInvoice: new GetMyInvoiceUseCase(leases),
+    reportPayment: new ReportPaymentUseCase(invoices, leases),
   };
 }
 

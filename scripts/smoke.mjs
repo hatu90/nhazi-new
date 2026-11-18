@@ -79,15 +79,15 @@ check("get version 1", (expect("get version 1", await api("GET", `${P}/agreement
 
 console.log("• leases");
 const lease = expect("create lease", await api("POST", `${P}/leases`, { token: owner.token, body: {
-  unitId: unit.id, startDate: "2026-01-01", rent: 3000000, depositAmount: 3000000,
+  unitId: unit.id, startDate: "2026-01-01", firstPeriodEnd: "2026-12-31", rent: 3000000, depositAmount: 3000000,
   tenants: [{ phoneNumber: tenant.local, displayName: "Tenant" }],
   members: [{ name: "Tenant", yearOfBirth: 1999 }],
   agreement: { templateId: tpl.id, values: { tenantName: "Tenant", signatureUrl: "sig/1.png" } },
 } }), 201);
 check("lease pinned template v2", lease?.agreement?.version === 2, lease?.agreement);
 check("lease handover snapshot", lease?.handovers.length === 1 && lease.handovers[0].itemName === "Bed", lease?.handovers);
-check("lease status active", lease?.status === "active" && lease.currentRent === 3000000, lease);
-expect("overlapping lease", await api("POST", `${P}/leases`, { token: owner.token, body: { unitId: unit.id, startDate: "2026-06-01", rent: 1, tenants: [{ phoneNumber: tenant.local, displayName: "T" }] } }), 409);
+check("new lease is a draft", lease?.status === "draft" && lease.activatedAt === null && lease.firstPeriodEnd === "2026-12-31" && lease.currentRent === 3000000, lease);
+expect("overlapping lease", await api("POST", `${P}/leases`, { token: owner.token, body: { unitId: unit.id, startDate: "2026-06-01", firstPeriodEnd: "2026-06-30", rent: 1, tenants: [{ phoneNumber: tenant.local, displayName: "T" }] } }), 409);
 expect("template v3 after lease", await api("POST", `${P}/agreement-templates/${tpl.id}/versions`, { token: owner.token, body: { baseVersion: 2, data: { content: [] } } }), 201);
 check("lease still on v2", (expect("get lease", await api("GET", `${P}/leases/${lease.id}`, { token: owner.token }), 200))?.agreement.version === 2);
 const L = `${P}/leases/${lease.id}`;
@@ -101,21 +101,35 @@ expect("end subscription", await api("PATCH", `${L}/subscriptions/${sNet.id}`, {
 expect("add rent version", await api("POST", `${L}/rent`, { token: owner.token, body: { effectiveDate: "2026-07-01", amount: 3200000 } }), 201);
 expect("rent version not later", await api("POST", `${L}/rent`, { token: owner.token, body: { effectiveDate: "2026-05-01", amount: 1 } }), 422);
 expect("add member", await api("POST", `${L}/members`, { token: owner.token, body: { name: "Kid", yearOfBirth: 2015, joinedAt: "2026-03-01" } }), 201);
-expect("terminate before a member joined", await api("POST", `${L}/terminate`, { token: owner.token, body: { terminatedAt: "2026-02-01" } }), 422);
+expect("cannot close a draft", await api("POST", `${L}/close`, { token: owner.token, body: { terminatedAt: "2026-02-01" } }), 409);
 expect("update handover", await api("PATCH", `${L}/handovers/${lease.handovers[0].id}`, { token: owner.token, body: { condition: "damaged" } }), 200);
 
 console.log("• tenant claims placeholder account");
 const claimed = expect("tenant registers", await api("POST", "/public/register", { token: tenant.token, body: { displayName: "Tenant Real", phoneNumber: tenant.local } }), 201);
 check("claimed the placeholder", claimed?.displayName === "Tenant Real");
-const mine = expect("tenant leases", await api("GET", "/lease", { token: tenant.token }), 200);
-check("tenant sees lease", mine?.items[0]?.id === lease.id, mine);
+check("a draft is hidden from the tenant", (await api("GET", "/lease", { token: tenant.token })).body.data.total === 0);
+expect("draft hidden by id", await api("GET", `/lease/${lease.id}`, { token: tenant.token }), 404);
 expect("remove last tenant", await api("DELETE", `${L}/tenants/${claimed.id}`, { token: owner.token }), 409);
 
-console.log("• terminate");
-const ended = expect("terminate", await api("POST", `${L}/terminate`, { token: owner.token, body: { terminatedAt: "2026-08-31", reason: "moved out" } }), 200);
-check("terminated sets subscriptions end", ended?.subscriptions.every((s) => s.endDate && s.endDate <= "2026-08-31"), ended?.subscriptions);
-check("members left", ended?.members.every((m) => m.leftAt === "2026-08-31"), ended?.members);
-expect("terminate twice", await api("POST", `${L}/terminate`, { token: owner.token, body: { terminatedAt: "2026-09-01" } }), 409);
+console.log("• start the lease");
+const started = expect("start", await api("POST", `${L}/start`, { token: owner.token, body: { dueDate: "2026-01-05" } }), 200);
+check("first period over the whole year, rent 12 months", started?.period.startDate === "2026-01-01" && started.period.endDate === "2026-12-31" && started.period.rentAmount === 36000000, started?.period);
+check("move-in invoice: deposit + rent + net 6 months + parking 12 months", started?.invoice.kind === "move_in" && started.invoice.amount === 3000000 + 36000000 + 600000 + 1920000, started?.invoice);
+expect("start twice", await api("POST", `${L}/start`, { token: owner.token, body: {} }), 409);
+expect("cannot delete a started lease", await api("DELETE", L, { token: owner.token }), 409);
+const mine = expect("tenant leases", await api("GET", "/lease", { token: tenant.token }), 200);
+check("tenant sees the started lease", mine?.items[0]?.id === lease.id, mine);
+
+console.log("• close the lease");
+expect("close before a member joined", await api("POST", `${L}/close`, { token: owner.token, body: { terminatedAt: "2026-02-01" } }), 422);
+expect("close needs the closing reading", await api("POST", `${L}/close`, { token: owner.token, body: { terminatedAt: "2026-08-31" } }), 409);
+const ended = expect("close lease", await api("POST", `${L}/close`, { token: owner.token, body: { terminatedAt: "2026-08-31", reason: "moved out", readings: [{ meterId: meter.id, value: 200 }] } }), 200);
+check("closing invoice = 100 kWh on the frozen step price", ended?.invoice?.kind === "closing" && ended.invoice.amount === 50 * 1800 + 50 * 2500, ended?.invoice);
+check("nothing was paid -> no refund", ended?.refund === null, ended?.refund);
+const after = (await api("GET", L, { token: owner.token })).body.data;
+check("terminated sets subscriptions end", after.status === "ended" && after.subscriptions.every((s) => s.endDate && s.endDate <= "2026-08-31"), after.subscriptions);
+check("members left", after.members.every((m) => m.leftAt === "2026-08-31"), after.members);
+expect("close twice", await api("POST", `${L}/close`, { token: owner.token, body: { terminatedAt: "2026-09-01" } }), 409);
 expect("delete unit with leases", await api("DELETE", `${P}/units/${unit.id}`, { token: owner.token }), 409);
 
 globalThis.__ctx = { owner, tenant, tech, prop, unit, lease, P, L };

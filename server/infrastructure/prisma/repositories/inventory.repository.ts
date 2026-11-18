@@ -1,5 +1,6 @@
 import type { IInventoryRepository } from "@/server/modules/inventory/inventory.repository";
 import type {
+  IBulkItemsCommand,
   ICreateHandoverCommand,
   ICreateItemCommand,
   IHandoverResponse,
@@ -43,6 +44,17 @@ export class PrismaInventoryRepository implements IInventoryRepository {
   async findItem(propertyId: string, itemId: string) {
     const r = await this.db.inventoryItem.findFirst({ where: { id: itemId, propertyId, deletedAt: null } });
     return r ? toItem(r) : null;
+  }
+  createItems(c: IBulkItemsCommand) {
+    return orConflict(
+      () =>
+        this.db.$transaction(async (tx) => {
+          const out: IItemResponse[] = [];
+          for (const it of c.items) out.push(toItem(await tx.inventoryItem.create({ data: { propertyId: c.propertyId, inventoryName: it.name } })));
+          return out;
+        }),
+      ...NAME,
+    );
   }
   createItem(c: ICreateItemCommand) {
     return orConflict(async () => toItem(await this.db.inventoryItem.create({ data: { propertyId: c.propertyId, inventoryName: c.name } })), ...NAME);

@@ -78,6 +78,11 @@ Enum auth_provider {
   apple
   password
 }
+Enum payment_status {
+  pending
+  confirmed
+  rejected
+}
 Enum payment_method {
   cash
   bank_transfer
@@ -314,6 +319,8 @@ Table leases {
   billing_cycle_day smallint [not null, default: 1, note: 'CHECK 1..28']
   deposit_amount numeric(14,0) [not null, default: 0, note: 'collected on move_in invoice, returned via refund item']
   terminated_at date
+  activated_at timestamptz [note: 'NULL = DRAFT: nothing billed, hidden from the tenant. Set by POST /start, which opens the first billing period and issues the move_in invoice']
+  first_period_end date [note: 'chosen with the draft: where the first billing period ends. CHECK within the lease']
   termination_reason text
   agreement_template_id uuid [note: 'template the agreement was created from; NULL = none / uploaded file only']
   agreement_template_version integer [note: 'version of that template in use at lease creation (versions are append-only, so it always resolves); NOT NULL iff agreement_template_id is set']
@@ -475,6 +482,7 @@ Table payments {
   invoice_id uuid [not null, ref: > invoices.id]
   amount numeric(14,0) [not null, note: 'CHECK > 0']
   method payment_method [not null]
+  status payment_status [not null, default: 'confirmed', note: 'tenant-reported payments start as pending and count only once an admin confirms them']
   paid_on date [not null, note: 'actual payment date (may be backdated); created_at is when it was recorded']
   reference text [note: 'bank transaction reference']
   evidence text[] [not null, default: '{}', note: 'storage keys / URLs of proof (transfer screenshot, receipt photo)']

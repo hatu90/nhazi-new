@@ -1,6 +1,7 @@
 import type { IServiceRepository } from "@/server/modules/service/service.repository";
 import {
   pricesSchema,
+  type IBulkServicesCommand,
   type ICreateServiceCommand,
   type IPriceVersion,
   type IServiceListQuery,
@@ -39,6 +40,27 @@ export class PrismaServiceRepository implements IServiceRepository {
   async findById(propertyId: string, serviceId: string) {
     const r = await this.db.service.findFirst({ where: live(propertyId, serviceId) });
     return r ? toService(r) : null;
+  }
+
+  createMany(c: IBulkServicesCommand) {
+    return orConflict(
+      () =>
+        this.db.$transaction(async (tx) => {
+          const out: IServiceResponse[] = [];
+          for (const v of c.items) {
+            out.push(
+              toService(
+                await tx.service.create({
+                  data: { propertyId: c.propertyId, serviceName: v.name, usageBase: v.usageBase, unitOfMeasure: v.unitOfMeasure, description: v.description, prices: v.prices },
+                }),
+              ),
+            );
+          }
+          return out;
+        }),
+      "A service with this name already exists in the property",
+      "SERVICE_NAME_TAKEN",
+    );
   }
 
   create(c: ICreateServiceCommand) {

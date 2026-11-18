@@ -89,6 +89,12 @@ export class UpdateTenancyUseCase extends Base implements IUseCase<IUpdateLeaseC
   async execute(c: IUpdateLeaseCommand) {
     await this.manage(c);
     const core = await this.core(c.propertyId, c.leaseId);
+    if ((c.depositAmount !== undefined || c.firstPeriodEnd !== undefined) && core.activatedAt !== null) {
+      throw new ConflictError("The deposit and the first period can only change while the lease is a draft", "LEASE_STARTED");
+    }
+    if (c.firstPeriodEnd && (c.firstPeriodEnd < core.startDate || (core.endDate && c.firstPeriodEnd > core.endDate))) {
+      throw invalid("Invalid first period end", "firstPeriodEnd", "Must be within the lease");
+    }
     if (c.endDate && c.endDate < core.startDate) throw invalid("Invalid end date", "endDate", "Must be on/after startDate");
     if (c.endDate && (await this.leases.hasOverlap(core.unitId, core.startDate, c.endDate, core.id))) {
       throw new ConflictError("The new end date overlaps another lease of the unit", "LEASE_OVERLAP");
@@ -99,10 +105,21 @@ export class UpdateTenancyUseCase extends Base implements IUseCase<IUpdateLeaseC
   }
 }
 
+/** A draft was never billed, so it can simply be thrown away. */
+export class DeleteDraftTenancyUseCase extends Base implements IUseCase<IPropertyScope & Lease, void> {
+  async execute({ actor, propertyId, leaseId }: IPropertyScope & Lease) {
+    await this.manage({ actor, propertyId });
+    const core = await this.core(propertyId, leaseId);
+    if (core.activatedAt !== null) throw new ConflictError("A started lease cannot be deleted: close it instead", "LEASE_STARTED");
+    await this.leases.softDeleteDraft(propertyId, leaseId);
+  }
+}
+
 export class TerminateTenancyUseCase extends Base implements IUseCase<ITerminateLeaseCommand, ITenancyDetailResponse> {
   async execute(c: ITerminateLeaseCommand) {
     await this.manage(c);
     const core = await this.core(c.propertyId, c.leaseId);
+    if (core.activatedAt === null) throw new ConflictError("The lease has not started", "LEASE_NOT_STARTED");
     if (core.terminatedAt) throw new ConflictError("The lease is already terminated", "LEASE_TERMINATED");
     if (c.terminatedAt < core.startDate) throw invalid("Invalid termination date", "terminatedAt", "Must be on/after startDate");
     if (core.lastMemberJoinedAt && c.terminatedAt < core.lastMemberJoinedAt) {
@@ -170,6 +187,12 @@ export class UpdateLeaseMemberUseCase extends Base implements IUseCase<IUpdateLe
 
 export class CreateSubscriptionUseCase extends Base implements IUseCase<ICreateSubscriptionCommand, ISubscriptionResponse> {
   async execute(c: ICreateSubscriptionCommand) {
+    const startDate = await this.validate(c);
+    return this.leases.createSubscription(c, startDate);
+  }
+
+  /** Authorisation + every rule of adding a subscription; returns the effective start date. */
+  async validate(c: ICreateSubscriptionCommand): Promise<string> {
     await this.manage(c);
     const core = await this.core(c.propertyId, c.leaseId);
     if (core.terminatedAt) throw new ConflictError("The lease is terminated", "LEASE_TERMINATED");
@@ -195,7 +218,7 @@ export class CreateSubscriptionUseCase extends Base implements IUseCase<ICreateS
     if (await this.leases.hasSubscriptionOverlap(c.leaseId, c.serviceId, startDate, c.endDate ?? null)) {
       throw new ConflictError("The lease already has this service in that period", "SUBSCRIPTION_OVERLAP");
     }
-    return this.leases.createSubscription(c, startDate);
+    return startDate;
   }
 }
 

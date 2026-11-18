@@ -1,7 +1,7 @@
 // Unit tests for lib/billing/pricing.ts:  node scripts/test-billing.mjs
 import assert from "node:assert/strict";
 import test from "node:test";
-import { computeCost, daysInclusive, prorate, suggestRent, usageCost, meterQuantity, previewBill, priceTypeOf, resolvePriceVersion } from "../lib/billing/pricing.ts";
+import { computeCost, daysInclusive, monthsCovered, prorate, suggestAmount, usageCost, meterQuantity, previewBill, priceTypeOf, resolvePriceVersion } from "../lib/billing/pricing.ts";
 
 const step = [{ upTo: 50, rate: 1800 }, { upTo: 100, rate: 2500 }, { upTo: null, rate: 3000 }];
 
@@ -69,7 +69,20 @@ test("frozen price cost + proration suggestions", () => {
   assert.equal(daysInclusive("2026-11-01", "2026-11-30"), 30);
   assert.equal(daysInclusive("2026-02-01", "2026-02-28"), 28);
   assert.equal(prorate(3000000, 10, 30), 1000000);
-  assert.equal(suggestRent(3000000, { start: "2026-11-01", end: "2026-11-30" }, { start: "2026-11-21", end: "2026-11-30" }), 1000000);
   assert.equal(prorate(100, 40, 30), 100);
   assert.throws(() => prorate(1, 1, 0), RangeError);
+});
+
+test("billing months and suggested amounts", () => {
+  assert.equal(monthsCovered("2026-11-01", "2026-11-30"), 1);
+  assert.equal(monthsCovered("2026-11-18", "2026-12-17"), 1);
+  assert.equal(monthsCovered("2026-11-18", "2026-11-30"), 13 / 30);
+  assert.equal(monthsCovered("2026-11-01", "2027-01-31"), 3);
+  assert.equal(monthsCovered("2026-01-31", "2026-02-28"), 1); // anchor on a missing day
+  assert.equal(monthsCovered("2026-11-01", "2026-12-15"), 1 + 15 / 31);
+  assert.equal(monthsCovered("2026-11-05", "2026-11-05"), 1 / 30);
+  assert.equal(suggestAmount(3000000, "2026-11-21", "2026-11-30"), 1000000);
+  assert.equal(suggestAmount(3000000, "2026-11-01", "2026-11-30"), 3000000);
+  assert.equal(suggestAmount(100000, "2026-11-18", "2026-11-30"), Math.round((100000 * 13) / 30));
+  assert.throws(() => monthsCovered("2026-11-02", "2026-11-01"), RangeError);
 });
