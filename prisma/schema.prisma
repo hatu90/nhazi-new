@@ -1,0 +1,817 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../server/infrastructure/prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountStatus {
+  active
+  inactive
+  suspended
+
+  @@map("account_status")
+}
+
+enum PropertyCategory {
+  apartment
+  house
+  mini_apartment
+  office
+
+  @@map("property_category")
+}
+
+enum PropertyRole {
+  owner
+  admin
+  technician
+  viewer
+
+  @@map("property_role")
+}
+
+enum InvitationKind {
+  property
+  lease
+
+  @@map("invitation_kind")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  declined
+  revoked
+
+  @@map("invitation_status")
+}
+
+enum ServiceUsageBase {
+  meter
+  lease
+  device
+  member
+
+  @@map("service_usage_base")
+}
+
+enum BillingPeriodStatus {
+  active
+  closed
+
+  @@map("billing_period_status")
+}
+
+enum InvoiceStatus {
+  pending
+  partial
+  paid
+  cancelled
+
+  @@map("invoice_status")
+}
+
+enum InvoiceKind {
+  move_in
+  transition
+  closing
+  other
+
+  @@map("invoice_kind")
+}
+
+enum InvoiceItemKind {
+  rent
+  service
+  meter
+  deposit
+  credit
+  other
+
+  @@map("invoice_item_kind")
+}
+
+enum RefundItemKind {
+  deposit
+  unused_rent
+  unused_service
+  other
+
+  @@map("refund_item_kind")
+}
+
+enum RefundStatus {
+  pending
+  paid
+  cancelled
+
+  @@map("refund_status")
+}
+
+enum AuthProvider {
+  phone
+  google
+  facebook
+  apple
+  password
+
+  @@map("auth_provider")
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+
+  @@map("payment_method")
+}
+
+enum ItemCondition {
+  good
+  damaged
+  missing
+
+  @@map("item_condition")
+}
+
+enum RequestType {
+  maintenance
+  close_lease
+  enquiry
+
+  @@map("request_type")
+}
+
+enum RequestStatus {
+  open
+  in_progress
+  resolved
+  rejected
+  cancelled
+
+  @@map("request_status")
+}
+
+enum RequestPriority {
+  low
+  normal
+  high
+  urgent
+
+  @@map("request_priority")
+}
+
+enum PlanCycle {
+  monthly
+  yearly
+
+  @@map("plan_cycle")
+}
+
+enum SubPeriodStatus {
+  active
+  expired
+
+  @@map("sub_period_status")
+}
+
+model Account {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  phoneNumber             String                @map("phone_number")
+  displayName             String                @map("display_name")
+  status                  AccountStatus         @default(active) @map("status")
+  createdAt               DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt               DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  authIdentities          AuthIdentity[]        @relation("AuthIdentity_account")
+  accountProperties       AccountProperty[]     @relation("AccountProperty_account")
+  accountSubscriptions    AccountSubscription[] @relation("AccountSubscription_account")
+  agreementTemplates      AgreementTemplate[]   @relation("AgreementTemplate_createdByRef")
+  accountLeases           AccountLease[]        @relation("AccountLease_account")
+  invitationsSent         Invitation[]          @relation("Invitation_invitedByRef")
+  invitationsAnswered     Invitation[]          @relation("Invitation_respondedByRef")
+  readings                Reading[]             @relation("Reading_readByRef")
+  invoices                Invoice[]             @relation("Invoice_createdByRef")
+  payments                Payment[]             @relation("Payment_createdByRef")
+  refunds                 Refund[]              @relation("Refund_createdByRef")
+  requests                Request[]             @relation("Request_requestedByRef")
+  requestsByAssignedToRef Request[]             @relation("Request_assignedToRef")
+  requestComments         RequestComment[]      @relation("RequestComment_author")
+
+  @@map("accounts")
+}
+
+model AuthIdentity {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  accountId      String       @map("account_id") @db.Uuid
+  provider       AuthProvider @map("provider")
+  providerUserId String       @map("provider_user_id")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastLoginAt    DateTime?    @map("last_login_at") @db.Timestamptz(6)
+  account        Account      @relation("AuthIdentity_account", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider, providerUserId])
+  @@index([accountId])
+  @@map("auth_identities")
+}
+
+model AccountProperty {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId String       @map("property_id") @db.Uuid
+  accountId  String       @map("account_id") @db.Uuid
+  role       PropertyRole @map("role")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  property   Property     @relation("AccountProperty_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  account    Account      @relation("AccountProperty_account", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([propertyId, accountId])
+  @@index([accountId])
+  @@map("account_properties")
+}
+
+model Plan {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  planName             String                @map("plan_name")
+  price                Decimal               @map("price") @db.Decimal(14, 0)
+  description          String?               @map("description")
+  cycle                PlanCycle             @map("cycle")
+  features             Json                  @map("features")
+  accountSubscriptions AccountSubscription[] @relation("AccountSubscription_plan")
+
+  @@map("plans")
+}
+
+model AccountSubscription {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  accountId           String               @map("account_id") @db.Uuid
+  planId              String               @map("plan_id") @db.Uuid
+  startDate           DateTime             @map("start_date") @db.Date
+  endDate             DateTime?            @map("end_date") @db.Date
+  account             Account              @relation("AccountSubscription_account", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  plan                Plan                 @relation("AccountSubscription_plan", fields: [planId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subscriptionPeriods SubscriptionPeriod[] @relation("SubscriptionPeriod_accountSubscription")
+
+  @@index([accountId])
+  @@index([planId])
+  @@map("account_subscriptions")
+}
+
+model SubscriptionPeriod {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  accountSubscriptionId String              @map("account_subscription_id") @db.Uuid
+  startDate             DateTime            @map("start_date") @db.Date
+  endDate               DateTime            @map("end_date") @db.Date
+  status                SubPeriodStatus     @map("status")
+  accountSubscription   AccountSubscription @relation("SubscriptionPeriod_accountSubscription", fields: [accountSubscriptionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([accountSubscriptionId])
+  @@map("subscription_periods")
+}
+
+model Property {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyName       String              @map("property_name")
+  category           PropertyCategory    @map("category")
+  street             String              @map("street")
+  headerImage        String?             @map("header_image")
+  images             String[]            @default([]) @map("images")
+  rules              String[]            @default([]) @map("rules")
+  documents          Json                @default("[]") @map("documents")
+  province           Json                @map("province")
+  ward               Json                @map("ward")
+  rentPriceFrom      Decimal?            @map("rent_price_from") @db.Decimal(14, 0)
+  rentPriceTo        Decimal?            @map("rent_price_to") @db.Decimal(14, 0)
+  rentNegotiable     Boolean             @default(false) @map("rent_negotiable")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  accountProperties  AccountProperty[]   @relation("AccountProperty_property")
+  units              Unit[]              @relation("Unit_property")
+  services           Service[]           @relation("Service_property")
+  meters             Meter[]             @relation("Meter_property")
+  agreementTemplates AgreementTemplate[] @relation("AgreementTemplate_property")
+  inventoryItems     InventoryItem[]     @relation("InventoryItem_property")
+  handovers          Handover[]          @relation("Handover_property")
+  leases             Lease[]             @relation("Lease_property")
+  invitations        Invitation[]        @relation("Invitation_property")
+  billingPeriods     BillingPeriod[]     @relation("BillingPeriod_property")
+  invoices           Invoice[]           @relation("Invoice_property")
+  refunds            Refund[]            @relation("Refund_property")
+  requests           Request[]           @relation("Request_property")
+
+  @@map("properties")
+}
+
+model Unit {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId     String     @map("property_id") @db.Uuid
+  unitName       String     @map("unit_name")
+  area           Decimal    @map("area") @db.Decimal(8, 2)
+  floor          Int        @map("floor")
+  bathrooms      Int?       @map("bathrooms") @db.SmallInt
+  bedrooms       Int?       @map("bedrooms") @db.SmallInt
+  rentPrice      Decimal?   @map("rent_price") @db.Decimal(14, 0)
+  rentNegotiable Boolean    @default(false) @map("rent_negotiable")
+  description    String?    @map("description")
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  property       Property   @relation("Unit_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meters         Meter[]    @relation("Meter_unit")
+  handovers      Handover[] @relation("Handover_unit")
+  leases         Lease[]    @relation("Lease_unit")
+  requests       Request[]  @relation("Request_unit")
+
+  @@unique([id, propertyId])
+  @@index([propertyId])
+  @@map("units")
+}
+
+model Service {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId           String                @map("property_id") @db.Uuid
+  serviceName          String                @map("service_name")
+  usageBase            ServiceUsageBase      @map("usage_base")
+  unitOfMeasure        String?               @map("unit_of_measure")
+  prices               Json                  @map("prices")
+  description          String?               @map("description")
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  property             Property              @relation("Service_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meters               Meter[]               @relation("Meter_service")
+  serviceSubscriptions ServiceSubscription[] @relation("ServiceSubscription_service")
+
+  @@unique([id, propertyId])
+  @@index([propertyId])
+  @@map("services")
+}
+
+model Meter {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId           String                @map("property_id") @db.Uuid
+  unitId               String                @map("unit_id") @db.Uuid
+  serviceId            String                @map("service_id") @db.Uuid
+  meterName            String                @map("meter_name")
+  serialNumber         String?               @map("serial_number")
+  installedAt          DateTime?             @map("installed_at") @db.Date
+  removedAt            DateTime?             @map("removed_at") @db.Date
+  maxValue             Decimal?              @map("max_value") @db.Decimal(14, 3)
+  description          String?               @map("description")
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  property             Property              @relation("Meter_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  unit                 Unit                  @relation("Meter_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  service              Service               @relation("Meter_service", fields: [serviceId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  serviceSubscriptions ServiceSubscription[] @relation("ServiceSubscription_meter")
+  readings             Reading[]             @relation("Reading_meter")
+
+  @@unique([id, propertyId])
+  @@unique([id, serviceId])
+  @@index([propertyId])
+  @@index([unitId, propertyId])
+  @@index([serviceId, propertyId])
+  @@map("meters")
+}
+
+model AgreementTemplate {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  templateName   String    @map("template_name")
+  versions       Json      @map("versions")
+  currentVersion Int       @map("current_version")
+  isDefault      Boolean   @default(false) @map("is_default")
+  createdBy      String    @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  property       Property  @relation("AgreementTemplate_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdByRef   Account   @relation("AgreementTemplate_createdByRef", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  leases         Lease[]   @relation("Lease_agreementTemplate")
+
+  @@unique([id, propertyId])
+  @@index([propertyId])
+  @@index([createdBy])
+  @@map("agreement_templates")
+}
+
+model InventoryItem {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId     String          @map("property_id") @db.Uuid
+  inventoryName  String          @map("inventory_name")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  property       Property        @relation("InventoryItem_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  handovers      Handover[]      @relation("Handover_inventoryItem")
+  leaseHandovers LeaseHandover[] @relation("LeaseHandover_inventoryItem")
+
+  @@unique([id, propertyId])
+  @@index([propertyId])
+  @@map("inventory_items")
+}
+
+model Handover {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId    String        @map("property_id") @db.Uuid
+  unitId        String        @map("unit_id") @db.Uuid
+  itemId        String        @map("item_id") @db.Uuid
+  quantity      Int           @map("quantity")
+  itemCondition ItemCondition @default(good) @map("item_condition")
+  description   String?       @map("description")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  property      Property      @relation("Handover_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  inventoryItem InventoryItem @relation("Handover_inventoryItem", fields: [itemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  unit          Unit          @relation("Handover_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+
+  // partial unique (unit_id, item_id) -> SQL migration
+  @@index([propertyId])
+  @@index([itemId, propertyId])
+  @@index([unitId, propertyId])
+  @@map("handovers")
+}
+
+model Lease {
+  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId               String                @map("property_id") @db.Uuid
+  unitId                   String                @map("unit_id") @db.Uuid
+  startDate                DateTime              @map("start_date") @db.Date
+  endDate                  DateTime?             @map("end_date") @db.Date
+  prices                   Json                  @map("prices")
+  billingCycleDay          Int                   @default(1) @map("billing_cycle_day") @db.SmallInt
+  depositAmount            Decimal               @default(0) @map("deposit_amount") @db.Decimal(14, 0)
+  terminatedAt             DateTime?             @map("terminated_at") @db.Date
+  terminationReason        String?               @map("termination_reason")
+  agreementTemplateId      String?               @map("agreement_template_id") @db.Uuid
+  agreementTemplateVersion Int?                  @map("agreement_template_version")
+  agreementData            Json?                 @map("agreement_data")
+  documents                String[]              @default([]) @map("documents")
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  property                 Property              @relation("Lease_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  unit                     Unit                  @relation("Lease_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  agreementTemplate        AgreementTemplate?    @relation("Lease_agreementTemplate", fields: [agreementTemplateId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  accountLeases            AccountLease[]        @relation("AccountLease_lease")
+  invitations              Invitation[]          @relation("Invitation_lease")
+  leaseMembers             LeaseMember[]         @relation("LeaseMember_lease")
+  leaseHandovers           LeaseHandover[]       @relation("LeaseHandover_lease")
+  serviceSubscriptions     ServiceSubscription[] @relation("ServiceSubscription_lease")
+  billingPeriods           BillingPeriod[]       @relation("BillingPeriod_lease")
+  usages                   Usage[]               @relation("Usage_lease")
+  invoices                 Invoice[]             @relation("Invoice_lease")
+  refunds                  Refund[]              @relation("Refund_lease")
+  requests                 Request[]             @relation("Request_lease")
+  requestsByLeaseByUnit    Request[]             @relation("Request_leaseByUnit")
+
+  @@unique([id, propertyId])
+  @@unique([id, unitId])
+  @@index([propertyId])
+  @@index([unitId, propertyId])
+  @@index([agreementTemplateId, propertyId])
+  @@map("leases")
+}
+
+model AccountLease {
+  leaseId   String   @map("lease_id") @db.Uuid
+  accountId String   @map("account_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lease     Lease    @relation("AccountLease_lease", fields: [leaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  account   Account  @relation("AccountLease_account", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([leaseId, accountId])
+  @@index([leaseId])
+  @@index([accountId])
+  @@map("account_leases")
+}
+
+model LeaseMember {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  leaseId     String    @map("lease_id") @db.Uuid
+  name        String    @map("name")
+  phoneNumber String?   @map("phone_number")
+  yearOfBirth Int       @map("year_of_birth") @db.SmallInt
+  joinedAt    DateTime  @map("joined_at") @db.Date
+  leftAt      DateTime? @map("left_at") @db.Date
+  lease       Lease     @relation("LeaseMember_lease", fields: [leaseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([leaseId])
+  @@map("lease_members")
+}
+
+model LeaseHandover {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId    String         @map("property_id") @db.Uuid
+  leaseId       String         @map("lease_id") @db.Uuid
+  sourceItemId  String?        @map("source_item_id") @db.Uuid
+  itemName      String         @map("item_name")
+  quantity      Int            @map("quantity")
+  itemCondition ItemCondition  @default(good) @map("item_condition")
+  description   String?        @map("description")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  lease         Lease          @relation("LeaseHandover_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  inventoryItem InventoryItem? @relation("LeaseHandover_inventoryItem", fields: [sourceItemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([leaseId, propertyId])
+  @@index([sourceItemId, propertyId])
+  @@map("lease_handovers")
+}
+
+model ServiceSubscription {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId String    @map("property_id") @db.Uuid
+  leaseId    String    @map("lease_id") @db.Uuid
+  serviceId  String    @map("service_id") @db.Uuid
+  meterId    String?   @map("meter_id") @db.Uuid
+  quantity   Int       @default(1) @map("quantity")
+  details    String?   @map("details")
+  startDate  DateTime  @map("start_date") @db.Date
+  endDate    DateTime? @map("end_date") @db.Date
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  lease      Lease     @relation("ServiceSubscription_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  service    Service   @relation("ServiceSubscription_service", fields: [serviceId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  meter      Meter?    @relation("ServiceSubscription_meter", fields: [meterId, serviceId], references: [id, serviceId], onDelete: NoAction, onUpdate: NoAction)
+  usages     Usage[]   @relation("Usage_serviceSubscription")
+
+  @@unique([id, leaseId])
+  @@index([leaseId, propertyId])
+  @@index([serviceId, propertyId])
+  @@index([meterId, serviceId])
+  @@map("service_subscriptions")
+}
+
+model BillingPeriod {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId String              @map("property_id") @db.Uuid
+  leaseId    String              @map("lease_id") @db.Uuid
+  status     BillingPeriodStatus @default(active) @map("status")
+  startDate  DateTime            @map("start_date") @db.Date
+  endDate    DateTime            @map("end_date") @db.Date
+  rentAmount Decimal             @map("rent_amount") @db.Decimal(14, 0)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  property   Property            @relation("BillingPeriod_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lease      Lease               @relation("BillingPeriod_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  usages     Usage[]             @relation("Usage_billingPeriod")
+  invoices   Invoice[]           @relation("Invoice_billingPeriod")
+  refunds    Refund[]            @relation("Refund_billingPeriod")
+
+  @@unique([id, leaseId])
+  @@index([propertyId])
+  @@index([leaseId, propertyId])
+  @@map("billing_periods")
+}
+
+model Reading {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId             String    @map("property_id") @db.Uuid
+  meterId                String    @map("meter_id") @db.Uuid
+  readOn                 DateTime  @map("read_on") @db.Date
+  readingValue           Decimal   @map("reading_value") @db.Decimal(14, 3)
+  readBy                 String    @map("read_by") @db.Uuid
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz(6)
+  readByRef              Account   @relation("Reading_readByRef", fields: [readBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meter                  Meter     @relation("Reading_meter", fields: [meterId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  usages                 Usage[]   @relation("Usage_openingReading")
+  usagesByClosingReading Usage[]   @relation("Usage_closingReading")
+
+  // partial unique (meter_id, read_on) -> SQL migration
+  @@index([readBy])
+  @@index([meterId, propertyId])
+  @@map("readings")
+}
+
+model Usage {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId          String              @map("property_id") @db.Uuid
+  billingPeriodId     String              @map("billing_period_id") @db.Uuid
+  leaseId             String              @map("lease_id") @db.Uuid
+  subscriptionId      String              @map("subscription_id") @db.Uuid
+  openingReadingId    String?             @map("opening_reading_id") @db.Uuid
+  closingReadingId    String?             @map("closing_reading_id") @db.Uuid
+  quantity            Decimal?            @map("quantity") @db.Decimal(14, 3)
+  price               Json                @map("price")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  openingReading      Reading?            @relation("Usage_openingReading", fields: [openingReadingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  closingReading      Reading?            @relation("Usage_closingReading", fields: [closingReadingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  billingPeriod       BillingPeriod       @relation("Usage_billingPeriod", fields: [billingPeriodId, leaseId], references: [id, leaseId], onDelete: NoAction, onUpdate: NoAction)
+  lease               Lease               @relation("Usage_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  serviceSubscription ServiceSubscription @relation("Usage_serviceSubscription", fields: [subscriptionId, leaseId], references: [id, leaseId], onDelete: NoAction, onUpdate: NoAction)
+  invoiceItems        InvoiceItem[]       @relation("InvoiceItem_usage")
+
+  @@unique([billingPeriodId, subscriptionId])
+  @@index([openingReadingId])
+  @@index([closingReadingId])
+  @@index([billingPeriodId, leaseId])
+  @@index([leaseId, propertyId])
+  @@index([subscriptionId, leaseId])
+  @@map("usages")
+}
+
+model Invoice {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId      String         @map("property_id") @db.Uuid
+  leaseId         String         @map("lease_id") @db.Uuid
+  kind            InvoiceKind    @map("kind")
+  billingPeriodId String?        @map("billing_period_id") @db.Uuid
+  title           String         @map("title")
+  amount          Decimal        @map("amount") @db.Decimal(14, 0)
+  dueDate         DateTime       @map("due_date") @db.Date
+  status          InvoiceStatus  @default(pending) @map("status")
+  cancelledAt     DateTime?      @map("cancelled_at") @db.Timestamptz(6)
+  targetMetadata  Json           @map("target_metadata")
+  createdBy       String         @map("created_by") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  property        Property       @relation("Invoice_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdByRef    Account        @relation("Invoice_createdByRef", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lease           Lease          @relation("Invoice_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  billingPeriod   BillingPeriod? @relation("Invoice_billingPeriod", fields: [billingPeriodId, leaseId], references: [id, leaseId], onDelete: NoAction, onUpdate: NoAction)
+  invoiceItems    InvoiceItem[]  @relation("InvoiceItem_invoice")
+  payments        Payment[]      @relation("Payment_invoice")
+  refundItems     RefundItem[]   @relation("RefundItem_invoice")
+
+  @@index([propertyId])
+  @@index([createdBy])
+  @@index([leaseId, propertyId])
+  @@index([billingPeriodId, leaseId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  invoiceId    String          @map("invoice_id") @db.Uuid
+  parentId     String?         @map("parent_id") @db.Uuid
+  seq          Int             @default(0) @map("seq") @db.SmallInt
+  kind         InvoiceItemKind @default(other) @map("kind")
+  usageId      String?         @map("usage_id") @db.Uuid
+  voidedAt     DateTime?       @map("voided_at") @db.Timestamptz(6)
+  title        String          @map("title")
+  amount       Decimal         @map("amount") @db.Decimal(14, 0)
+  detail       Json?           @map("detail")
+  invoice      Invoice         @relation("InvoiceItem_invoice", fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parent       InvoiceItem?    @relation("InvoiceItem_parent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usage        Usage?          @relation("InvoiceItem_usage", fields: [usageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoiceItems InvoiceItem[]   @relation("InvoiceItem_parent")
+  refundItems  RefundItem[]    @relation("RefundItem_invoiceItem")
+
+  @@unique([id, invoiceId])
+  // partial unique (usage_id) -> SQL migration
+  @@index([invoiceId])
+  @@index([parentId])
+  @@index([usageId])
+  @@map("invoice_items")
+}
+
+model Payment {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  invoiceId    String        @map("invoice_id") @db.Uuid
+  amount       Decimal       @map("amount") @db.Decimal(14, 0)
+  method       PaymentMethod @map("method")
+  paidOn       DateTime      @map("paid_on") @db.Date
+  reference    String?       @map("reference")
+  evidence     String[]      @default([]) @map("evidence")
+  notes        String?       @map("notes")
+  createdBy    String        @map("created_by") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  invoice      Invoice       @relation("Payment_invoice", fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdByRef Account       @relation("Payment_createdByRef", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([invoiceId])
+  @@index([createdBy])
+  @@map("payments")
+}
+
+model Refund {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId      String         @map("property_id") @db.Uuid
+  leaseId         String         @map("lease_id") @db.Uuid
+  billingPeriodId String?        @map("billing_period_id") @db.Uuid
+  amount          Decimal        @map("amount") @db.Decimal(14, 0)
+  status          RefundStatus   @default(pending) @map("status")
+  method          PaymentMethod? @map("method")
+  paidAt          DateTime?      @map("paid_at") @db.Timestamptz(6)
+  note            String?        @map("note")
+  createdBy       String         @map("created_by") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  property        Property       @relation("Refund_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdByRef    Account        @relation("Refund_createdByRef", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lease           Lease          @relation("Refund_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  billingPeriod   BillingPeriod? @relation("Refund_billingPeriod", fields: [billingPeriodId, leaseId], references: [id, leaseId], onDelete: NoAction, onUpdate: NoAction)
+  refundItems     RefundItem[]   @relation("RefundItem_refund")
+
+  @@index([propertyId])
+  @@index([createdBy])
+  @@index([leaseId, propertyId])
+  @@index([billingPeriodId, leaseId])
+  @@map("refunds")
+}
+
+model RefundItem {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  refundId      String         @map("refund_id") @db.Uuid
+  invoiceId     String         @map("invoice_id") @db.Uuid
+  kind          RefundItemKind @map("kind")
+  invoiceItemId String?        @map("invoice_item_id") @db.Uuid
+  title         String         @map("title")
+  chargedAmount Decimal        @map("charged_amount") @db.Decimal(14, 0)
+  unusedDays    Int?           @map("unused_days")
+  totalDays     Int?           @map("total_days")
+  amount        Decimal        @map("amount") @db.Decimal(14, 0)
+  note          String?        @map("note")
+  refund        Refund         @relation("RefundItem_refund", fields: [refundId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoice       Invoice        @relation("RefundItem_invoice", fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoiceItem   InvoiceItem?   @relation("RefundItem_invoiceItem", fields: [invoiceItemId, invoiceId], references: [id, invoiceId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([refundId])
+  @@index([invoiceId])
+  @@index([invoiceItemId, invoiceId])
+  @@map("refund_items")
+}
+
+model Request {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId         String           @map("property_id") @db.Uuid
+  unitId             String?          @map("unit_id") @db.Uuid
+  leaseId            String?          @map("lease_id") @db.Uuid
+  type               RequestType      @map("type")
+  title              String           @map("title")
+  description        String?          @map("description")
+  priority           RequestPriority  @default(normal) @map("priority")
+  status             RequestStatus    @default(open) @map("status")
+  requestedBy        String           @map("requested_by") @db.Uuid
+  assignedTo         String?          @map("assigned_to") @db.Uuid
+  requestedCloseDate DateTime?        @map("requested_close_date") @db.Date
+  closedAt           DateTime?        @map("closed_at") @db.Timestamptz(6)
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  property           Property         @relation("Request_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requestedByRef     Account          @relation("Request_requestedByRef", fields: [requestedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignedToRef      Account?         @relation("Request_assignedToRef", fields: [assignedTo], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  unit               Unit?            @relation("Request_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  lease              Lease?           @relation("Request_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  leaseByUnit        Lease?           @relation("Request_leaseByUnit", fields: [leaseId, unitId], references: [id, unitId], onDelete: NoAction, onUpdate: NoAction)
+  requestComments    RequestComment[] @relation("RequestComment_request")
+
+  @@index([propertyId])
+  @@index([requestedBy])
+  @@index([assignedTo])
+  @@index([unitId, propertyId])
+  @@index([leaseId, propertyId])
+  @@index([leaseId, unitId])
+  @@map("requests")
+}
+
+model RequestComment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  requestId String   @map("request_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  body      String   @map("body")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  request   Request  @relation("RequestComment_request", fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  author    Account  @relation("RequestComment_author", fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([requestId])
+  @@index([authorId])
+  @@map("request_comments")
+}
+
+model Invitation {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  kind           InvitationKind   @map("kind")
+  propertyId     String           @map("property_id") @db.Uuid
+  leaseId        String?          @map("lease_id") @db.Uuid
+  phoneNumber    String           @map("phone_number")
+  role           PropertyRole?    @map("role")
+  status         InvitationStatus @default(pending) @map("status")
+  invitedBy      String           @map("invited_by") @db.Uuid
+  respondedBy    String?          @map("responded_by") @db.Uuid
+  respondedAt    DateTime?        @map("responded_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  property       Property         @relation("Invitation_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lease          Lease?           @relation("Invitation_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  invitedByRef   Account          @relation("Invitation_invitedByRef", fields: [invitedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  respondedByRef Account?         @relation("Invitation_respondedByRef", fields: [respondedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([propertyId, status])
+  @@index([phoneNumber, status])
+  @@map("invitations")
+}

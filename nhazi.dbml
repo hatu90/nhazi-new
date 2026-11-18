@@ -1,0 +1,548 @@
+// Nhazi — DBML for https://dbdiagram.io  (paste the whole file into the editor)
+// Source of truth: schema.sql. Triggers, EXCLUDE constraints, partial unique indexes and CHECKs live there; this file shows structure.
+// Money = whole VND numeric(14,0). Soft delete = deleted_at.
+// Every created_at / updated_at: timestamptz NOT NULL DEFAULT now().
+
+Enum account_status {
+  active
+  inactive
+  suspended
+}
+Enum property_category {
+  apartment
+  house
+  mini_apartment
+  office
+}
+Enum property_role {
+  owner
+  admin
+  technician
+  viewer
+}
+Enum invitation_kind {
+  property [note: 'join the property team with `role`']
+  lease    [note: 'become a tenant (account_leases) of `lease_id`']
+}
+Enum invitation_status {
+  pending
+  accepted
+  declined
+  revoked
+}
+Enum service_usage_base {
+  meter   [note: 'billed at period END from readings, tiers over usage']
+  lease   [note: 'flat fee per lease, qty 1, billed at START']
+  device  [note: 'per counted device (2 motorbikes), billed at START']
+  member  [note: 'headcount tiers (first 3 free), billed at START']
+}
+Enum billing_period_status {
+  active
+  closed
+}
+Enum invoice_status {
+  pending
+  partial
+  paid
+  cancelled
+}
+Enum invoice_kind {
+  move_in
+  transition
+  closing
+  other
+}
+Enum invoice_item_kind {
+  rent
+  service
+  meter
+  deposit
+  credit
+  other
+}
+Enum refund_item_kind {
+  deposit
+  unused_rent
+  unused_service
+  other
+}
+Enum refund_status {
+  pending
+  paid
+  cancelled
+}
+Enum auth_provider {
+  phone
+  google
+  facebook
+  apple
+  password
+}
+Enum payment_method {
+  cash
+  bank_transfer
+}
+Enum item_condition {
+  good
+  damaged
+  missing
+}
+Enum request_type {
+  maintenance
+  close_lease
+  enquiry
+}
+Enum request_status {
+  open
+  in_progress
+  resolved
+  rejected
+  cancelled
+}
+Enum request_priority {
+  low
+  normal
+  high
+  urgent
+}
+Enum plan_cycle {
+  monthly
+  yearly
+}
+Enum sub_period_status {
+  active
+  expired
+}
+
+// Provinces and wards are NOT tables: they come from an external API. Their JSON is stored inside properties (province, ward).
+
+// ───────────── Identity and access ─────────────
+Table accounts {
+  id uuid [pk]
+  phone_number text [not null, note: 'unique while not deleted (partial unique index)']
+  display_name text [not null]
+  status account_status [not null, default: 'active']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+}
+Table auth_identities {
+  id uuid [pk]
+  account_id uuid [not null, ref: > accounts.id]
+  provider auth_provider [not null]
+  provider_user_id text [not null, note: 'Firebase uid / provider uid']
+  created_at timestamptz [not null]
+  last_login_at timestamptz
+  indexes { (provider, provider_user_id) [unique] }
+}
+Table account_properties {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  account_id uuid [not null, ref: > accounts.id]
+  role property_role [not null]
+  created_at timestamptz [not null]
+  indexes { (property_id, account_id) [unique] }
+}
+
+Table invitations {
+  id uuid [pk]
+  kind invitation_kind [not null]
+  property_id uuid [not null, ref: > properties.id]
+  lease_id uuid [note: 'kind = lease only; (lease_id, property_id) -> leases']
+  phone_number text [not null, note: 'E.164. Whoever signs in with this verified phone may answer; no token or code']
+  role property_role [note: 'kind = property only']
+  status invitation_status [not null, note: 'accepting inserts account_properties / account_leases']
+  invited_by uuid [not null, ref: > accounts.id]
+  responded_by uuid [ref: > accounts.id, note: 'set for accepted / declined']
+  responded_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (property_id, status)
+    (phone_number, status)
+    (property_id, phone_number) [unique, note: 'partial: status = pending AND kind = property']
+    (lease_id, phone_number) [unique, note: 'partial: status = pending AND kind = lease']
+  }
+  Note: 'CHECK property => lease_id NULL AND role NOT NULL; lease => lease_id NOT NULL AND role NULL. CHECK answered <=> responded_by/at'
+}
+
+// ───────────── SaaS plan ─────────────
+Table plans {
+  id uuid [pk]
+  plan_name text [not null]
+  price numeric(14,0) [not null]
+  description text
+  cycle plan_cycle [not null]
+  features jsonb [not null]
+}
+Table account_subscriptions {
+  id uuid [pk]
+  account_id uuid [not null, ref: > accounts.id]
+  plan_id uuid [not null, ref: > plans.id]
+  start_date date [not null]
+  end_date date [note: 'no overlap per account (EXCLUDE)']
+}
+Table subscription_periods {
+  id uuid [pk]
+  account_subscription_id uuid [not null, ref: > account_subscriptions.id]
+  start_date date [not null]
+  end_date date [not null]
+  status sub_period_status [not null]
+}
+
+// ───────────── Property side ─────────────
+Table properties {
+  id uuid [pk]
+  property_name text [not null]
+  category property_category [not null]
+  street text [not null]
+  header_image text [note: 'storage key / URL of the cover image']
+  images text[] [not null, default: '{}', note: 'storage keys / URLs, in display order']
+  rules text[] [not null, default: '{}', note: 'house rules shown to tenants, one per item, in display order (curfew, pets, guests, ...)']
+  documents jsonb [not null, default: '[]', note: 'property files: {kind: rules|other, name, url, contentType, size, uploadedAt, uploadedBy}[]']
+  province jsonb [not null, note: 'snapshot from the external API: {code, name, codename}']
+  ward jsonb [not null, note: 'snapshot from the external API: {code, name, codename, provinceCode}; app validates ward belongs to province']
+  rent_price_from numeric(14,0) [note: 'shown on search; maintained from units']
+  rent_price_to numeric(14,0)
+  rent_negotiable boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes {
+    `((province->>'code')::int)` [name: 'properties_province_code_idx']
+    `((ward->>'code')::int)` [name: 'properties_ward_code_idx']
+  }
+}
+Table units {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  unit_name text [not null]
+  area numeric(8,2) [not null]
+  floor integer [not null]
+  bathrooms smallint
+  bedrooms smallint
+  rent_price numeric(14,0) [note: 'asking rent shown on search']
+  rent_negotiable boolean [not null, default: false]
+  description text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes { (id, property_id) [unique] }
+}
+Table services {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  service_name text [not null]
+  usage_base service_usage_base [not null]
+  unit_of_measure text [note: 'kWh, m3, person, month ...']
+  prices jsonb [not null, note: 'embedded versions: {effectiveDate, tiers:[{upTo|null, rate}]}[]; CHECK/trigger: effectiveDate unique + ascending, tiers ascending']
+  description text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes { (id, property_id) [unique] }
+}
+Table meters {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  unit_id uuid [not null]
+  service_id uuid [not null, note: 'trigger: service.usage_base = meter']
+  meter_name text [not null]
+  serial_number text
+  installed_at date
+  removed_at date [note: 'NULL = in service']
+  max_value numeric(14,3) [note: 'dial capacity for rollover (e.g. 99999.999); NULL = no rollover support']
+  description text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes {
+    (id, property_id) [unique]
+    (id, service_id) [unique]
+  }
+}
+Ref: meters.(unit_id, property_id) > units.(id, property_id)
+Ref: meters.(service_id, property_id) > services.(id, property_id)
+
+Table agreement_templates {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  template_name text [not null]
+  versions jsonb [not null, note: 'append-only: {version, createdAt, createdBy, data}[]; data = Puck editor data {root, content, zones} with placeholders like {{tenant.name}}. Latest = highest version; old versions are never edited']
+  current_version integer [not null, note: 'highest version in versions (trigger-maintained); new leases use it']
+  is_default boolean [not null, default: false, note: 'partial unique: one default per property (deleted_at IS NULL)']
+  created_by uuid [not null, ref: > accounts.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes { (id, property_id) [unique] }
+}
+
+Table inventory_items {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  inventory_name text [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes { (id, property_id) [unique] }
+}
+Table handovers {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  unit_id uuid [not null, note: 'default handover list is per unit']
+  item_id uuid [not null]
+  quantity integer [not null]
+  item_condition item_condition [not null, default: 'good']
+  description text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes { (unit_id, item_id) [unique, note: 'partial: deleted_at IS NULL'] }
+}
+Ref: handovers.(item_id, property_id) > inventory_items.(id, property_id)
+Ref: handovers.(unit_id, property_id) > units.(id, property_id)
+
+// ───────────── Lease side ─────────────
+Table leases {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  unit_id uuid [not null]
+  start_date date [not null]
+  end_date date [note: 'NULL = open-ended; no overlap per unit (EXCLUDE)']
+  prices jsonb [not null, note: 'embedded rent versions: {effectiveDate, amount}[]; CHECK/trigger: effectiveDate unique + ascending']
+  billing_cycle_day smallint [not null, default: 1, note: 'CHECK 1..28']
+  deposit_amount numeric(14,0) [not null, default: 0, note: 'collected on move_in invoice, returned via refund item']
+  terminated_at date
+  termination_reason text
+  agreement_template_id uuid [note: 'template the agreement was created from; NULL = none / uploaded file only']
+  agreement_template_version integer [note: 'version of that template in use at lease creation (versions are append-only, so it always resolves); NOT NULL iff agreement_template_id is set']
+  agreement_data jsonb [note: 'values filled into the template: {tenantName, address, signatureUrl, ...}; rendered = template version data + these values']
+  documents text[] [not null, default: '{}', note: 'storage keys / URLs of attached files (signed agreement scans, ID copies, ...)']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes {
+    (id, property_id) [unique]
+    (id, unit_id) [unique]
+  }
+}
+Ref: leases.(unit_id, property_id) > units.(id, property_id)
+Ref: leases.(agreement_template_id, property_id) > agreement_templates.(id, property_id)
+
+Table account_leases {
+  lease_id uuid [not null, ref: > leases.id]
+  account_id uuid [not null, ref: > accounts.id, note: 'tenant account (can log in)']
+  created_at timestamptz [not null]
+  indexes { (lease_id, account_id) [pk] }
+}
+Table lease_members {
+  id uuid [pk]
+  lease_id uuid [not null, ref: > leases.id]
+  name text [not null]
+  phone_number text
+  year_of_birth smallint [not null, note: 'CHECK plausible range']
+  joined_at date [not null, note: 'headcount at date D = joined_at <= D AND (left_at IS NULL OR left_at > D)']
+  left_at date [note: 'NULL = still living there; CHECK left_at >= joined_at']
+}
+Table lease_handovers {
+  id uuid [pk]
+  property_id uuid [not null]
+  lease_id uuid [not null]
+  source_item_id uuid
+  item_name text [not null, note: 'snapshot']
+  quantity integer [not null]
+  item_condition item_condition [not null, default: 'good']
+  description text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+}
+Ref: lease_handovers.(lease_id, property_id) > leases.(id, property_id)
+Ref: lease_handovers.(source_item_id, property_id) > inventory_items.(id, property_id)
+
+Table service_subscriptions {
+  id uuid [pk]
+  property_id uuid [not null]
+  lease_id uuid [not null]
+  service_id uuid [not null]
+  meter_id uuid [note: 'meter services only. trigger: not null iff services.usage_base = meter, and the meter is in the lease unit']
+  quantity integer [not null, default: 1, note: 'only device may be > 1']
+  details text [note: 'device: plates / identifiers']
+  start_date date [not null]
+  end_date date
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes {
+    (id, lease_id) [unique]
+  }
+}
+Ref: service_subscriptions.(lease_id, property_id) > leases.(id, property_id)
+Ref: service_subscriptions.(service_id, property_id) > services.(id, property_id)
+Ref: service_subscriptions.(meter_id, service_id) > meters.(id, service_id)
+
+// ───────────── Billing periods and readings ─────────────
+Table billing_periods {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  lease_id uuid [not null, note: 'belongs to the lease; unit reached through the lease']
+  status billing_period_status [not null, default: 'active']
+  start_date date [not null]
+  end_date date [not null, note: 'contiguous, no gaps/overlap']
+  rent_amount numeric(14,0) [not null, note: 'the admin\'s final figure, frozen when the period opens (the frontend pre-fills a prorated suggestion; omitted = full rent)']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes { (id, lease_id) [unique] }
+}
+Ref: billing_periods.(lease_id, property_id) > leases.(id, property_id)
+
+Table readings {
+  id uuid [pk]
+  property_id uuid [not null]
+  meter_id uuid [not null]
+  read_on date [not null, note: 'meter value at the START of this day. Period opening = reading on start_date; closing = reading on end_date + 1 (the same row opens the next period)']
+  reading_value numeric(14,3) [not null, note: 'never goes down over time, except a rollover at meters.max_value']
+  read_by uuid [not null, ref: > accounts.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  indexes {
+    (meter_id, read_on) [unique, note: 'partial: deleted_at IS NULL']
+  }
+}
+Ref: readings.(meter_id, property_id) > meters.(id, property_id)
+
+// Usage = what ONE subscription consumed in ONE billing period. Links period + subscription + readings.
+// A usage with a closed period is immutable: its readings must not be soft-deleted or edited (trigger).
+Table usages {
+  id uuid [pk]
+  property_id uuid [not null]
+  billing_period_id uuid [not null]
+  lease_id uuid [not null]
+  subscription_id uuid [not null]
+  opening_reading_id uuid [ref: > readings.id, note: 'meter only: reading dated max(period start, subscription start). trigger: reading is on the subscription meter']
+  closing_reading_id uuid [ref: > readings.id, note: 'meter only: reading dated min(period end, subscription end) + 1; set at close. trigger: same meter as opening']
+  price jsonb [not null, note: 'FROZEN price version {effectiveDate, tiers} = the latest version with effectiveDate <= period start_date, copied when the period opens. Later price changes never touch it. cost = tiers applied to quantity (plain = 1 tier, step = several, each tier billed on its own slice)']
+  quantity numeric(14,3) [note: 'meter: closing - opening (computed by DB, NULL until closed). others: frozen count (device count, member headcount, 1)']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes { (billing_period_id, subscription_id) [unique] }
+}
+Ref: usages.(billing_period_id, lease_id) > billing_periods.(id, lease_id)
+Ref: usages.(lease_id, property_id) > leases.(id, property_id)
+Ref: usages.(subscription_id, lease_id) > service_subscriptions.(id, lease_id)
+
+// ───────────── Money ─────────────
+Table invoices {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  lease_id uuid [not null]
+  kind invoice_kind [not null, note: 'one invoice per event']
+  billing_period_id uuid [note: 'move_in = first period; transition = the period just opened (carries the previous period\'s meter fees); closing = last period; NULL only for other']
+  title text [not null]
+  amount numeric(14,0) [not null, note: '= SUM(invoice_items.amount) (trigger); deposit is the kind=deposit item']
+  due_date date [not null]
+  status invoice_status [not null, default: 'pending', note: 'derived from payments by trigger; payments may not exceed amount']
+  cancelled_at timestamptz [note: 'CHECK: set iff status = cancelled. Cancel = business void (keeps record); deleted_at = admin soft delete of mistakes only']
+  target_metadata jsonb [not null]
+  created_by uuid [not null, ref: > accounts.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+}
+Ref: invoices.(lease_id, property_id) > leases.(id, property_id)
+Ref: invoices.(billing_period_id, lease_id) > billing_periods.(id, lease_id)
+
+Table invoice_items {
+  id uuid [pk]
+  invoice_id uuid [not null, ref: > invoices.id]
+  parent_id uuid [ref: > invoice_items.id, note: 'tree']
+  seq smallint [not null, default: 0]
+  kind invoice_item_kind [not null, default: 'other']
+  usage_id uuid [ref: > usages.id, note: 'the usage this line bills. meter usage -> transition/closing invoice (arrears); other usage -> move_in/transition invoice, or an ad-hoc other invoice for a service added mid-period (advance)']
+  voided_at timestamptz [note: 'set by trigger when the invoice is cancelled; frees the usage to be billed again']
+  title text [not null]
+  amount numeric(14,0) [not null, note: 'final value; negative only for credit']
+  detail jsonb [note: 'usage lines: {quantity, price (frozen version), calculatedAmount}. `amount` is what the admin charged (negotiable), so amount <> calculatedAmount is a visible discount/surcharge']
+  indexes {
+    (id, invoice_id) [unique]
+    (usage_id) [unique, note: 'partial: usage_id IS NOT NULL AND voided_at IS NULL — a usage is billed once']
+  }
+}
+Table payments {
+  id uuid [pk]
+  invoice_id uuid [not null, ref: > invoices.id]
+  amount numeric(14,0) [not null, note: 'CHECK > 0']
+  method payment_method [not null]
+  paid_on date [not null, note: 'actual payment date (may be backdated); created_at is when it was recorded']
+  reference text [note: 'bank transaction reference']
+  evidence text[] [not null, default: '{}', note: 'storage keys / URLs of proof (transfer screenshot, receipt photo)']
+  notes text
+  created_by uuid [not null, ref: > accounts.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+}
+Table refunds {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  lease_id uuid [not null]
+  billing_period_id uuid
+  amount numeric(14,0) [not null, note: '= SUM(refund_items.amount) (trigger)']
+  status refund_status [not null, default: 'pending']
+  method payment_method
+  paid_at timestamptz
+  note text
+  created_by uuid [not null, ref: > accounts.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+Ref: refunds.(lease_id, property_id) > leases.(id, property_id)
+Ref: refunds.(billing_period_id, lease_id) > billing_periods.(id, lease_id)
+
+Table refund_items {
+  id uuid [pk]
+  refund_id uuid [not null, ref: > refunds.id]
+  invoice_id uuid [not null, ref: > invoices.id, note: 'where the money was paid']
+  kind refund_item_kind [not null]
+  invoice_item_id uuid [note: 'invoice line being refunded (rent/service); NULL for deposit']
+  title text [not null]
+  charged_amount numeric(14,0) [not null]
+  unused_days integer
+  total_days integer
+  amount numeric(14,0) [not null, note: 'user-entered final amount <= charged_amount']
+  note text
+}
+Ref: refund_items.(invoice_item_id, invoice_id) > invoice_items.(id, invoice_id)
+
+// ───────────── Requests ─────────────
+Table requests {
+  id uuid [pk]
+  property_id uuid [not null, ref: > properties.id]
+  unit_id uuid
+  lease_id uuid
+  type request_type [not null, note: 'CHECK: close_lease requires lease_id and requested_close_date; other types must not set requested_close_date']
+  title text [not null]
+  description text
+  priority request_priority [not null, default: 'normal']
+  status request_status [not null, default: 'open']
+  requested_by uuid [not null, ref: > accounts.id]
+  assigned_to uuid [ref: > accounts.id]
+  requested_close_date date [note: 'close_lease only']
+  closed_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+}
+Ref: requests.(unit_id, property_id) > units.(id, property_id)
+Ref: requests.(lease_id, property_id) > leases.(id, property_id)
+Ref: requests.(lease_id, unit_id) > leases.(id, unit_id)
+
+Table request_comments {
+  id uuid [pk]
+  request_id uuid [not null, ref: > requests.id]
+  author_id uuid [not null, ref: > accounts.id]
+  body text [not null]
+  created_at timestamptz [not null]
+}

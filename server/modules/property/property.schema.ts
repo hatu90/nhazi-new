@@ -1,0 +1,104 @@
+import { z } from "zod";
+import type { IActor } from "@/server/shared/actor";
+import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
+import type { IUnitResponse } from "../unit/unit.schema";
+import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole } from "@/server/shared/schema";
+
+// ── address JSON (snapshot of the external provinces/wards API) ─────────────────────
+export const provinceSchema = z.object({
+  code: z.number().int().positive(),
+  name: z.string().trim().min(1),
+  codename: z.string().trim().min(1),
+});
+export const wardSchema = provinceSchema.extend({ provinceCode: z.number().int().positive() });
+export type IProvince = z.infer<typeof provinceSchema>;
+export type IWard = z.infer<typeof wardSchema>;
+
+const storageKey = z.string().trim().min(1).max(500);
+const priceRange = (v: { rentPriceFrom?: number | null; rentPriceTo?: number | null }) =>
+  v.rentPriceFrom == null || v.rentPriceTo == null || v.rentPriceFrom <= v.rentPriceTo;
+
+// ── GET /api/public/properties ──────────────────────────────────────────────────────
+export const propertySearchQuerySchema = paginationQuerySchema
+  .extend({
+    q: z.string().trim().min(1).max(100).optional(),
+    provinceCode: z.coerce.number().int().positive().optional(),
+    wardCode: z.coerce.number().int().positive().optional(),
+    category: propertyCategorySchema.optional(),
+    minPrice: z.coerce.number().int().nonnegative().optional(),
+    maxPrice: z.coerce.number().int().nonnegative().optional(),
+  })
+  .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
+    message: "minPrice must be <= maxPrice",
+    path: ["maxPrice"],
+  });
+export type IPropertySearchQuery = z.infer<typeof propertySearchQuerySchema>;
+
+// ── GET /api/admin/properties ───────────────────────────────────────────────────────
+export const adminPropertyListQuerySchema = paginationQuerySchema.extend({
+  q: z.string().trim().min(1).max(100).optional(),
+});
+export type IAdminPropertyListQuery = z.infer<typeof adminPropertyListQuerySchema>;
+
+// ── POST /api/admin/properties ──────────────────────────────────────────────────────
+export const createPropertyPayloadSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    category: propertyCategorySchema,
+    street: z.string().trim().min(1).max(300),
+    province: provinceSchema,
+    ward: wardSchema,
+    rentPriceFrom: vndSchema.optional(),
+    rentPriceTo: vndSchema.optional(),
+    rentNegotiable: z.boolean().default(false),
+    headerImage: storageKey.optional(),
+    images: z.array(storageKey).max(50).default([]),
+    rules: z.array(z.string().trim().min(1).max(500)).max(100).default([]),
+  })
+  .refine((v) => v.ward.provinceCode === v.province.code, { message: "Ward does not belong to the province", path: ["ward"] })
+  .refine(priceRange, { message: "rentPriceFrom must be <= rentPriceTo", path: ["rentPriceTo"] });
+export type ICreatePropertyPayload = z.infer<typeof createPropertyPayloadSchema>;
+
+export interface ICreatePropertyCommand extends ICreatePropertyPayload {
+  actor: IActor;
+}
+export const toCreatePropertyCommand = (payload: ICreatePropertyPayload, actor: IActor): ICreatePropertyCommand => ({
+  ...payload,
+  actor,
+});
+
+// ── responses ───────────────────────────────────────────────────────────────────────
+export interface IPropertySummaryResponse {
+  id: string;
+  name: string;
+  category: PropertyCategory;
+  street: string;
+  province: IProvince;
+  ward: IWard;
+  rentPriceFrom: number | null;
+  rentPriceTo: number | null;
+  rentNegotiable: boolean;
+  headerImage: string | null;
+  unitCount: number;
+}
+
+/** Public detail: what a prospective tenant may see. */
+export interface IPropertyDetailResponse extends IPropertySummaryResponse {
+  images: string[];
+  rules: string[];
+  units: IUnitResponse[];
+}
+
+/** Admin detail: public detail + management data. */
+export interface IAdminPropertyDetail extends IPropertyDetailResponse {
+  documents: unknown[];
+}
+export interface IAdminPropertyResponse extends IAdminPropertyDetail {
+  role: PropertyRole;
+}
+export interface IAdminPropertySummaryResponse extends IPropertySummaryResponse {
+  role: PropertyRole;
+}
+
+export type IPropertySearchResponse = IPaginated<IPropertySummaryResponse>;
+export type IAdminPropertyListResponse = IPaginated<IAdminPropertySummaryResponse>;
