@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
-import { idSchema, isoDateSchema, itemConditionSchema, nonEmptyPatch, phoneSchema, vndSchema, type ItemCondition, type ServiceUsageBase } from "@/server/shared/schema";
+import { idSchema, isoDateSchema, nonEmptyPatch, phoneSchema, vndSchema, type ItemCondition, type ServiceUsageBase } from "@/server/shared/schema";
 import type { IRentVersion, LeaseStatus } from "../lease/lease.schema";
+import { createHandoverPayloadSchema } from "../inventory/inventory.schema";
 
 const thisYear = new Date().getFullYear();
 const yearOfBirth = z.number().int().min(1900).max(thisYear);
@@ -22,9 +23,6 @@ export const createLeasePayloadSchema = z
     startDate: isoDateSchema,
     endDate: isoDateSchema.optional(),
     rent: money,
-    /** Where the first billing period ends (it starts on startDate). Prefilled by the frontend, e.g. the end of that month. */
-    firstPeriodEnd: isoDateSchema,
-    billingCycleDay: z.number().int().min(1).max(28).default(1),
     depositAmount: money.default(0),
     /** Accounts that can log in and see the lease. Unregistered phones get a placeholder account they claim on sign-up. */
     tenants: z.array(z.object({ phoneNumber: phoneSchema, displayName: z.string().trim().min(1).max(100) })).min(1).max(10),
@@ -34,12 +32,11 @@ export const createLeasePayloadSchema = z
       .default([]),
     agreement: z.object({ templateId: idSchema, values: z.record(z.string(), z.unknown()).default({}) }).optional(),
     documents: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
+    /** Inventory items handed over with the lease. More can be added later via /handovers. */
+    handovers: z.array(createHandoverPayloadSchema).max(200).default([]),
   })
-  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "endDate must be on/after startDate", path: ["endDate"] })
-  .refine((v) => v.firstPeriodEnd >= v.startDate && (!v.endDate || v.firstPeriodEnd <= v.endDate), {
-    message: "firstPeriodEnd must be within the lease",
-    path: ["firstPeriodEnd"],
-  });
+  .refine((v) => new Set(v.handovers.map((h) => h.itemId)).size === v.handovers.length, { message: "Each item can only be listed once", path: ["handovers"] })
+  .refine((v) => !v.endDate || v.endDate >= v.startDate, { message: "endDate must be on/after startDate", path: ["endDate"] });
 export type ICreateLeasePayload = z.infer<typeof createLeasePayloadSchema>;
 export interface ICreateLeaseCommand extends ICreateLeasePayload, IPropertyScope {}
 export const toCreateLeaseCommand = (p: ICreateLeasePayload, s: IPropertyScope): ICreateLeaseCommand => ({ ...p, ...s });
@@ -154,23 +151,6 @@ export const toUpdateSubscriptionCommand = (p: IUpdateSubscriptionPayload, s: IP
   subscriptionId,
 });
 
-// ── lease handover (condition at move-in / move-out) ───────────────────────────────
-export const updateLeaseHandoverPayloadSchema = z
-  .object({ condition: itemConditionSchema, quantity: z.number().int().min(0).max(1000), description: z.string().trim().max(1000).nullable() })
-  .partial()
-  .refine(nonEmptyPatch, "Nothing to update");
-export type IUpdateLeaseHandoverPayload = z.infer<typeof updateLeaseHandoverPayloadSchema>;
-export interface IUpdateLeaseHandoverCommand extends IUpdateLeaseHandoverPayload, IPropertyScope {
-  leaseId: string;
-  handoverId: string;
-}
-export const toUpdateLeaseHandoverCommand = (p: IUpdateLeaseHandoverPayload, s: IPropertyScope, leaseId: string, handoverId: string): IUpdateLeaseHandoverCommand => ({
-  ...p,
-  ...s,
-  leaseId,
-  handoverId,
-});
-
 // ── responses ───────────────────────────────────────────────────────────────────────
 export interface ITenantResponse {
   accountId: string;
@@ -211,7 +191,7 @@ export interface ITenancyDetailResponse extends ITenancySummaryResponse {
   agreement: { templateId: string; templateName: string; version: number; values: unknown } | null;
   documents: string[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
-  handovers: { id: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null }[];
+  handovers: { id: string; itemId: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null }[];
   subscriptions: ISubscriptionResponse[];
 }
 export type ITenancyListResponse = IPaginated<ITenancySummaryResponse>;

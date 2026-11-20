@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router";
-import { PageSpinner } from "@/client/ui";
 import { NotFound } from "@/client/spa/not-found";
 import { SpaProviders } from "@/client/spa/providers";
 import { RequireAccount } from "@/client/spa/require-account";
-import { SpaShell } from "@/client/spa/topbar";
+import { BrowserRouter, Route, Routes } from "react-router";
+import { AdminLayout } from "./admin-layout";
 import { AgreementEditorPage } from "./pages/agreement-editor";
 import { AgreementsPage } from "./pages/agreements";
+import { InventoryPage } from "./pages/inventory";
 import { InvoiceDetailPage } from "./pages/invoice-detail";
 import { InvoicesPage } from "./pages/invoices";
 import { LeaseDetailPage } from "./pages/lease-detail";
@@ -19,27 +18,11 @@ import { OverviewPage } from "./pages/overview";
 import { RequestDetailPage } from "./pages/request-detail";
 import { RequestsPage } from "./pages/requests";
 import { ServicesPage } from "./pages/services";
+import { SettingsPage } from "./pages/settings";
 import { TeamPage } from "./pages/team";
 import { UnitsPage } from "./pages/units";
-import { PropertySidebar } from "./property-sidebar";
-import { SettingsPage } from "./pages/settings";
 import { PropertyLayout } from "./property-layout";
-
-/** The property list lives on the dashboard; /admin itself only hosts per-property pages. */
-function ToDashboard() {
-  useEffect(() => { window.location.replace("/dashboard"); }, []);
-  return <PageSpinner />;
-}
-
-function AdminLayout() {
-  return (
-    <SpaShell sideNav={(withAccount) => <PropertySidebar withAccount={withAccount} />}>
-      <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-        <Outlet />
-      </div>
-    </SpaShell>
-  );
-}
+import { ToDashboard } from "./to-dashboard";
 
 export default function AdminApp() {
   return (
@@ -53,6 +36,7 @@ export default function AdminApp() {
                 <Route index element={<OverviewPage />} />
                 <Route path="units" element={<UnitsPage />} />
                 <Route path="services" element={<ServicesPage />} />
+                <Route path="inventory" element={<InventoryPage />} />
                 <Route path="meters" element={<MetersPage />} />
                 <Route path="meters/:meterId" element={<MeterPage />} />
                 <Route path="leases" element={<LeasesPage />} />

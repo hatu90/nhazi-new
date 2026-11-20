@@ -73,6 +73,8 @@ interface IBase {
   readings: IReadingWrite[];
 }
 export interface IStartPlan extends IBase {
+  /** The draft's start date moves: everything that began on `from` (first rent, services, members) follows. */
+  moveStart?: { from: string; to: string };
   period: INewPeriod;
   invoice: IInvoicePlan;
 }
@@ -109,6 +111,10 @@ export interface ILifecycleRepository {
   /** Lease + subscriptions + members + the running period (if any). */
   load(propertyId: string, leaseId: string): Promise<ILifecycleContext | null>;
   findReading(meterId: string, on: string): Promise<{ value: number } | null>;
+  /** The latest reading of the meter on or before `on`, else the nearest one after it. */
+  findLastReading(meterId: string, on: string): Promise<{ value: number; on: string } | null>;
+  /** Does another lease of the unit overlap [start, end]? */
+  hasOverlap(unitId: string, start: string, end: string | null, excludeLeaseId: string): Promise<boolean>;
   /** Name, base and price history of a service of the property. */
   findServicePrices(propertyId: string, serviceId: string): Promise<{ name: string; usageBase: ServiceUsageBase; prices: IPriceVersion[] } | null>;
   /** Rent / service lines of one period and the deposit lines of the lease, with paid + refunded totals. Cancelled invoices excluded. */

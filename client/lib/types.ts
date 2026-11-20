@@ -15,6 +15,7 @@ export type {
   IProvince,
   IWard,
 } from "@/server/modules/property/property.schema";
+export type { IBillingPeriodResponse, IBillingPeriodListResponse } from "@/server/modules/billing/billing.schema";
 export type { IUnitResponse, IUnitListResponse } from "@/server/modules/unit/unit.schema";
 export type {
   ILeaseSummaryResponse,
@@ -52,6 +53,7 @@ export type {
   RequestStatus,
   RequestPriority,
 } from "@/server/modules/request/request.schema";
+export type { IItemResponse, IItemListResponse, IHandoverResponse } from "@/server/modules/inventory/inventory.schema";
 export type { IServiceResponse, IServiceListResponse, IPriceVersion } from "@/server/modules/service/service.schema";
 export type { IMeterResponse, IMeterListResponse } from "@/server/modules/meter/meter.schema";
 export type { IReadingResponse, IReadingListResponse } from "@/server/modules/reading/reading.schema";

@@ -94,8 +94,31 @@ export class PrismaLifecycleRepository implements ILifecycleRepository {
     };
   }
 
+  async hasOverlap(unitId: string, start: string, end: string | null, excludeLeaseId: string) {
+    const s = d(start);
+    const n = await this.db.lease.count({
+      where: {
+        unitId,
+        deletedAt: null,
+        id: { not: excludeLeaseId },
+        ...(end && { startDate: { lte: d(end) } }),
+        OR: [{ terminatedAt: { gte: s } }, { terminatedAt: null, endDate: null }, { terminatedAt: null, endDate: { gte: s } }],
+      },
+    });
+    return n > 0;
+  }
+
   findReading(meterId: string, on: string) {
     return this.billing.findReading(meterId, on);
+  }
+
+  async findLastReading(meterId: string, on: string) {
+    const pick = { readOn: true, readingValue: true } as const;
+    // The latest reading on/before the day; failing that, the nearest one after it.
+    const r =
+      (await this.db.reading.findFirst({ where: { meterId, readOn: { lte: new Date(on) }, deletedAt: null }, orderBy: { readAt: "desc" }, select: pick })) ??
+      (await this.db.reading.findFirst({ where: { meterId, readOn: { gt: new Date(on) }, deletedAt: null }, orderBy: { readAt: "asc" }, select: pick }));
+    return r && { value: num(r.readingValue), on: isoDate(r.readOn) };
   }
 
   async findServicePrices(propertyId: string, serviceId: string) {
@@ -148,6 +171,16 @@ export class PrismaLifecycleRepository implements ILifecycleRepository {
           await insertReadings(tx, plan.propertyId, plan.actor.accountId, plan.readings);
           const started = await tx.lease.updateMany({ where: { id: plan.leaseId, propertyId: plan.propertyId, deletedAt: null, activatedAt: null }, data: { activatedAt: new Date() } });
           if (started.count === 0) throw new ConflictError("The lease has already started", "LEASE_STARTED");
+          if (plan.moveStart) {
+            const { from, to } = plan.moveStart;
+            const row = await tx.lease.findUniqueOrThrow({ where: { id: plan.leaseId }, select: { prices: true } });
+            const prices = (row.prices as unknown as { effectiveDate: string; amount: number }[]).map((v) => (v.effectiveDate === from ? { ...v, effectiveDate: to } : v));
+            await tx.lease.update({ where: { id: plan.leaseId }, data: { startDate: d(to), prices: prices as never } });
+            await tx.serviceSubscription.updateMany({ where: { leaseId: plan.leaseId, deletedAt: null, startDate: { lt: d(to) } }, data: { startDate: d(to) } });
+            await tx.serviceSubscription.updateMany({ where: { leaseId: plan.leaseId, deletedAt: null, startDate: d(from) }, data: { startDate: d(to) } });
+            await tx.leaseMember.updateMany({ where: { leaseId: plan.leaseId, joinedAt: { lt: d(to) } }, data: { joinedAt: d(to) } });
+            await tx.leaseMember.updateMany({ where: { leaseId: plan.leaseId, joinedAt: d(from) }, data: { joinedAt: d(to) } });
+          }
           const periodId = await createPeriodTx(tx, plan.period);
           const invoiceId = await createInvoiceTx(tx, await toInvoice(tx, plan, plan.invoice, { new: periodId }));
           return { periodId, invoiceId };

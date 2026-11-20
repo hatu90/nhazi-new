@@ -3,7 +3,7 @@ import { ConflictError } from "@/server/shared/errors";
 import type { INewUsage, IOpenContext } from "./billing.repository";
 
 /** Pure planning for a billing period. Reads are injected so callers can overlay readings that are not stored yet. */
-export type IReadingAt = (meterId: string, on: string) => Promise<{ value: number } | null>;
+export type IReadingAt = (meterId: string, on: string) => Promise<{ value: number; on?: string } | null>;
 
 export interface IPlannedUsage extends INewUsage {
   serviceName: string;
@@ -12,6 +12,10 @@ export interface IPlannedUsage extends INewUsage {
   from: string;
   to: string;
 }
+
+/** The earliest version that comes into force after `on`. */
+const nextPriceVersion = <T extends { effectiveDate: string }>(versions: T[], on: string): T | null =>
+  versions.filter((v) => v.effectiveDate > on).sort((a, b) => (a.effectiveDate < b.effectiveDate ? -1 : 1))[0] ?? null;
 
 const max = (a: string, b: string) => (a > b ? a : b);
 const min = (a: string, b: string) => (a < b ? a : b);
@@ -29,7 +33,8 @@ export async function planUsages(ctx: IOpenContext, start: string, end: string, 
   const out: IPlannedUsage[] = [];
   for (const sub of ctx.subscriptions) {
     if (sub.startDate > end || (sub.endDate && sub.endDate < start)) continue; // not live in this period
-    const price = resolvePriceVersion(sub.service.prices, start);
+    // No price in force on the first day: take the very next one that comes into force.
+    const price = resolvePriceVersion(sub.service.prices, start) ?? nextPriceVersion(sub.service.prices, start);
     if (!price) throw new ConflictError(`${sub.service.name} has no price in force on ${start}`, "PRICE_NOT_IN_FORCE");
     const from = max(start, sub.startDate);
     const to = sub.endDate ? min(end, sub.endDate) : end;
@@ -37,7 +42,7 @@ export async function planUsages(ctx: IOpenContext, start: string, end: string, 
     if (sub.service.usageBase === "meter") {
       const opening = sub.meterId ? await readingAt(sub.meterId, from) : null;
       if (!sub.meterId || !opening) throw new ConflictError(`${sub.service.name} needs a meter reading on ${from}`, "MISSING_READING");
-      out.push({ ...base, opening: { meterId: sub.meterId, on: from }, quantity: null });
+      out.push({ ...base, opening: { meterId: sub.meterId, on: opening.on ?? from }, quantity: null });
       continue;
     }
     const quantity = sub.service.usageBase === "device" ? sub.quantity : sub.service.usageBase === "member" ? headcountOn(ctx.members, from) : 1;

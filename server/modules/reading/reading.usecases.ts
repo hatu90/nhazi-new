@@ -22,7 +22,7 @@ export class ListReadingsUseCase extends Base implements IUseCase<IPropertyScope
   }
 }
 
-/** Rule: a meter never runs backwards over time (readings are monotonic by date). */
+/** Rule: a meter never runs backwards over time (readings are monotonic by time). */
 export class CreateReadingUseCase extends Base implements IUseCase<ICreateReadingCommand, IReadingResponse> {
   async execute(c: ICreateReadingCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.field);
@@ -30,12 +30,12 @@ export class CreateReadingUseCase extends Base implements IUseCase<ICreateReadin
     if (meter.removedAt && c.readOn > meter.removedAt) {
       throw new ValidationError("The meter was removed before this date", { fieldErrors: { readOn: [`Meter removed on ${meter.removedAt}`] } });
     }
-    const { prev, next } = await this.readings.neighbours(c.meterId, c.readOn);
+    const { prev, next } = await this.readings.neighbours(c.meterId, c.readAt);
     if (prev && c.value < prev.value) {
-      throw new ValidationError("Reading is lower than the previous one", { fieldErrors: { value: [`Must be >= ${prev.value} (${prev.readOn})`] } });
+      throw new ValidationError("Reading is lower than the previous one", { fieldErrors: { value: [`Must be >= ${prev.value} (${prev.readAt})`] } });
     }
     if (next && c.value > next.value) {
-      throw new ValidationError("Reading is higher than the next one", { fieldErrors: { value: [`Must be <= ${next.value} (${next.readOn})`] } });
+      throw new ValidationError("Reading is higher than the next one", { fieldErrors: { value: [`Must be <= ${next.value} (${next.readAt})`] } });
     }
     return this.readings.create(c);
   }

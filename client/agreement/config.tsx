@@ -1,68 +1,13 @@
 "use client";
 
-import { DropZone, type Config, type Data } from "@puckeditor/core";
-import { createContext, useContext, type CSSProperties } from "react";
+import { DropZone, type Config } from "@puckeditor/core";
+import { Content } from "./content";
+import { TextBlock } from "./text-block";
 import "./document.css";
-import { fillText } from "./vars";
-
-/** Values for {{placeholders}} in Text blocks. Empty in the editor, which shows the raw {{keys}}. */
-export const AgreementVars = createContext<Record<string, string>>({});
-export const useFill = () => {
-  const vars = useContext(AgreementVars);
-  return (text: string) => fillText(text, vars);
-};
-
-export type TextProps = { text: string; weight: "normal" | "semibold" | "bold"; align: "start" | "center" | "end"; fontSize: number; lineHeight: number };
-export type TextInputProps = {
-  name: string;
-  label: string;
-  unit?: string;
-  inputType: "text" | "textarea";
-  labelPosition: "top" | "bottom" | "left" | "right";
-  defaultValue: string;
-  fontSize: number;
-  lineHeight: number;
-  placeholder?: string;
-  rows?: number;
-};
-export type ContentProps = { paddingTop: number; paddingRight: number; paddingBottom: number; paddingLeft: number };
-export type Components = {
-  Content: ContentProps;
-  Text: TextProps;
-  TextInput: TextInputProps;
-  Divider: { thickness: number };
-  Spacer: { height: number };
-  Grid: { content?: never };
-  GridItem: { columns: number; rows: number };
-};
+import { FieldFrame } from "./field-frame";
+import { AgreementDocument, Components, ContentProps, TemplatePage, TextInputProps, TextProps } from "./types";
 
 export const DEFAULT_PAGE_PROPS: ContentProps = { paddingTop: 12, paddingRight: 12, paddingBottom: 12, paddingLeft: 12 };
-
-/** One A4 portrait sheet. Add several pages to the document for more room. */
-function Content({ paddingTop, paddingRight, paddingBottom, paddingLeft }: ContentProps) {
-  return (
-    <section className="a4-page" style={{ padding: `${paddingTop}mm ${paddingRight}mm ${paddingBottom}mm ${paddingLeft}mm` }}>
-      <DropZone zone="content" disallow={["Content"]} />
-    </section>
-  );
-}
-
-const weightOf = { normal: 400, semibold: 600, bold: 700 } as const;
-
-/** Layout of a TextInput: label next to / above / below the control. Shared by editor, form and result. */
-export function FieldFrame({ label, labelPosition, fontSize, lineHeight, children }: Pick<TextInputProps, "label" | "labelPosition" | "fontSize" | "lineHeight"> & { children: React.ReactNode }) {
-  const horizontal = labelPosition === "left" || labelPosition === "right";
-  const labelFirst = labelPosition === "top" || labelPosition === "left";
-  const labelEl = label ? <span style={{ fontSize, lineHeight }}>{label}</span> : null;
-  const style: CSSProperties = { display: "flex", flexDirection: horizontal ? "row" : "column", alignItems: horizontal ? "center" : "stretch", gap: 4, minWidth: 0 };
-  return (
-    <div style={style}>
-      {labelFirst && labelEl}
-      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
-      {!labelFirst && labelEl}
-    </div>
-  );
-}
 
 export const textInputFields = {
   name: { type: "text", label: "Field name (unique)" },
@@ -102,10 +47,7 @@ export const config: Config<Components> = {
         lineHeight: { type: "number", label: "Line height", min: 0.8, max: 3, step: 0.1 },
       },
       defaultProps: { text: "Text", weight: "normal", align: "start", fontSize: 14, lineHeight: 1.5 },
-      render: function TextBlock({ text, weight, align, fontSize, lineHeight }) {
-        const fill = useFill();
-        return <p style={{ margin: 0, whiteSpace: "pre-wrap", fontWeight: weightOf[weight], textAlign: align, fontSize, lineHeight }}>{fill(text)}</p>;
-      },
+      render: TextBlock,
     },
     TextInput: {
       label: "Text input (form field)",
@@ -142,10 +84,6 @@ export const config: Config<Components> = {
     },
   },
 };
-
-export type TemplatePage = Data<Components>;
-/** What the API stores per version: one or more A4 pages (legacy single-page data is accepted too). */
-export type AgreementDocument = { pages: TemplatePage[] };
 
 export const emptyPage = (): TemplatePage => ({ content: [{ type: "Content", props: { id: `page-${crypto.randomUUID().slice(0, 8)}`, ...DEFAULT_PAGE_PROPS } }], root: { props: {} }, zones: {} }) as TemplatePage;
 

@@ -1,0 +1,11 @@
+{
+  "Common": {
+    "language": "Ngôn ngữ",
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "dashboard": "Bảng điều khiển",
+    "settings": "Cài đặt",
+    "about": "Giới thiệu",
+    "terms": "Điều khoản"
+  }
+}

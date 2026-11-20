@@ -1,9 +1,15 @@
 import { getContainer } from "@/server/container";
-import { adminRoute, ok, parseBody, parseParams } from "@/server/http/route";
-import { toUpdateLeaseHandoverCommand, updateLeaseHandoverPayloadSchema } from "@/server/modules/tenancy/tenancy.schema";
+import { adminRoute, noContent, ok, parseBody, parseParams } from "@/server/http/route";
+import { toUpdateHandoverCommand, updateHandoverPayloadSchema } from "@/server/modules/inventory/inventory.schema";
 import { idParamsSchema } from "@/server/shared/schema";
 
+const ids = idParamsSchema("leaseId", "handoverId");
 export const PATCH = adminRoute(async ({ request, params, scope }) => {
-  const { leaseId, handoverId } = parseParams(idParamsSchema("leaseId", "handoverId"), params);
-  return ok(await getContainer().updateLeaseHandover.execute(toUpdateLeaseHandoverCommand(await parseBody(updateLeaseHandoverPayloadSchema, request), scope, leaseId, handoverId)));
+  const { leaseId, handoverId } = parseParams(ids, params);
+  return ok(await getContainer().updateHandover.execute(toUpdateHandoverCommand(await parseBody(updateHandoverPayloadSchema, request), scope, leaseId, handoverId)));
+});
+
+export const DELETE = adminRoute(async ({ params, scope }) => {
+  await getContainer().deleteHandover.execute({ ...scope, ...parseParams(ids, params) });
+  return noContent();
 });

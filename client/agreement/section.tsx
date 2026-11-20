@@ -1,13 +1,14 @@
 "use client";
 
+import { Section } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useMemo, useState, type ReactNode } from "react";
-import { ErrorBox, Section } from "@/client/ui";
 import { toPages } from "./config";
+import { FillForm } from "./fill-form";
 import { withDefaults } from "./metadata";
-import { AgreementFormFields, AgreementResult, hasFields, useAgreementForm } from "./render";
+import { AgreementResult, hasFields } from "./render";
 import { buildVars, type LeaseFacts } from "./vars";
 
 /**
@@ -56,36 +57,5 @@ export function AgreementSection({
         )}
       </VStack>
     </Section>
-  );
-}
-
-function FillForm({ content, vars, values, onSave, onDone }: { content: unknown; vars: Record<string, string>; values: unknown; onSave: (v: Record<string, string>) => Promise<unknown>; onDone: () => void }) {
-  const form = useAgreementForm(content, values);
-  const [error, setError] = useState<Error | null>(null);
-  const [busy, setBusy] = useState(false);
-  return (
-    <form
-      onSubmit={form.handleSubmit(async (v) => {
-        setBusy(true);
-        setError(null);
-        try {
-          await onSave(v);
-          onDone();
-        } catch (e) {
-          setError(e as Error);
-        } finally {
-          setBusy(false);
-        }
-      })}
-    >
-      <VStack gap={3}>
-        {error && <ErrorBox error={error} />}
-        <AgreementFormFields form={form} data={content} vars={vars} />
-        <HStack gap={2} justify="end">
-          <Button label="Cancel" variant="secondary" onClick={onDone} />
-          <Button label="Save" type="submit" isLoading={busy} />
-        </HStack>
-      </VStack>
-    </form>
   );
 }

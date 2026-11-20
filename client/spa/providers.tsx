@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { AuthProvider } from "@/client/auth/auth-provider";
 import { ApiError } from "@/client/lib/api";
-import { SpaLinks } from "./router-link";
+import { SpaLinks } from "./spa-links";
 
 export function SpaProviders({ children }: { children: ReactNode }) {
   const [client] = useState(

@@ -3,6 +3,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/e
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import { resolveLeaseStatus, resolveRent, today } from "../lease/lease.rules";
+import type { IInvitationRepository } from "../invitation/invitation.repository";
 import type { ITenancyRepository } from "./tenancy.repository";
 import type {
   IAddLeaseMemberCommand,
@@ -17,7 +18,6 @@ import type {
   ITenancyListResponse,
   ITerminateLeaseCommand,
   IUpdateLeaseCommand,
-  IUpdateLeaseHandoverCommand,
   IUpdateLeaseMemberCommand,
   IUpdateSubscriptionCommand,
 } from "./tenancy.schema";
@@ -48,6 +48,19 @@ abstract class Base {
   }
 }
 
+/**
+ * A person added to a lease with a phone number is invited to it, so they can sign in and see the lease.
+ * Someone who is already a tenant or already has an open invitation is skipped, not an error.
+ */
+const inviteToLease = async (invitations: IInvitationRepository, s: IPropertyScope & Lease, phoneNumber: string | undefined) => {
+  if (!phoneNumber || (await invitations.isTenant(s.leaseId, phoneNumber))) return;
+  try {
+    await invitations.create({ kind: "lease", propertyId: s.propertyId, leaseId: s.leaseId, phoneNumber, role: null, invitedBy: s.actor.accountId });
+  } catch (e) {
+    if (!(e instanceof ConflictError)) throw e;
+  }
+};
+
 export class ListTenanciesUseCase extends Base implements IUseCase<IPropertyScope & { query: ITenancyListQuery }, ITenancyListResponse> {
   async execute({ actor, propertyId, query }: IPropertyScope & { query: ITenancyListQuery }) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.read);
@@ -68,12 +81,16 @@ export class GetTenancyUseCase extends Base implements IUseCase<IPropertyScope &
 }
 
 export class CreateTenancyUseCase extends Base implements IUseCase<ICreateLeaseCommand, ITenancyDetailResponse> {
+  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository) {
+    super(leases, policy);
+  }
   async execute(c: ICreateLeaseCommand) {
     await this.manage(c);
     if (!(await this.leases.unitExists(c.propertyId, c.unitId))) throw new NotFoundError("Unit");
     if (await this.leases.hasOverlap(c.unitId, c.startDate, c.endDate ?? null)) {
       throw new ConflictError("The unit already has a lease in this period", "LEASE_OVERLAP");
     }
+    if (c.handovers.length && (await this.leases.countItems(c.propertyId, c.handovers.map((h) => h.itemId))) !== c.handovers.length) throw new NotFoundError("Item");
     let templateVersion: number | null = null;
     if (c.agreement) {
       const t = await this.leases.findTemplate(c.propertyId, c.agreement.templateId);
@@ -81,6 +98,7 @@ export class CreateTenancyUseCase extends Base implements IUseCase<ICreateLeaseC
       templateVersion = t.currentVersion; // the version in use at this moment is pinned to the lease
     }
     const leaseId = await this.leases.create(c, templateVersion);
+    for (const m of c.members) await inviteToLease(this.invitations, { actor: c.actor, propertyId: c.propertyId, leaseId }, m.phoneNumber);
     return this.detail(c.propertyId, leaseId);
   }
 }
@@ -163,12 +181,16 @@ export class RemoveTenantUseCase extends Base implements IUseCase<IPropertyScope
 }
 
 export class AddLeaseMemberUseCase extends Base implements IUseCase<IAddLeaseMemberCommand, ITenancyDetailResponse> {
+  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository) {
+    super(leases, policy);
+  }
   async execute(c: IAddLeaseMemberCommand) {
     await this.manage(c);
     const core = await this.core(c.propertyId, c.leaseId);
     const joinedAt = c.joinedAt ?? (today() < core.startDate ? core.startDate : today());
     if (joinedAt < core.startDate) throw invalid("Invalid join date", "joinedAt", "Must be on/after the lease start");
     await this.leases.addMember(c, joinedAt);
+    await inviteToLease(this.invitations, c, c.phoneNumber);
     return this.detail(c.propertyId, c.leaseId);
   }
 }
@@ -242,14 +264,5 @@ export class DeleteSubscriptionUseCase extends Base implements IUseCase<IPropert
     await this.manage({ actor, propertyId });
     await this.core(propertyId, leaseId);
     if (!(await this.leases.softDeleteSubscription(leaseId, subscriptionId))) throw new NotFoundError("Subscription");
-  }
-}
-
-export class UpdateLeaseHandoverUseCase extends Base implements IUseCase<IUpdateLeaseHandoverCommand, ITenancyDetailResponse> {
-  async execute(c: IUpdateLeaseHandoverCommand) {
-    await this.manage(c);
-    await this.core(c.propertyId, c.leaseId);
-    if (!(await this.leases.updateHandover(c))) throw new NotFoundError("Handover");
-    return this.detail(c.propertyId, c.leaseId);
   }
 }

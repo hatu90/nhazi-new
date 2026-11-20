@@ -33,7 +33,7 @@ import { PrismaReadingRepository } from "./infrastructure/prisma/repositories/re
 import { PrismaInventoryRepository } from "./infrastructure/prisma/repositories/inventory.repository";
 import { PrismaAgreementRepository } from "./infrastructure/prisma/repositories/agreement.repository";
 import { PrismaMemberRepository } from "./infrastructure/prisma/repositories/member.repository";
-import { AddLeaseMemberUseCase, DeleteDraftTenancyUseCase, AddRentVersionUseCase, AddTenantUseCase, CreateSubscriptionUseCase, CreateTenancyUseCase, DeleteSubscriptionUseCase, GetTenancyUseCase, ListTenanciesUseCase, RemoveTenantUseCase, UpdateLeaseHandoverUseCase, UpdateLeaseMemberUseCase, UpdateSubscriptionUseCase, UpdateTenancyUseCase } from "./modules/tenancy/tenancy.usecases";
+import { AddLeaseMemberUseCase, DeleteDraftTenancyUseCase, AddRentVersionUseCase, AddTenantUseCase, CreateSubscriptionUseCase, CreateTenancyUseCase, DeleteSubscriptionUseCase, GetTenancyUseCase, ListTenanciesUseCase, RemoveTenantUseCase, UpdateLeaseMemberUseCase, UpdateSubscriptionUseCase, UpdateTenancyUseCase } from "./modules/tenancy/tenancy.usecases";
 import { PrismaTenancyRepository } from "./infrastructure/prisma/repositories/tenancy.repository";
 import { CancelInvoiceUseCase, CreateInvoiceUseCase, DeletePaymentUseCase, GetInvoiceUseCase, ListInvoicesUseCase, RecordPaymentUseCase, ReportPaymentUseCase, ReviewPaymentUseCase } from "./modules/invoice/invoice.usecases";
 import { CancelRefundUseCase, CreateRefundUseCase, GetRefundUseCase, ListRefundsUseCase, PayRefundUseCase } from "./modules/refund/refund.usecases";
@@ -147,18 +147,17 @@ function build() {
     // leases (admin side)
     listTenancies: new ListTenanciesUseCase(tenancies, policy),
     getTenancy: new GetTenancyUseCase(tenancies, policy),
-    createTenancy: new CreateTenancyUseCase(tenancies, policy),
+    createTenancy: new CreateTenancyUseCase(tenancies, policy, invitations),
     updateTenancy: new UpdateTenancyUseCase(tenancies, policy),
     deleteDraftTenancy: new DeleteDraftTenancyUseCase(tenancies, policy),
     addRentVersion: new AddRentVersionUseCase(tenancies, policy),
     addTenant: new AddTenantUseCase(tenancies, policy),
     removeTenant: new RemoveTenantUseCase(tenancies, policy),
-    addLeaseMember: new AddLeaseMemberUseCase(tenancies, policy),
+    addLeaseMember: new AddLeaseMemberUseCase(tenancies, policy, invitations),
     updateLeaseMember: new UpdateLeaseMemberUseCase(tenancies, policy),
     createSubscription: subscriptionRules,
     updateSubscription: new UpdateSubscriptionUseCase(tenancies, policy),
     deleteSubscription: new DeleteSubscriptionUseCase(tenancies, policy),
-    updateLeaseHandover: new UpdateLeaseHandoverUseCase(tenancies, policy),
     // billing (read) + invoices + payments + refunds
     listBillingPeriods: new ListBillingPeriodsUseCase(billing, policy),
     getBillingPeriod: new GetBillingPeriodUseCase(billing, policy),

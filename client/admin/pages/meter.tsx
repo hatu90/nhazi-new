@@ -1,16 +1,15 @@
 "use client";
 
+import { formatDate, formatDateTime } from "@/client/lib/format";
+import { useGet } from "@/client/lib/hooks";
+import type { IMeterResponse, IReadingListResponse, IReadingResponse } from "@/client/lib/types";
+import { DataTable, DefList, Empty, ErrorBox, Modal, PageSpinner, Section } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
-import { formatDate, formatDateTime, todayIso } from "@/client/lib/format";
-import { useGet, useSend } from "@/client/lib/hooks";
-import type { IMeterResponse, IReadingListResponse, IReadingResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, PageSpinner, Section } from "@/client/ui";
-import { FDate, FNumber, FormBody, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
+import { ReadingForm } from "./reading-form";
 
 export function MeterPage() {
   const { meterId = "" } = useParams();
@@ -35,25 +34,12 @@ export function MeterPage() {
         paging={setPage}
         empty={<Empty title="No readings yet" />}
         columns={[
-          { key: "date", header: "Date", render: (r) => formatDate(r.readOn) },
+          { key: "date", header: "Read at", render: (r) => formatDateTime(r.readAt) },
           { key: "value", header: "Value", render: (r) => r.value },
           { key: "at", header: "Recorded", render: (r) => formatDateTime(r.createdAt) },
         ]}
       />
       <Modal open={adding} onClose={() => setAdding(false)} title="Record a reading">{adding && <ReadingForm meterId={meterId} onDone={() => setAdding(false)} />}</Modal>
     </VStack>
-  );
-}
-
-function ReadingForm({ meterId, onDone }: { meterId: string; onDone: () => void }) {
-  const { apiPath } = useProperty();
-  const save = useSend<object>("POST", apiPath(`/meters/${meterId}/readings`), [apiPath(`/meters/${meterId}/readings`)]);
-  const form = useForm<{ readOn: string; value: string }>({ defaultValues: { readOn: todayIso(), value: "" } });
-  const submit = useSubmit(form, save, (v) => ({ readOn: v.readOn, value: Number(v.value) }), onDone);
-  return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Save reading" onCancel={onDone}>
-      <FDate control={form.control} name="readOn" label="Read on" required width="100%" />
-      <FNumber control={form.control} name="value" label="Value" required width="100%" />
-    </FormBody>
   );
 }

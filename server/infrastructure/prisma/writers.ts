@@ -14,22 +14,26 @@ const d = (v: string) => new Date(v);
 
 export interface IReadingWrite {
   meterId: string;
+  /** The day the reading belongs to (the date of `at` when given). */
   on: string;
   value: number;
+  /** When the meter was read (ISO timestamp). Defaults to the start of `on`. */
+  at?: string;
 }
 
-/** Same rules as POST /meters/:id/readings: monotonic over time. A reading already there with the same value is fine (idempotent). */
+/** Same rules as POST /meters/:id/readings: monotonic over time (by timestamp). A reading already there with the same value is fine (idempotent). */
 export async function insertReadings(tx: Tx, propertyId: string, readBy: string, readings: IReadingWrite[]) {
   for (const r of readings) {
-    const on = d(r.on);
-    const same = await tx.reading.findFirst({ where: { meterId: r.meterId, readOn: on, deletedAt: null }, select: { readingValue: true } });
+    const at = r.at ? new Date(r.at) : d(r.on);
+    const on = d(at.toISOString().slice(0, 10));
+    const same = await tx.reading.findFirst({ where: { meterId: r.meterId, readAt: at, deletedAt: null }, select: { readingValue: true } });
     if (same) {
-      if (num(same.readingValue) !== r.value) throw new ConflictError(`A different reading (${num(same.readingValue)}) already exists on ${r.on}`, "READING_EXISTS");
+      if (num(same.readingValue) !== r.value) throw new ConflictError(`A different reading (${num(same.readingValue)}) already exists at ${at.toISOString()}`, "READING_EXISTS");
       continue;
     }
     const [prev, next] = await Promise.all([
-      tx.reading.findFirst({ where: { meterId: r.meterId, readOn: { lt: on }, deletedAt: null }, orderBy: { readOn: "desc" }, select: { readingValue: true, readOn: true } }),
-      tx.reading.findFirst({ where: { meterId: r.meterId, readOn: { gt: on }, deletedAt: null }, orderBy: { readOn: "asc" }, select: { readingValue: true, readOn: true } }),
+      tx.reading.findFirst({ where: { meterId: r.meterId, readAt: { lt: at }, deletedAt: null }, orderBy: { readAt: "desc" }, select: { readingValue: true } }),
+      tx.reading.findFirst({ where: { meterId: r.meterId, readAt: { gt: at }, deletedAt: null }, orderBy: { readAt: "asc" }, select: { readingValue: true } }),
     ]);
     if (prev && r.value < num(prev.readingValue)) {
       throw new ValidationError("Reading is lower than the previous one", { fieldErrors: { readings: [`Meter ${r.meterId}: must be >= ${num(prev.readingValue)}`] } });
@@ -37,12 +41,12 @@ export async function insertReadings(tx: Tx, propertyId: string, readBy: string,
     if (next && r.value > num(next.readingValue)) {
       throw new ValidationError("Reading is higher than the next one", { fieldErrors: { readings: [`Meter ${r.meterId}: must be <= ${num(next.readingValue)}`] } });
     }
-    await tx.reading.create({ data: { propertyId, meterId: r.meterId, readOn: on, readingValue: r.value, readBy } });
+    await tx.reading.create({ data: { propertyId, meterId: r.meterId, readOn: on, readAt: at, readingValue: r.value, readBy } });
   }
 }
 
 export async function readingIdAt(tx: Tx, meterId: string, on: string): Promise<string> {
-  const r = await tx.reading.findFirst({ where: { meterId, readOn: d(on), deletedAt: null }, select: { id: true } });
+  const r = await tx.reading.findFirst({ where: { meterId, readOn: d(on), deletedAt: null }, orderBy: { readAt: "desc" }, select: { id: true } });
   if (!r) throw new ConflictError(`Missing meter reading on ${on}`, "MISSING_READING");
   return r.id;
 }

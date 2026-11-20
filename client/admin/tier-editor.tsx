@@ -5,6 +5,8 @@ import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useFieldArray, type Control, type FieldValues, type Path } from "react-hook-form";
 import { FNumber } from "@/client/ui/rhf";
+import { IconButton } from '@astryxdesign/core/IconButton'
+import { Minus, Plus } from "lucide-react";
 
 export interface TierRow {
   upTo: string;
@@ -28,12 +30,15 @@ export function TierFields<T extends FieldValues>({ control, name, multi, unit }
             <HStack gap={2} align="end">
               {multi && !last && <FNumber control={control} name={`${name}.${i}.upTo` as Path<T>} label={`Tier ${i + 1} up to (${unit})`} required width="100%" />}
               <FNumber control={control} name={`${name}.${i}.rate` as Path<T>} label={multi ? `Rate (₫ per ${unit})` : `Price (₫ per ${unit})`} required width="100%" />
-              {multi && fields.length > 1 && <Button label={`Remove tier ${i + 1}`} variant="ghost" size="sm" isIconOnly icon="✕" onClick={() => remove(i)} />}
+              {multi && fields.length > 1 && (!last) && <IconButton label={`Remove tier ${i + 1}`} variant="ghost" icon={<Minus />} onClick={() => remove(i)} />}
+              {multi && last && (
+                <IconButton icon={<Plus />} label="Add tier" onClick={() => append(emptyTier() as never)} />
+              )}
             </HStack>
           </VStack>
         );
       })}
-      {multi && <HStack><Button label="Add tier" size="sm" variant="secondary" onClick={() => append(emptyTier() as never)} /></HStack>}
+
     </VStack>
   );
 }

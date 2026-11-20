@@ -2,7 +2,7 @@
 
 import { SideNav, SideNavItem, SideNavSection } from "@astryxdesign/core/SideNav";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { AccountSection } from "@/client/spa/topbar";
+import { AccountSection } from "@/client/spa/account-section";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyListResponse } from "@/client/lib/types";
 
@@ -11,6 +11,7 @@ const items = [
   { id: "units", label: "Units" },
   { id: "leases", label: "Leases" },
   { id: "services", label: "Services" },
+  { id: "inventory", label: "Inventory" },
   { id: "meters", label: "Meters" },
   { id: "requests", label: "Requests" },
   { id: "invoices", label: "Invoices" },

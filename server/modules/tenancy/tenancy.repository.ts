@@ -13,7 +13,6 @@ import type {
   ITenancySummaryRecord,
   ITerminateLeaseCommand,
   IUpdateLeaseCommand,
-  IUpdateLeaseHandoverCommand,
   IUpdateLeaseMemberCommand,
   IUpdateSubscriptionCommand,
 } from "./tenancy.schema";
@@ -41,9 +40,11 @@ export interface ITenancyRepository {
   unitExists(propertyId: string, unitId: string): Promise<boolean>;
   /** Another live lease of the unit overlapping [start, end] (end null = open-ended). */
   hasOverlap(unitId: string, start: string, end: string | null, excludeLeaseId?: string): Promise<boolean>;
+  /** How many of these catalogue items are live in the property. */
+  countItems(propertyId: string, itemIds: string[]): Promise<number>;
   findTemplate(propertyId: string, templateId: string): Promise<{ id: string; currentVersion: number } | null>;
 
-  /** One transaction: tenants (accounts found/created by phone), members, handover snapshot of the unit, the lease. Returns its id. */
+  /** One transaction: tenants (accounts found/created by phone), members, handover items, the lease. Returns its id. */
   create(command: ICreateLeaseCommand, templateVersion: number | null): Promise<string>;
   update(command: IUpdateLeaseCommand): Promise<void>;
   /** Draft leases only (nothing was ever billed). */
@@ -70,5 +71,4 @@ export interface ITenancyRepository {
   updateSubscription(command: IUpdateSubscriptionCommand): Promise<ISubscriptionResponse>;
   softDeleteSubscription(leaseId: string, subscriptionId: string): Promise<boolean>;
 
-  updateHandover(command: IUpdateLeaseHandoverCommand): Promise<boolean>;
 }

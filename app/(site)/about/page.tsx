@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <VStack gap={4} maxWidth={640} paddingBlock={10} paddingInline={5} className="mx-auto w-full">
-      <Heading level={1}>About Handly</Heading>
-      <Text color="secondary">Handly is built for landlords and property managers who rent out apartments, houses and offices — and for the tenants who live in them.</Text>
+      <Heading level={1}>About Nhazi</Heading>
+      <Text color="secondary">Nhazi is built for landlords and property managers who rent out apartments, houses and offices — and for the tenants who live in them.</Text>
       <Text color="secondary">
         Owners and their teams set up each property, its units, services and meters, create leases and issue invoices. Tenants are invited by phone number and see
         their own lease, invoices and requests in a dashboard of their own.

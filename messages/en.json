@@ -1,0 +1,11 @@
+{
+  "Common": {
+    "language": "Language",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "about": "About",
+    "terms": "Terms"
+  }
+}

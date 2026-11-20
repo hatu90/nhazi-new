@@ -17,7 +17,7 @@ const toItem = (r: Prisma.InventoryItemGetPayload<object>): IItemResponse => ({ 
 const include = { inventoryItem: { select: { inventoryName: true } } } satisfies Prisma.HandoverInclude;
 const toHandover = (r: Prisma.HandoverGetPayload<{ include: typeof include }>): IHandoverResponse => ({
   id: r.id,
-  unitId: r.unitId,
+  leaseId: r.leaseId,
   itemId: r.itemId,
   itemName: r.inventoryItem.inventoryName,
   quantity: r.quantity,
@@ -70,11 +70,11 @@ export class PrismaInventoryRepository implements IInventoryRepository {
     return (await this.db.inventoryItem.updateMany({ where: { id: itemId, propertyId, deletedAt: null }, data: { deletedAt: new Date() } })).count > 0;
   }
 
-  async unitExists(propertyId: string, unitId: string) {
-    return (await this.db.unit.count({ where: { id: unitId, propertyId, deletedAt: null } })) > 0;
+  async leaseExists(propertyId: string, leaseId: string) {
+    return (await this.db.lease.count({ where: { id: leaseId, propertyId, deletedAt: null } })) > 0;
   }
-  async listHandovers(propertyId: string, unitId: string) {
-    const rows = await this.db.handover.findMany({ where: { propertyId, unitId, deletedAt: null }, include, orderBy: { createdAt: "asc" } });
+  async listHandovers(propertyId: string, leaseId: string) {
+    const rows = await this.db.handover.findMany({ where: { propertyId, leaseId, deletedAt: null }, include, orderBy: { createdAt: "asc" } });
     return rows.map(toHandover);
   }
   createHandover(c: ICreateHandoverCommand) {
@@ -82,16 +82,16 @@ export class PrismaInventoryRepository implements IInventoryRepository {
       async () =>
         toHandover(
           await this.db.handover.create({
-            data: { propertyId: c.propertyId, unitId: c.unitId, itemId: c.itemId, quantity: c.quantity, itemCondition: c.condition, description: c.description },
+            data: { propertyId: c.propertyId, leaseId: c.leaseId, itemId: c.itemId, quantity: c.quantity, itemCondition: c.condition, description: c.description },
             include,
           }),
         ),
-      "This item is already on the unit handover list",
+      "This item is already on the lease handover list",
       "HANDOVER_EXISTS",
     );
   }
   async updateHandover(c: IUpdateHandoverCommand) {
-    const where = { id: c.handoverId, propertyId: c.propertyId, unitId: c.unitId, deletedAt: null };
+    const where = { id: c.handoverId, propertyId: c.propertyId, leaseId: c.leaseId, deletedAt: null };
     if (!(await this.db.handover.count({ where }))) return null;
     const r = await this.db.handover.update({
       where: { id: c.handoverId },
@@ -100,7 +100,7 @@ export class PrismaInventoryRepository implements IInventoryRepository {
     });
     return toHandover(r);
   }
-  async softDeleteHandover(propertyId: string, unitId: string, handoverId: string) {
-    return (await this.db.handover.updateMany({ where: { id: handoverId, propertyId, unitId, deletedAt: null }, data: { deletedAt: new Date() } })).count > 0;
+  async softDeleteHandover(propertyId: string, leaseId: string, handoverId: string) {
+    return (await this.db.handover.updateMany({ where: { id: handoverId, propertyId, leaseId, deletedAt: null }, data: { deletedAt: new Date() } })).count > 0;
   }
 }

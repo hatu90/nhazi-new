@@ -6,6 +6,6 @@ import { createLeasePayloadSchema, tenancyListQuerySchema, toCreateLeaseCommand 
 export const GET = adminRoute(async ({ request, scope }) =>
   ok(await getContainer().listTenancies.execute({ ...scope, query: parseQuery(tenancyListQuerySchema, request) })));
 
-// POST: creates tenants (by phone), members, the unit's handover snapshot and pins the agreement template version
+// POST: creates tenants (by phone), members, handover items and pins the agreement template version
 export const POST = adminRoute(async ({ request, scope }) =>
   created(await getContainer().createTenancy.execute(toCreateLeaseCommand(await parseBody(createLeasePayloadSchema, request), scope))));

@@ -106,7 +106,7 @@ export class PrismaBillingRepository implements IBillingRepository {
   }
 
   async findReading(meterId: string, on: string) {
-    const r = await this.db.reading.findFirst({ where: { meterId, readOn: d(on), deletedAt: null }, select: { id: true, readingValue: true } });
+    const r = await this.db.reading.findFirst({ where: { meterId, readOn: d(on), deletedAt: null }, orderBy: { readAt: "desc" }, select: { id: true, readingValue: true } });
     return r && { id: r.id, value: num(r.readingValue) };
   }
 

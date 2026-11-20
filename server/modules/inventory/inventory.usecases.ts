@@ -17,8 +17,8 @@ import type {
 
 abstract class Base {
   constructor(protected readonly inventory: IInventoryRepository, protected readonly policy: AccessPolicy) {}
-  protected async unit(propertyId: string, unitId: string) {
-    if (!(await this.inventory.unitExists(propertyId, unitId))) throw new NotFoundError("Unit");
+  protected async lease(propertyId: string, leaseId: string) {
+    if (!(await this.inventory.leaseExists(propertyId, leaseId))) throw new NotFoundError("Lease");
   }
 }
 
@@ -52,22 +52,22 @@ export class DeleteItemUseCase extends Base implements IUseCase<IPropertyScope &
   async execute({ actor, propertyId, itemId }: IPropertyScope & { itemId: string }) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.manage);
     if (!(await this.inventory.findItem(propertyId, itemId))) throw new NotFoundError("Item");
-    if (await this.inventory.itemInUse(itemId)) throw new ConflictError("The item is on a unit handover list", "ITEM_IN_USE");
+    if (await this.inventory.itemInUse(itemId)) throw new ConflictError("The item is on a lease handover list", "ITEM_IN_USE");
     await this.inventory.softDeleteItem(propertyId, itemId);
   }
 }
 
-export class ListHandoversUseCase extends Base implements IUseCase<IPropertyScope & { unitId: string }, IHandoverResponse[]> {
-  async execute({ actor, propertyId, unitId }: IPropertyScope & { unitId: string }) {
+export class ListHandoversUseCase extends Base implements IUseCase<IPropertyScope & { leaseId: string }, IHandoverResponse[]> {
+  async execute({ actor, propertyId, leaseId }: IPropertyScope & { leaseId: string }) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.read);
-    await this.unit(propertyId, unitId);
-    return this.inventory.listHandovers(propertyId, unitId);
+    await this.lease(propertyId, leaseId);
+    return this.inventory.listHandovers(propertyId, leaseId);
   }
 }
 export class CreateHandoverUseCase extends Base implements IUseCase<ICreateHandoverCommand, IHandoverResponse> {
   async execute(c: ICreateHandoverCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
-    await this.unit(c.propertyId, c.unitId);
+    await this.lease(c.propertyId, c.leaseId);
     if (!(await this.inventory.findItem(c.propertyId, c.itemId))) throw new NotFoundError("Item");
     return this.inventory.createHandover(c);
   }
@@ -80,9 +80,9 @@ export class UpdateHandoverUseCase extends Base implements IUseCase<IUpdateHando
     return h;
   }
 }
-export class DeleteHandoverUseCase extends Base implements IUseCase<IPropertyScope & { unitId: string; handoverId: string }, void> {
-  async execute({ actor, propertyId, unitId, handoverId }: IPropertyScope & { unitId: string; handoverId: string }) {
+export class DeleteHandoverUseCase extends Base implements IUseCase<IPropertyScope & { leaseId: string; handoverId: string }, void> {
+  async execute({ actor, propertyId, leaseId, handoverId }: IPropertyScope & { leaseId: string; handoverId: string }) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.manage);
-    if (!(await this.inventory.softDeleteHandover(propertyId, unitId, handoverId))) throw new NotFoundError("Handover");
+    if (!(await this.inventory.softDeleteHandover(propertyId, leaseId, handoverId))) throw new NotFoundError("Handover");
   }
 }

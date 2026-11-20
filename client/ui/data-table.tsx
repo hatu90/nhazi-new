@@ -1,14 +1,14 @@
 "use client";
 
 import { Card } from "@astryxdesign/core/Card";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Pagination } from "@astryxdesign/core/Pagination";
+import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Table, type TableColumn } from "@astryxdesign/core/Table";
 import { Text } from "@astryxdesign/core/Text";
 import type { ReactNode } from "react";
 import { ErrorBox } from "./error-box";
+import { MobileRow } from "./mobile-row";
 import { PageSpinner } from "./page-spinner";
-import { Raised } from "./raised";
 import { useInSection } from "./section-context";
 import { useIsMobile } from "./use-is-mobile";
 
@@ -75,8 +75,4 @@ export function DataTable<T extends { id: string }>({
       {pager}
     </Card>
   );
-}
-
-function MobileRow({ nested, children }: { nested: boolean; children: ReactNode }) {
-  return nested ? <Raised>{children}</Raised> : <Card padding={3}>{children}</Card>;
 }

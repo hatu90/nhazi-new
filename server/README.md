@@ -26,19 +26,19 @@ Dependency direction (never reversed, so no cycles):
 `/api/me`  profile · subscription
 `/api/lease/:leaseId`  tenant: lease, invoices (+detail), requests (create, list, cancel, comment)
 `/api/admin/properties` (+ `/:propertyId/...`, role-checked per call)
-- structure: units · handovers (default list per unit) · inventory-items · services (+ price versions) · meters · readings
+- structure: units · handovers (items handed over per lease) · inventory-items · services (+ price versions) · meters · readings
 - team: members (owner only) · agreement-templates (+ append-only versions)
 - invitations: admin invites a phone to the team (owner only, with a role) or to a lease (as tenant); `/api/me/invitations` lists what was sent to my phone, accept / decline; admin can revoke. The account's phone number is the only credential, there is no token. Accepting adds `account_properties` / `account_leases` (an existing one is kept). Open invitations are unique per phone and target.
 - billing calculator: `lib/billing/pricing.ts` is pure (no imports; the frontend runs the same file for its live calculator). Price = tiers over usage: plain (1 tier) or step (cost = Σ usage in tier × rate). Proration is a *suggestion* (`suggestAmount`: billing months from the period start's day-of-month; `prorate` by days for credits / refunds). The server never recomputes an amount the admin typed.
 - lease lifecycle (one atomic step each, every suggested line overridable by key, see `lifecycle.schema.ts`):
-  1. `POST …/leases` writes a **draft** (unit, start, rent, deposit, `firstPeriodEnd`, tenants); members / subscriptions / handovers / readings are added to it; `DELETE` throws a draft away; the tenant does not see it.
+  1. `POST …/leases` writes a **draft** (unit, start, rent, deposit, tenants) and issues a deposit invoice; the first period end is chosen when the lease starts; members / subscriptions / handovers / readings are added to it; `DELETE` throws a draft away; the tenant does not see it.
   2. `POST …/leases/:id/start` opens the first period (usages with frozen prices) + the `move_in` invoice (deposit, rent, non-meter services).
   3. `POST …/billing-periods/:id/close` closes at `endDate` (mid-term allowed) with closing `readings`; with `next` it opens the next period + `transition` invoice (next rent, services, this period's meter usage, credit for unused advance days).
   4. `POST …/leases/:id/subscriptions` mid-term: also creates the running period's usage and an invoice for the days left (non-meter).
   5. `POST …/leases/:id/close` ends the lease: closes the period, closing invoice, ends subscriptions + members, prefilled pending refund (unused rent / services by days + deposit, capped by what was paid).
   Price version of a usage = the one in force on its period's first day, frozen in `usages.price`.
 - setup: `PATCH …/properties/:id` (images, header, rules, address), `POST …/{units,meters,services,inventory-items}/bulk` (1..200, all or nothing).
-- leases: create draft (tenants by phone, members, handover snapshot, pinned template version) · rent versions · tenants · members · subscriptions · handovers
+- leases: create draft (tenants by phone, members, handover items, pinned template version) · rent versions · tenants · members · subscriptions · handovers
 - money: invoices (manual) · payments · cancel · refunds (+ pay / cancel) · billing-periods (read)
 - requests: list · update (status / assignee / priority) · comments
 

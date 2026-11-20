@@ -16,7 +16,7 @@ export default function HomePage() {
         <VStack gap={3} maxWidth={640}>
           <Heading level={1} type="display-2">Run your rentals without the spreadsheet.</Heading>
           <Text color="secondary" size="lg">
-            Handly keeps properties, leases, meter readings and invoices in one place — and gives every tenant a simple view of theirs.
+            Nhazi keeps properties, leases, meter readings and invoices in one place — and gives every tenant a simple view of theirs.
           </Text>
         </VStack>
         <HStack gap={3} wrap="wrap">

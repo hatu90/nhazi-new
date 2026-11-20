@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
+import { IntlProvider } from "@/client/ui/intl-provider";
 import { ThemeRoot } from "@/client/ui/theme-root";
 
 const geistSans = Geist({
@@ -14,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Handly — rental management", template: "%s · Handly" },
+  title: { default: "Nhazi — rental management", template: "%s · Nhazi" },
   description: "Manage properties, leases, utilities and invoices — and give your tenants one place to see it all.",
 };
 
@@ -24,7 +26,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <ThemeRoot>{children}</ThemeRoot>
+        <Suspense>
+          <IntlProvider>
+            <ThemeRoot>{children}</ThemeRoot>
+          </IntlProvider>
+        </Suspense>
       </body>
     </html>
   );

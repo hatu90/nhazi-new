@@ -34,7 +34,12 @@ export const readingsSchema = z
   .array(z.object({ meterId: idSchema, value: z.number().min(0).max(999_999_999_999) }))
   .max(100)
   .default([]);
-export type IReadingInput = z.infer<typeof readingsSchema>[number];
+export type IReadingInput = z.infer<typeof readingsSchema>[number] & { readAt?: string };
+/** Start: a typed reading may carry the moment it was taken (default: the start of the day), so it can follow readings already stored. */
+export const startReadingsSchema = z
+  .array(z.object({ meterId: idSchema, value: z.number().min(0).max(999_999_999_999), readAt: z.string().datetime().optional() }))
+  .max(100)
+  .default([]);
 
 const invoiceFields = {
   dueDate: isoDateSchema.optional(),
@@ -53,9 +58,11 @@ const signRule = (v: { extraItems: IExtraItem[] }, ctx: z.RefinementCtx) =>
 // ── POST .../leases/:leaseId/start ─────────────────────────────────────────────────
 export const startLeasePayloadSchema = z
   .object({
+    /** Move the lease's start (and what begins with it: first rent, services, members) while it is still a draft. Defaults to the lease's start. */
+    startDate: isoDateSchema.optional(),
     /** Defaults to the draft's firstPeriodEnd. */
     periodEnd: isoDateSchema.optional(),
-    readings: readingsSchema,
+    readings: startReadingsSchema,
     ...invoiceFields,
   })
   .superRefine(signRule);

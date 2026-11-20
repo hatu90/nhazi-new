@@ -329,7 +329,6 @@ model Unit {
   deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(6)
   property       Property   @relation("Unit_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   meters         Meter[]    @relation("Meter_unit")
-  handovers      Handover[] @relation("Handover_unit")
   leases         Lease[]    @relation("Lease_unit")
   requests       Request[]  @relation("Request_unit")
 
@@ -416,7 +415,6 @@ model InventoryItem {
   deletedAt      DateTime?       @map("deleted_at") @db.Timestamptz(6)
   property       Property        @relation("InventoryItem_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   handovers      Handover[]      @relation("Handover_inventoryItem")
-  leaseHandovers LeaseHandover[] @relation("LeaseHandover_inventoryItem")
 
   @@unique([id, propertyId])
   @@index([propertyId])
@@ -426,7 +424,7 @@ model InventoryItem {
 model Handover {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   propertyId    String        @map("property_id") @db.Uuid
-  unitId        String        @map("unit_id") @db.Uuid
+  leaseId       String        @map("lease_id") @db.Uuid
   itemId        String        @map("item_id") @db.Uuid
   quantity      Int           @map("quantity")
   itemCondition ItemCondition @default(good) @map("item_condition")
@@ -436,12 +434,12 @@ model Handover {
   deletedAt     DateTime?     @map("deleted_at") @db.Timestamptz(6)
   property      Property      @relation("Handover_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   inventoryItem InventoryItem @relation("Handover_inventoryItem", fields: [itemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
-  unit          Unit          @relation("Handover_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  lease         Lease         @relation("Handover_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
 
-  // partial unique (unit_id, item_id) -> SQL migration
+  // partial unique (lease_id, item_id) -> SQL migration
   @@index([propertyId])
   @@index([itemId, propertyId])
-  @@index([unitId, propertyId])
+  @@index([leaseId, propertyId])
   @@map("handovers")
 }
 
@@ -471,7 +469,7 @@ model Lease {
   accountLeases            AccountLease[]        @relation("AccountLease_lease")
   invitations              Invitation[]          @relation("Invitation_lease")
   leaseMembers             LeaseMember[]         @relation("LeaseMember_lease")
-  leaseHandovers           LeaseHandover[]       @relation("LeaseHandover_lease")
+  handovers                Handover[]            @relation("Handover_lease")
   serviceSubscriptions     ServiceSubscription[] @relation("ServiceSubscription_lease")
   billingPeriods           BillingPeriod[]       @relation("BillingPeriod_lease")
   usages                   Usage[]               @relation("Usage_lease")
@@ -513,26 +511,6 @@ model LeaseMember {
 
   @@index([leaseId])
   @@map("lease_members")
-}
-
-model LeaseHandover {
-  id            String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  propertyId    String         @map("property_id") @db.Uuid
-  leaseId       String         @map("lease_id") @db.Uuid
-  sourceItemId  String?        @map("source_item_id") @db.Uuid
-  itemName      String         @map("item_name")
-  quantity      Int            @map("quantity")
-  itemCondition ItemCondition  @default(good) @map("item_condition")
-  description   String?        @map("description")
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz(6)
-  lease         Lease          @relation("LeaseHandover_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
-  inventoryItem InventoryItem? @relation("LeaseHandover_inventoryItem", fields: [sourceItemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([leaseId, propertyId])
-  @@index([sourceItemId, propertyId])
-  @@map("lease_handovers")
 }
 
 model ServiceSubscription {
@@ -587,6 +565,7 @@ model Reading {
   propertyId             String    @map("property_id") @db.Uuid
   meterId                String    @map("meter_id") @db.Uuid
   readOn                 DateTime  @map("read_on") @db.Date
+  readAt                 DateTime  @map("read_at") @db.Timestamptz(6)
   readingValue           Decimal   @map("reading_value") @db.Decimal(14, 3)
   readBy                 String    @map("read_by") @db.Uuid
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -597,9 +576,10 @@ model Reading {
   usages                 Usage[]   @relation("Usage_openingReading")
   usagesByClosingReading Usage[]   @relation("Usage_closingReading")
 
-  // partial unique (meter_id, read_on) -> SQL migration
+  // partial unique (meter_id, read_at) -> SQL migration
   @@index([readBy])
   @@index([meterId, propertyId])
+  @@index([meterId, readOn])
   @@map("readings")
 }
 

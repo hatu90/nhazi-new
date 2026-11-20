@@ -30,7 +30,7 @@ export interface IItemResponse {
 }
 export type IItemListResponse = IPaginated<IItemResponse>;
 
-// ── default handover list of a unit ────────────────────────────────────────────────
+// ── handover list of a lease (items handed to the tenant; condition at move-in / move-out) ──
 export const createHandoverPayloadSchema = z.object({
   itemId: z.uuid(),
   quantity: z.number().int().min(1).max(1000),
@@ -39,13 +39,13 @@ export const createHandoverPayloadSchema = z.object({
 });
 export type ICreateHandoverPayload = z.infer<typeof createHandoverPayloadSchema>;
 export interface ICreateHandoverCommand extends ICreateHandoverPayload, IPropertyScope {
-  unitId: string;
+  leaseId: string;
 }
-export const toCreateHandoverCommand = (p: ICreateHandoverPayload, s: IPropertyScope, unitId: string): ICreateHandoverCommand => ({ ...p, ...s, unitId });
+export const toCreateHandoverCommand = (p: ICreateHandoverPayload, s: IPropertyScope, leaseId: string): ICreateHandoverCommand => ({ ...p, ...s, leaseId });
 
 export const updateHandoverPayloadSchema = z
   .object({
-    quantity: z.number().int().min(1).max(1000),
+    quantity: z.number().int().min(0).max(1000),
     condition: itemConditionSchema,
     description: z.string().trim().max(1000).nullable(),
   })
@@ -53,19 +53,19 @@ export const updateHandoverPayloadSchema = z
   .refine(nonEmptyPatch, "Nothing to update");
 export type IUpdateHandoverPayload = z.infer<typeof updateHandoverPayloadSchema>;
 export interface IUpdateHandoverCommand extends IUpdateHandoverPayload, IPropertyScope {
-  unitId: string;
+  leaseId: string;
   handoverId: string;
 }
-export const toUpdateHandoverCommand = (p: IUpdateHandoverPayload, s: IPropertyScope, unitId: string, handoverId: string): IUpdateHandoverCommand => ({
+export const toUpdateHandoverCommand = (p: IUpdateHandoverPayload, s: IPropertyScope, leaseId: string, handoverId: string): IUpdateHandoverCommand => ({
   ...p,
   ...s,
-  unitId,
+  leaseId,
   handoverId,
 });
 
 export interface IHandoverResponse {
   id: string;
-  unitId: string;
+  leaseId: string;
   itemId: string;
   itemName: string;
   quantity: number;

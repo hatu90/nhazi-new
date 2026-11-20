@@ -12,7 +12,7 @@ import type { IRefundRepository } from "../refund/refund.repository";
 import type { ITenancyRepository } from "../tenancy/tenancy.repository";
 import type { CreateSubscriptionUseCase } from "../tenancy/tenancy.usecases";
 import type { ILifecycleContext, ILifecycleRepository, IReadingWrite } from "./lifecycle.repository";
-import { advanceLine, creditLines, depositLine, finalize, meterLine, planRefund, rentLine } from "./lifecycle.plan";
+import { advanceLine, creditLines, finalize, meterLine, planRefund, rentLine } from "./lifecycle.plan";
 import type {
   IAddSubscriptionCommand,
   IAddSubscriptionResponse,
@@ -25,7 +25,7 @@ import type {
   IPlanLine,
   IReadingInput,
   IStartLeaseCommand,
-  IStartLeaseResponse,
+    IStartLeaseResponse,
 } from "./lifecycle.schema";
 
 const invalid = (field: string, message: string) => new ValidationError(message, { fieldErrors: { [field]: [message] } });
@@ -74,13 +74,13 @@ abstract class Base {
     return async (meterId, at) => {
       if (at === on) {
         const typed = payload.find((r) => r.meterId === meterId);
-        if (typed) return { value: typed.value };
+        if (typed) return { value: typed.value, on: typed.readAt ? new Date(typed.readAt).toISOString().slice(0, 10) : undefined };
       }
       return this.life.findReading(meterId, at);
     };
   }
   protected writes(payload: IReadingInput[], on: string): IReadingWrite[] {
-    return payload.map((r) => ({ meterId: r.meterId, on, value: r.value }));
+    return payload.map((r) => ({ meterId: r.meterId, on: r.readAt ? new Date(r.readAt).toISOString().slice(0, 10) : on, value: r.value, at: r.readAt }));
   }
 
   /** Closing quantities of the meter usages of the running period, ended on `endDate`. */
@@ -101,7 +101,7 @@ abstract class Base {
       } catch {
         throw new ConflictError(`${u.serviceName}: the reading on ${on} is lower than the opening reading`, "READING_ORDER");
       }
-      closings.push({ usageId: u.id, meterId: u.meterId, on, quantity });
+      closings.push({ usageId: u.id, meterId: u.meterId, on: reading.on ?? on, quantity });
       quantities.set(u.id, quantity);
     }
     return { closings, quantities };
@@ -122,28 +122,50 @@ abstract class Base {
 // ── II.6  Start a draft lease ────────────────────────────────────────────────────────
 /**
  * Draft -> started, in one transaction: opens the first billing period (usages + frozen prices) and issues the
- * move-in invoice: deposit, the period's rent, and the non-meter services (all prorated suggestions you can override).
+ * move-in invoice: the period's rent, and the non-meter services (all prorated suggestions you can override).
  * Meter services need an opening reading on the start date (typed in `readings` or already stored).
  */
 export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseCommand, IStartLeaseResponse> {
-  async execute(c: IStartLeaseCommand): Promise<IStartLeaseResponse> {
+  /** Validates the request and plans the first period + the move-in lines. */
+  protected async planStart(c: IStartLeaseCommand) {
     await this.manage(c);
     const ctx = await this.load(c.propertyId, c.leaseId);
     if (ctx.lease.activatedAt !== null) throw new ConflictError("The lease has already started", "LEASE_STARTED");
-    const start = ctx.lease.startDate;
-    const end = c.periodEnd ?? ctx.lease.firstPeriodEnd;
+    const from = ctx.lease.startDate;
+    const start = c.startDate ?? from;
+    const end = c.periodEnd ?? (ctx.lease.firstPeriodEnd && ctx.lease.firstPeriodEnd >= start ? ctx.lease.firstPeriodEnd : null);
     if (!end) throw invalid("periodEnd", "Choose where the first billing period ends");
+    const moveStart = start !== from ? { from, to: start } : undefined;
+    if (moveStart) {
+      // The draft begins on another day: plan as if it always had, and let applyStart move the stored rows.
+      if (await this.life.hasOverlap(ctx.lease.unitId, start, ctx.lease.endDate, c.leaseId)) {
+        throw new ConflictError("Another lease of the unit overlaps these dates", "LEASE_OVERLAP");
+      }
+      const shift = (d: string) => (d === from || d < start ? start : d);
+      ctx.lease.startDate = start;
+      ctx.lease.rentVersions = ctx.lease.rentVersions.map((v) => ({ ...v, effectiveDate: v.effectiveDate === from ? start : v.effectiveDate }));
+      ctx.subscriptions = ctx.subscriptions.map((s) => ({ ...s, startDate: shift(s.startDate) }));
+      ctx.members = ctx.members.map((m) => ({ ...m, joinedAt: shift(m.joinedAt) }));
+    }
     this.checkRange(ctx, start, end, "periodEnd");
-    const monthly = resolveRent(ctx.lease.rentVersions, start);
+    // No rent in force on the first day: the very next rent version applies.
+    const monthly = resolveRent(ctx.lease.rentVersions, start) ?? [...ctx.lease.rentVersions].sort((a, b) => (a.effectiveDate < b.effectiveDate ? -1 : 1)).find((v) => v.effectiveDate > start)?.amount ?? null;
     if (monthly === null) throw invalid("rent", "The lease has no rent in force on its start date");
     this.checkReadings(ctx, c.readings);
 
-    const usages = await planUsages(ctx, start, end, this.readingAt(c.readings, start));
+    // A meter without a reading on the start date opens from its latest earlier reading (no new record), unless one is typed.
+    const onDay = this.readingAt(c.readings, start);
+    const stored: IReadingAt = async (m, on) => (await onDay(m, on)) ?? (on === start ? await this.life.findLastReading(m, on) : null);
+    const usages = await planUsages(ctx, start, end, stored);
     const lines: IPlanLine[] = [
-      ...(ctx.lease.depositAmount > 0 ? [depositLine(ctx.lease.depositAmount)] : []),
       rentLine(monthly, start, end),
       ...usages.filter((u) => u.usageBase !== "meter").map((u) => advanceLine(u, "new")),
     ];
+    return { ctx, start, end, monthly, usages, lines, stored, moveStart };
+  }
+
+  async execute(c: IStartLeaseCommand): Promise<IStartLeaseResponse> {
+    const { start, end, usages, lines, moveStart } = await this.planStart(c);
     const items = finalize(lines, c.overrides, c.extraItems);
     const period: INewPeriod = {
       propertyId: c.propertyId,
@@ -154,7 +176,7 @@ export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseComma
       usages,
     };
     const invoice: IInvoicePlan = { kind: "move_in", period: "new", title: c.title ?? `Move-in ${dmy(start)}`, dueDate: c.dueDate ?? start, items };
-    const r = await this.life.applyStart({ propertyId: c.propertyId, leaseId: c.leaseId, actor: c.actor, readings: this.writes(c.readings, start), period, invoice });
+    const r = await this.life.applyStart({ propertyId: c.propertyId, leaseId: c.leaseId, actor: c.actor, readings: this.writes(c.readings, start), period, invoice, moveStart });
     return { leaseId: c.leaseId, period: await this.periodDetail(c.propertyId, r.periodId), invoice: await this.invoiceDetail(c.propertyId, r.invoiceId) };
   }
 }

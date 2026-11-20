@@ -1,27 +1,18 @@
 "use client";
 
+import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
+import { useGet } from "@/client/lib/hooks";
+import type { IServiceListResponse, IServiceResponse } from "@/client/lib/types";
+import { Empty, ErrorBox, Modal, PageSpinner, Tag } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack, Stack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
-import { useGet, useSend } from "@/client/lib/hooks";
-import type { IServiceListResponse, IServiceResponse, ServiceUsageBase } from "@/client/lib/types";
-import { Empty, ErrorBox, Modal, PageSpinner, Tag } from "@/client/ui";
-import { text } from "@/client/ui/form";
-import { FArea, FDate, FSelect, FText, FormBody, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
-import { TierFields, emptyTier, toTiers, type TierRow } from "../tier-editor";
-
-const bases: { id: ServiceUsageBase; label: string; hint: string }[] = [
-  { id: "meter", label: "Metered", hint: "Meter readings; tiers allowed." },
-  { id: "lease", label: "Per lease", hint: "Flat per lease." },
-  { id: "device", label: "Per device", hint: "Flat per device." },
-  { id: "member", label: "Per person", hint: "Flat per person." },
-];
+import { PriceForm } from "./price-form";
+import { ServiceForm } from "./service-form";
 
 export function ServicesPage() {
   const { apiPath, canManage } = useProperty();
@@ -70,53 +61,3 @@ export function ServicesPage() {
   );
 }
 
-interface ServiceValues {
-  name: string;
-  usageBase: ServiceUsageBase;
-  unitOfMeasure: string;
-  description: string;
-  effectiveDate: string;
-  tiers: TierRow[];
-}
-
-function ServiceForm({ onDone }: { onDone: () => void }) {
-  const { apiPath } = useProperty();
-  const save = useSend<object>("POST", apiPath("/services"), [apiPath("/services")]);
-  const form = useForm<ServiceValues>({ defaultValues: { name: "", usageBase: "meter", unitOfMeasure: "", description: "", effectiveDate: todayIso(), tiers: [emptyTier()] } });
-  const base = useWatch({ control: form.control, name: "usageBase" });
-  const unit = useWatch({ control: form.control, name: "unitOfMeasure" });
-  const multi = base === "meter" || base === "member";
-  const submit = useSubmit(
-    form,
-    save,
-    (v) => ({ name: v.name.trim(), usageBase: v.usageBase, unitOfMeasure: text(v.unitOfMeasure), description: text(v.description), prices: [{ effectiveDate: v.effectiveDate, tiers: toTiers(multi ? v.tiers : v.tiers.slice(0, 1)) }] }),
-    onDone,
-  );
-  return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Add service" onCancel={onDone}>
-      <FText control={form.control} name="name" label="Name" placeholder="Electricity" required width="100%" />
-      <FSelect control={form.control} name="usageBase" label="Billed by" hint={bases.find((b) => b.id === base)?.hint} options={bases.map((b) => ({ value: b.id, label: b.label }))} onValueChange={() => form.setValue("tiers", [emptyTier()])} width="100%" />
-      <FText control={form.control} name="unitOfMeasure" label="Unit of measure" hint="e.g. kWh, m³" width="100%" />
-      <FDate control={form.control} name="effectiveDate" label="Effective from" required width="100%" />
-      <TierFields control={form.control} name="tiers" multi={multi} unit={unit || "unit"} />
-      <FArea control={form.control} name="description" label="Description" rows={2} width="100%" />
-    </FormBody>
-  );
-}
-
-function PriceForm({ service, onDone }: { service: IServiceResponse; onDone: () => void }) {
-  const { apiPath } = useProperty();
-  const save = useSend<object>("POST", apiPath(`/services/${service.id}/prices`), [apiPath("/services")]);
-  const last = service.prices[service.prices.length - 1];
-  const multi = service.usageBase === "meter" || service.usageBase === "member";
-  const form = useForm<{ effectiveDate: string; tiers: TierRow[] }>({
-    defaultValues: { effectiveDate: "", tiers: last ? last.tiers.map((t) => ({ upTo: t.upTo?.toString() ?? "", rate: t.rate.toString() })) : [emptyTier()] },
-  });
-  const submit = useSubmit(form, save, (v) => ({ effectiveDate: v.effectiveDate, tiers: toTiers(v.tiers) }), onDone);
-  return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Add price" onCancel={onDone}>
-      <FDate control={form.control} name="effectiveDate" label="Effective from" hint={last ? `After ${formatDate(last.effectiveDate)}` : undefined} min={last?.effectiveDate} required width="100%" />
-      <TierFields control={form.control} name="tiers" multi={multi} unit={service.unitOfMeasure ?? "unit"} />
-    </FormBody>
-  );
-}

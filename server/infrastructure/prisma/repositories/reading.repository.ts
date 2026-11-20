@@ -8,6 +8,7 @@ const toReading = (r: Prisma.ReadingGetPayload<object>): IReadingResponse => ({
   id: r.id,
   meterId: r.meterId,
   readOn: isoDate(r.readOn),
+  readAt: isoDateTime(r.readAt),
   value: num(r.readingValue),
   readBy: r.readBy,
   createdAt: isoDateTime(r.createdAt),
@@ -31,19 +32,19 @@ export class PrismaReadingRepository implements IReadingRepository {
       ...((q.from || q.to) && { readOn: { ...(q.from && { gte: new Date(q.from) }), ...(q.to && { lte: new Date(q.to) }) } }),
     };
     const [rows, total] = await Promise.all([
-      this.db.reading.findMany({ where, orderBy: { readOn: "desc" }, ...toSkipTake(q) }),
+      this.db.reading.findMany({ where, orderBy: { readAt: "desc" }, ...toSkipTake(q) }),
       this.db.reading.count({ where }),
     ]);
     return paginated(rows.map(toReading), total, q);
   }
 
-  async neighbours(meterId: string, readOn: string) {
-    const d = new Date(readOn);
+  async neighbours(meterId: string, readAt: string) {
+    const d = new Date(readAt);
     const [prev, next] = await Promise.all([
-      this.db.reading.findFirst({ where: { meterId, deletedAt: null, readOn: { lt: d } }, orderBy: { readOn: "desc" } }),
-      this.db.reading.findFirst({ where: { meterId, deletedAt: null, readOn: { gt: d } }, orderBy: { readOn: "asc" } }),
+      this.db.reading.findFirst({ where: { meterId, deletedAt: null, readAt: { lt: d } }, orderBy: { readAt: "desc" } }),
+      this.db.reading.findFirst({ where: { meterId, deletedAt: null, readAt: { gt: d } }, orderBy: { readAt: "asc" } }),
     ]);
-    const n = (r: typeof prev) => (r ? { readOn: isoDate(r.readOn), value: num(r.readingValue) } : null);
+    const n = (r: typeof prev) => (r ? { readOn: isoDate(r.readOn), readAt: isoDateTime(r.readAt), value: num(r.readingValue) } : null);
     return { prev: n(prev), next: n(next) };
   }
 
@@ -52,10 +53,10 @@ export class PrismaReadingRepository implements IReadingRepository {
       async () =>
         toReading(
           await this.db.reading.create({
-            data: { propertyId: c.propertyId, meterId: c.meterId, readOn: new Date(c.readOn), readingValue: c.value, readBy: c.actor.accountId },
+            data: { propertyId: c.propertyId, meterId: c.meterId, readOn: new Date(c.readOn), readAt: new Date(c.readAt), readingValue: c.value, readBy: c.actor.accountId },
           }),
         ),
-      "This meter already has a reading on that day",
+      "This meter already has a reading at that moment",
       "READING_EXISTS",
     );
   }

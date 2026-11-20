@@ -1,21 +1,18 @@
 "use client";
 
-import { Button } from "@astryxdesign/core/Button";
-import { Heading } from "@astryxdesign/core/Heading";
-import { Text } from "@astryxdesign/core/Text";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { useMe } from "@/client/auth/auth-provider";
-import { formatDate, isValidPhone, label, normalizePhone } from "@/client/lib/format";
+import { formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IInvitationResponse, IMemberResponse, IPaginated, PropertyRole } from "@/client/lib/types";
 import { DataTable, Empty, ErrorBox, Modal, PageSpinner, SelectField, StatusBadge } from "@/client/ui";
-import { FSelect, FText, FormBody, useSubmit } from "@/client/ui/rhf";
+import { Button } from "@astryxdesign/core/Button";
+import { Heading } from "@astryxdesign/core/Heading";
+import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { Text } from "@astryxdesign/core/Text";
+import { useState } from "react";
 import { useProperty } from "../property-layout";
-
-const roles: PropertyRole[] = ["owner", "admin", "technician", "viewer"];
-const roleOptions = roles.map((r) => ({ value: r, label: label(r) }));
+import { InviteForm } from "./invite-form";
+import { roleOptions } from "./role-options";
 
 export function TeamPage() {
   const { apiPath, isOwner } = useProperty();
@@ -77,18 +74,5 @@ export function TeamPage() {
       ) : <Text color="secondary">Only owners can invite people or change roles.</Text>}
       <Modal open={inviting} onClose={() => setInviting(false)} title="Add team member">{inviting && <InviteForm onDone={() => setInviting(false)} />}</Modal>
     </VStack>
-  );
-}
-
-function InviteForm({ onDone }: { onDone: () => void }) {
-  const { apiPath } = useProperty();
-  const invite = useSend<object>("POST", apiPath("/invitations"), [apiPath("/invitations")]);
-  const form = useForm<{ phone: string; role: PropertyRole }>({ defaultValues: { phone: "", role: "admin" } });
-  const submit = useSubmit(form, invite, (v) => ({ phoneNumber: normalizePhone(v.phone), role: v.role }), onDone);
-  return (
-    <FormBody onSubmit={submit} error={invite.error} busy={invite.isPending} submitLabel="Send invitation" onCancel={onDone}>
-      <FText control={form.control} name="phone" label="Phone number" type="tel" placeholder="0912 345 678" required rules={{ validate: (v) => isValidPhone(String(v)) || "Enter a valid phone number" }} width="100%" />
-      <FSelect control={form.control} name="role" label="Role" options={roleOptions} width="100%" />
-    </FormBody>
   );
 }

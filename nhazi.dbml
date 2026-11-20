@@ -295,7 +295,7 @@ Table inventory_items {
 Table handovers {
   id uuid [pk]
   property_id uuid [not null, ref: > properties.id]
-  unit_id uuid [not null, note: 'default handover list is per unit']
+  lease_id uuid [not null, note: 'items handed over with a lease (checked at move-in / move-out)']
   item_id uuid [not null]
   quantity integer [not null]
   item_condition item_condition [not null, default: 'good']
@@ -303,10 +303,10 @@ Table handovers {
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   deleted_at timestamptz
-  indexes { (unit_id, item_id) [unique, note: 'partial: deleted_at IS NULL'] }
+  indexes { (lease_id, item_id) [unique, note: 'partial: deleted_at IS NULL'] }
 }
 Ref: handovers.(item_id, property_id) > inventory_items.(id, property_id)
-Ref: handovers.(unit_id, property_id) > units.(id, property_id)
+Ref: handovers.(lease_id, property_id) > leases.(id, property_id)
 
 // ───────────── Lease side ─────────────
 Table leases {
@@ -352,22 +352,6 @@ Table lease_members {
   joined_at date [not null, note: 'headcount at date D = joined_at <= D AND (left_at IS NULL OR left_at > D)']
   left_at date [note: 'NULL = still living there; CHECK left_at >= joined_at']
 }
-Table lease_handovers {
-  id uuid [pk]
-  property_id uuid [not null]
-  lease_id uuid [not null]
-  source_item_id uuid
-  item_name text [not null, note: 'snapshot']
-  quantity integer [not null]
-  item_condition item_condition [not null, default: 'good']
-  description text
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
-  deleted_at timestamptz
-}
-Ref: lease_handovers.(lease_id, property_id) > leases.(id, property_id)
-Ref: lease_handovers.(source_item_id, property_id) > inventory_items.(id, property_id)
-
 Table service_subscriptions {
   id uuid [pk]
   property_id uuid [not null]
@@ -408,14 +392,16 @@ Table readings {
   id uuid [pk]
   property_id uuid [not null]
   meter_id uuid [not null]
-  read_on date [not null, note: 'meter value at the START of this day. Period opening = reading on start_date; closing = reading on end_date + 1 (the same row opens the next period)']
+  read_on date [not null, note: 'the day this reading belongs to (date of read_at). Period opening = (latest) reading on start_date; closing = reading on end_date + 1 (the same row opens the next period)']
+  read_at timestamptz [not null, note: 'when the meter was read; a meter can be read several times a day']
   reading_value numeric(14,3) [not null, note: 'never goes down over time, except a rollover at meters.max_value']
   read_by uuid [not null, ref: > accounts.id]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   deleted_at timestamptz
   indexes {
-    (meter_id, read_on) [unique, note: 'partial: deleted_at IS NULL']
+    (meter_id, read_at) [unique, note: 'partial: deleted_at IS NULL']
+    (meter_id, read_on)
   }
 }
 Ref: readings.(meter_id, property_id) > meters.(id, property_id)

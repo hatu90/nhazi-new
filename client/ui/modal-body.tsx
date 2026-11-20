@@ -17,7 +17,11 @@ export function ModalBody({ children, footer }: { children: ReactNode; footer?: 
       height="fill"
       padding={5}
       header={<DialogHeader title={modal.title} onOpenChange={(o) => !o && modal.onClose()} />}
-      content={<LayoutContent isScrollable>{children}</LayoutContent>}
+      content={<LayoutContent isScrollable>
+        <div className="py-4">
+          {children}
+        </div>
+      </LayoutContent>}
       footer={footer && <LayoutFooter>{footer}</LayoutFooter>}
     />
   );

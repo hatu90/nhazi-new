@@ -1,13 +1,8 @@
 /** Pure helpers for the bulk meters setup and the bulk units grid (no React, easy to reason about). */
 
-export const ROOM_TOKEN = "{ROOM_NAME}";
-export const NEW_SERVICE = "__new__";
-
-/** Default meter name for a service: `<service> - {ROOM_NAME}`. */
-export const autoTemplate = (serviceName: string) => `${serviceName.trim() || "Meter"} - ${ROOM_TOKEN}`;
-
-/** `Electricity - {ROOM_NAME}` / `{ROOM_NAME} - Electricity`: the token is replaced by the unit's name (prefix or postfix is just where you put it). */
-export const meterName = (template: string, room: string) => template.split(ROOM_TOKEN).join(room).trim();
+/** Meter name = `prefix - room - postfix`; an empty prefix or postfix is left out. */
+export const meterName = (prefix: string, room: string, postfix: string) =>
+  [prefix.trim(), room, postfix.trim()].filter(Boolean).join(" - ");
 
 /** "Room 101" -> "Room 102", "A-9" -> "A-10"; names without a trailing number are returned unchanged. */
 export const nextName = (name: string) => name.replace(/(\d+)(\D*)$/, (_, n: string, tail: string) => String(Number(n) + 1).padStart(n.length, "0") + tail);

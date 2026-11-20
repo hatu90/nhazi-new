@@ -6,10 +6,10 @@ import { VStack } from "@astryxdesign/core/Stack";
 export const metadata: Metadata = { title: "Terms of use" };
 
 const sections = [
-  { title: "Using Handly", body: "You sign in with a verified phone number. You are responsible for activity under your account and for keeping your phone secure." },
+  { title: "Using Nhazi", body: "You sign in with a verified phone number. You are responsible for activity under your account and for keeping your phone secure." },
   { title: "Your data", body: "Property owners control the data of their properties. Tenants can see only the leases they are a party to. We do not sell personal data." },
-  { title: "Invoices & payments", body: "Invoices are issued by property owners or their teams. Handly records them and the payments reported against them; it does not collect money on anyone's behalf." },
-  { title: "Changes", body: "We may update these terms. Continuing to use Handly after a change means you accept the updated terms." },
+  { title: "Invoices & payments", body: "Invoices are issued by property owners or their teams. Nhazi records them and the payments reported against them; it does not collect money on anyone's behalf." },
+  { title: "Changes", body: "We may update these terms. Continuing to use Nhazi after a change means you accept the updated terms." },
 ];
 
 export default function TermPage() {

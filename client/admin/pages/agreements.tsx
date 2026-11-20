@@ -1,18 +1,16 @@
 "use client";
 
-import { Button } from "@astryxdesign/core/Button";
-import { Link } from "@astryxdesign/core/Link";
-import { HStack, Stack } from "@astryxdesign/core/Stack";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
-import { starterDocument } from "@/client/agreement/config";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITemplateListResponse, ITemplateSummaryResponse } from "@/client/lib/types";
 import { DataTable, Empty, ErrorBox, Modal, Tag } from "@/client/ui";
-import { FText, FormBody, useSubmit } from "@/client/ui/rhf";
+import { Button } from "@astryxdesign/core/Button";
+import { Link } from "@astryxdesign/core/Link";
+import { HStack, Stack } from "@astryxdesign/core/Stack";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useProperty } from "../property-layout";
+import { NameForm } from "./agreement-name-form";
 
 export function AgreementsPage() {
   const { apiPath, canManage, to } = useProperty();
@@ -55,17 +53,5 @@ export function AgreementsPage() {
         {dialog && <NameForm key={dialog === "new" ? "new" : dialog.id} template={dialog === "new" ? undefined : dialog} onDone={(id) => { setDialog(null); if (id) navigate(to(`agreements/${id}`)); }} />}
       </Modal>
     </Stack>
-  );
-}
-
-function NameForm({ template, onDone }: { template?: ITemplateSummaryResponse; onDone: (createdId?: string) => void }) {
-  const { apiPath } = useProperty();
-  const save = useSend<object, { id: string }>(template ? "PATCH" : "POST", template ? apiPath(`/agreement-templates/${template.id}`) : apiPath("/agreement-templates"), [apiPath("/agreement-templates")]);
-  const form = useForm<{ name: string }>({ defaultValues: { name: template?.name ?? "" } });
-  const submit = useSubmit(form, save, (v) => (template ? { name: v.name.trim() } : { name: v.name.trim(), data: starterDocument() }), (r) => onDone(template ? undefined : r.id));
-  return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel={template ? "Save" : "Create and edit"} onCancel={() => onDone()}>
-      <FText control={form.control} name="name" label="Name" required width="100%" />
-    </FormBody>
   );
 }

@@ -1,4 +1,4 @@
-import type { Components, TemplatePage, TextInputProps } from "./config";
+import type { Components, TemplatePage, TextInputProps } from "./types";
 
 /** The form fields of a template: every TextInput block, in page order. */
 export function formFields(pages: TemplatePage[]): TextInputProps[] {

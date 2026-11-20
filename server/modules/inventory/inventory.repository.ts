@@ -21,10 +21,10 @@ export interface IInventoryRepository {
   itemInUse(itemId: string): Promise<boolean>;
   softDeleteItem(propertyId: string, itemId: string): Promise<boolean>;
 
-  unitExists(propertyId: string, unitId: string): Promise<boolean>;
-  listHandovers(propertyId: string, unitId: string): Promise<IHandoverResponse[]>;
-  /** ConflictError HANDOVER_EXISTS (one row per item per unit). */
+  leaseExists(propertyId: string, leaseId: string): Promise<boolean>;
+  listHandovers(propertyId: string, leaseId: string): Promise<IHandoverResponse[]>;
+  /** ConflictError HANDOVER_EXISTS (one row per item per lease). */
   createHandover(command: ICreateHandoverCommand): Promise<IHandoverResponse>;
   updateHandover(command: IUpdateHandoverCommand): Promise<IHandoverResponse | null>;
-  softDeleteHandover(propertyId: string, unitId: string, handoverId: string): Promise<boolean>;
+  softDeleteHandover(propertyId: string, leaseId: string, handoverId: string): Promise<boolean>;
 }

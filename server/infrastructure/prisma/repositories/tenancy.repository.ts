@@ -13,13 +13,13 @@ import type {
   ITenantResponse,
   ITerminateLeaseCommand,
   IUpdateLeaseCommand,
-  IUpdateLeaseHandoverCommand,
   IUpdateLeaseMemberCommand,
   IUpdateSubscriptionCommand,
 } from "@/server/modules/tenancy/tenancy.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { IRentVersion } from "@/server/modules/lease/lease.schema";
 import type { Prisma, PrismaClient } from "../client";
+import { createInvoiceTx } from "../writers";
 import { isoDate, isoDateOrNull, num, orConflict, toJson } from "../mappers";
 
 type Tx = Prisma.TransactionClient;
@@ -34,7 +34,7 @@ const detailInclude = {
   ...summaryInclude,
   agreementTemplate: { select: { templateName: true } },
   leaseMembers: { orderBy: { joinedAt: "asc" } },
-  leaseHandovers: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } },
+  handovers: { where: { deletedAt: null }, include: { inventoryItem: { select: { inventoryName: true } } }, orderBy: { createdAt: "asc" } },
   serviceSubscriptions: { where: { deletedAt: null }, include: { service: { select: { serviceName: true, usageBase: true } }, meter: { select: { meterName: true } } }, orderBy: { startDate: "asc" } },
 } satisfies Prisma.LeaseInclude;
 
@@ -96,7 +96,7 @@ const toDetail = (r: DetailRow): ITenancyDetailRecord => {
       joinedAt: isoDate(m.joinedAt),
       leftAt: isoDateOrNull(m.leftAt),
     })),
-    handovers: r.leaseHandovers.map((h) => ({ id: h.id, itemName: h.itemName, quantity: h.quantity, condition: h.itemCondition, description: h.description })),
+    handovers: r.handovers.map((h) => ({ id: h.id, itemId: h.itemId, itemName: h.inventoryItem.inventoryName, quantity: h.quantity, condition: h.itemCondition, description: h.description })),
     subscriptions: r.serviceSubscriptions.map(toSubscription),
   };
 };
@@ -176,6 +176,10 @@ export class PrismaTenancyRepository implements ITenancyRepository {
     return n > 0;
   }
 
+  async countItems(propertyId: string, itemIds: string[]) {
+    return this.db.inventoryItem.count({ where: { propertyId, id: { in: itemIds }, deletedAt: null } });
+  }
+
   async findTemplate(propertyId: string, templateId: string) {
     const t = await this.db.agreementTemplate.findFirst({ where: { id: templateId, propertyId, deletedAt: null }, select: { id: true, currentVersion: true } });
     return t;
@@ -187,10 +191,6 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         this.db.$transaction(async (tx) => {
           const accountIds = new Set<string>();
           for (const t of c.tenants) accountIds.add(await ensureAccount(tx, t.phoneNumber, t.displayName));
-          const handovers = await tx.handover.findMany({
-            where: { propertyId: c.propertyId, unitId: c.unitId, deletedAt: null },
-            include: { inventoryItem: { select: { inventoryName: true } } },
-          });
           const lease = await tx.lease.create({
             data: {
               propertyId: c.propertyId,
@@ -198,9 +198,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               startDate: d(c.startDate),
               endDate: dn(c.endDate),
               prices: toJson([{ effectiveDate: c.startDate, amount: c.rent }]),
-              billingCycleDay: c.billingCycleDay,
               depositAmount: c.depositAmount,
-              firstPeriodEnd: d(c.firstPeriodEnd),
               documents: c.documents,
               ...(c.agreement && templateVersion !== null && {
                 agreementTemplateId: c.agreement.templateId,
@@ -211,19 +209,26 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               leaseMembers: {
                 create: c.members.map((m) => ({ name: m.name, phoneNumber: m.phoneNumber, yearOfBirth: m.yearOfBirth, joinedAt: d(c.startDate) })),
               },
-              leaseHandovers: {
+              handovers: {
                 // propertyId comes from the parent lease (composite FK), so it must not be passed here
-                create: handovers.map((h) => ({
-                  sourceItemId: h.itemId,
-                  itemName: h.inventoryItem.inventoryName,
-                  quantity: h.quantity,
-                  itemCondition: h.itemCondition,
-                  description: h.description,
-                })),
+                create: c.handovers.map((h) => ({ itemId: h.itemId, quantity: h.quantity, itemCondition: h.condition, description: h.description })),
               },
             },
             select: { id: true },
           });
+          // the deposit is invoiced up front, with the draft
+          if (c.depositAmount > 0) {
+            await createInvoiceTx(tx, {
+              propertyId: c.propertyId,
+              leaseId: lease.id,
+              actor: c.actor,
+              kind: "other",
+              billingPeriodId: undefined,
+              title: "Deposit",
+              dueDate: c.startDate,
+              items: [{ kind: "deposit", title: "Deposit", amount: c.depositAmount, usageId: undefined, detail: null }],
+            });
+          }
           return lease.id;
         }),
       "The unit already has a lease in this period",
@@ -232,7 +237,8 @@ export class PrismaTenancyRepository implements ITenancyRepository {
   }
 
   async update(c: IUpdateLeaseCommand) {
-    await this.db.lease.update({
+    await this.db.$transaction(async (tx) => {
+    await tx.lease.update({
       where: { id: c.leaseId },
       data: {
         endDate: dn(c.endDate),
@@ -242,6 +248,18 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         documents: c.documents,
         ...(c.agreementValues && { agreementData: toJson(c.agreementValues) }),
       },
+    });
+    if (c.depositAmount !== undefined) {
+      // keep the draft's unpaid deposit invoice in step with the deposit
+      const items = await tx.invoiceItem.findMany({
+        where: { kind: "deposit", voidedAt: null, invoice: { leaseId: c.leaseId, deletedAt: null, status: "pending", kind: "other" } },
+        select: { id: true, invoiceId: true },
+      });
+      for (const it of items) {
+        await tx.invoiceItem.update({ where: { id: it.id }, data: { amount: c.depositAmount } });
+        await tx.invoice.update({ where: { id: it.invoiceId }, data: { amount: c.depositAmount } });
+      }
+    }
     });
   }
 
@@ -349,13 +367,5 @@ export class PrismaTenancyRepository implements ITenancyRepository {
   }
   async softDeleteSubscription(leaseId: string, subscriptionId: string) {
     return (await this.db.serviceSubscription.updateMany({ where: { id: subscriptionId, leaseId, deletedAt: null }, data: { deletedAt: new Date() } })).count > 0;
-  }
-
-  async updateHandover(c: IUpdateLeaseHandoverCommand) {
-    const r = await this.db.leaseHandover.updateMany({
-      where: { id: c.handoverId, leaseId: c.leaseId, deletedAt: null },
-      data: { itemCondition: c.condition, quantity: c.quantity, description: c.description },
-    });
-    return r.count > 0;
   }
 }
