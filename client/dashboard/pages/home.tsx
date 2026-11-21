@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -55,7 +56,7 @@ export function HomePage() {
           </div>
         )}
       </Section>
-      <Section title="Properties" action={<Button label="New property" variant="primary" onClick={() => setCreating(true)} />}>
+      <Section title="Properties" action={<Button icon={<Plus size={16} />} label="New property" variant="primary" onClick={() => setCreating(true)} />}>
         {properties.isPending ? <PageSpinner /> : properties.error ? <ErrorBox error={properties.error} retry={() => void properties.refetch()} /> : properties.data.items.length === 0 ? (
           <Empty title="No properties yet" hint="Create a property to add units, services and leases." />
         ) : (

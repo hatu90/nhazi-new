@@ -57,7 +57,7 @@ export function ReferenceAddressPicker({ value, onChange }: { value: RefAddressD
             </div>
             <IconButton label={`Remove ${v.name}`} variant="ghost" icon={<X />} onClick={() => onChange(value.filter((_, j) => j !== i))} />
           </div>
-          <NumberField label="Distance (m)" placeholder="Meters" value={v.distance} onChange={(d) => patch(i, d)} width="100%" />
+          <NumberField label="Distance" unit="m" value={v.distance} onChange={(d) => patch(i, d)} width="100%" />
         </VStack>
         </Card>
       ))}

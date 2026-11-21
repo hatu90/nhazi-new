@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -31,7 +32,7 @@ const emptyRow = (): Row => ({ floor: "1", name: "", area: "", bedrooms: "", bat
 
 /** Column layout shared by the header and every row: floor first, then the unit itself. Scrolls sideways on phones. */
 const GRID = "grid min-w-[640px] grid-cols-[72px_minmax(150px,1.5fr)_96px_88px_88px_130px_40px] items-start gap-2";
-const columns = ["Floor", "Name", "Area (m²)", "Bedrooms", "Bathrooms", "Rent (₫)"];
+const columns = ["Floor", "Name", "Area (m²)", "Bedrooms", "Bathrooms", "Rent (x1000₫)"];
 
 /**
  * Bulk add units as a grid of inputs, one unit per row, the floor leftmost. New rows start as a copy of the row above
@@ -121,18 +122,18 @@ export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, flo
               <div key={f.id} className={GRID} role="row">
                 <FNumber control={form.control} name={`rows.${i}.floor`} label={`Row ${i + 1} floor`} hideLabel required width="100%" />
                 <FText control={form.control} name={`rows.${i}.name`} label={`Row ${i + 1} name`} hideLabel required placeholder="Room 101" width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.area`} label={`Row ${i + 1} area`} hideLabel required rules={{ validate: (v) => Number(v) > 0 || "Must be > 0" }} width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.area`} label={`Row ${i + 1} area`} hideLabel unit="m²" required rules={{ validate: (v) => Number(v) > 0 || "Must be > 0" }} width="100%" />
                 <FNumber control={form.control} name={`rows.${i}.bedrooms`} label={`Row ${i + 1} bedrooms`} hideLabel width="100%" />
                 <FNumber control={form.control} name={`rows.${i}.bathrooms`} label={`Row ${i + 1} bathrooms`} hideLabel width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.rent`} label={`Row ${i + 1} rent`} hideLabel width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.rent`} label={`Row ${i + 1} rent`} hideLabel money width="100%" />
                 <Button label={`Remove row ${i + 1}`} variant="ghost" size="sm" isIconOnly icon="✕" onClick={() => rows.remove(i)} isDisabled={count === 1} />
               </div>
             ))}
           </div>
         </div>
         <HStack gap={2} wrap="wrap">
-          <Button label="Add row" size="sm" variant="secondary" onClick={() => addRows(1)} isDisabled={count >= MAX_ROWS} />
-          <Button label="Add 5 rows" size="sm" variant="secondary" onClick={() => addRows(5)} isDisabled={count >= MAX_ROWS} />
+          <Button icon={<Plus size={16} />} label="Add row" size="sm" variant="secondary" onClick={() => addRows(1)} isDisabled={count >= MAX_ROWS} />
+          <Button icon={<Plus size={16} />} label="Add 5 rows" size="sm" variant="secondary" onClick={() => addRows(5)} isDisabled={count >= MAX_ROWS} />
         </HStack>
         <VStack gap={3}>
           <Text weight="semibold">Add a floor</Text>
@@ -140,7 +141,7 @@ export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, flo
             <NumberField label="Floor" value={floorNo} onChange={setFloorNo} placeholder={String(suggestedFloor)} width={96} />
             <NumberField label="Units on it" value={floorCount} onChange={setFloorCount} width={120} />
             <TextField label="Name pattern" value={pattern} onChange={setPattern} width={260} />
-            <Button label="Add floor" variant="secondary" onClick={addFloor} isDisabled={count >= MAX_ROWS} />
+            <Button icon={<Plus size={16} />} label="Add floor" variant="secondary" onClick={addFloor} isDisabled={count >= MAX_ROWS} />
           </HStack>
         </VStack>
       </VStack>

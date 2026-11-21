@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { api } from "@/client/lib/api";
 import { useGet } from "@/client/lib/hooks";
 import type { IMeterResponse, IServiceListResponse, IUnitListResponse } from "@/client/lib/types";
@@ -69,7 +70,7 @@ export function BulkMetersFields({ x: { form, configs, meters, existingUnits, se
           {configs.fields.map((f, i) => (
             <MeterConfigFields key={f.id} control={form.control} index={i} serviceOptions={serviceOptions} prefix={meters[i]?.prefix ?? ""} postfix={meters[i]?.postfix ?? ""} sampleRoom={roomNames[0]} serviceNames={Object.fromEntries((services.data?.items ?? []).map((x) => [x.id, x.name]))} getValues={form.getValues} setValue={form.setValue} onRemove={configs.fields.length > 1 ? () => configs.remove(i) : undefined} />
           ))}
-          <HStack><Button label="Add another meter" size="sm" variant="secondary" onClick={() => configs.append(emptyMeter())} /></HStack>
+          <HStack><Button icon={<Plus size={16} />} label="Add another meter" size="sm" variant="secondary" onClick={() => configs.append(emptyMeter())} /></HStack>
       </VStack>
     </VStack>
   );

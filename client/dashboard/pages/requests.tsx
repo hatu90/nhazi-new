@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -22,11 +23,11 @@ export function RequestsPage() {
   const query = useGet<IRequestListResponse>(apiPath("/requests"), { page, pageSize: 20 }, { keepPrevious: true });
   return (
     <Stack gap={4}>
-      <HStack justify="end"><Button variant="primary" label="New request" onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} /></HStack>
+      <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label="New request" onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} /></HStack>
       <DataTable<IRequestResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No requests" hint="Report a repair, ask a question, or ask to end your lease." action={<Button variant="primary" label="New request" onClick={() => setCreating(true)} />} />}
+        empty={<Empty title="No requests" hint="Report a repair, ask a question, or ask to end your lease." action={<Button icon={<Plus size={16} />} variant="primary" label="New request" onClick={() => setCreating(true)} />} />}
         columns={[
           { key: "t", header: "Request", render: (r) => <Link href={to(`requests/${r.id}`)}>{r.title}</Link> },
           { key: "ty", header: "Type", render: (r) => label(r.type) },

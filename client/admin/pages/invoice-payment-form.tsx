@@ -29,7 +29,7 @@ export function usePaymentForm({ path, owed, open, onDone }: { path: string; owe
 export function PaymentFields({ x: { form, owed } }: { x: ReturnType<typeof usePaymentForm> }) {
   return (
     <VStack gap={4}>
-      <FNumber control={form.control} name="amount" label="Amount (₫)" hint={`Outstanding: ${formatMoney(owed)}`} required width="100%" />
+      <FNumber control={form.control} name="amount" label="Amount" money hint={`Outstanding: ${formatMoney(owed)}`} required width="100%" />
       <FSelect control={form.control} name="method" label="Method" options={[{ value: "cash", label: "Cash" }, { value: "bank_transfer", label: "Bank transfer" }]} width="100%" />
       <FDate control={form.control} name="paidOn" label="Paid on" required width="100%" />
       <FText control={form.control} name="reference" label="Reference" hint="Bank reference, receipt number…" width="100%" />

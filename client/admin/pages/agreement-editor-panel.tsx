@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { config, emptyPage, toPages } from "@/client/agreement/config";
 import type { TemplatePage } from "@/client/agreement/types";
 import { fieldProblems } from "@/client/agreement/metadata";
@@ -105,7 +106,7 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
                 <Button label="Previous page" variant="ghost" isDisabled={active === 0} onClick={() => setActive(active - 1)}>‹</Button>
                 <Text>Page {active + 1} of {pages.length}</Text>
                 <Button label="Next page" variant="ghost" isDisabled={active === pages.length - 1} onClick={() => setActive(active + 1)}>›</Button>
-                {canManage && <Button label="Add page" variant="ghost" onClick={addPage}>Add page</Button>}
+                {canManage && <Button icon={<Plus size={16} />} label="Add page" variant="ghost" onClick={addPage}>Add page</Button>}
                 {canManage && <Button label="Remove page" variant="ghost" isDisabled={pages.length <= 1} onClick={removePage}>Remove page</Button>}
                 {children}
               </HStack>

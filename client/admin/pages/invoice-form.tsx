@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { formatMoney, todayIso } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITenancyListResponse } from "@/client/lib/types";
@@ -52,12 +53,12 @@ export function InvoiceFields({ x: { form, leases, items, total } }: { x: Return
         {items.fields.map((f, i) => (
           <VStack key={f.id} gap={2}>
             <FText control={form.control} name={`items.${i}.title`} label={`Line ${i + 1}`} required width="100%" />
-            <FNumber control={form.control} name={`items.${i}.amount`} label="Amount (₫)" required width="100%" />
+            <FNumber control={form.control} name={`items.${i}.amount`} label="Amount" money required width="100%" />
             {items.fields.length > 1 && <HStack><Button label="Remove line" variant="ghost" size="sm" onClick={() => items.remove(i)} /></HStack>}
           </VStack>
         ))}
         <HStack justify="between" align="center">
-          <Button label="Add line" size="sm" variant="secondary" onClick={() => items.append({ title: "", amount: "" })} />
+          <Button icon={<Plus size={16} />} label="Add line" size="sm" variant="secondary" onClick={() => items.append({ title: "", amount: "" })} />
           <Text weight="semibold">Total {formatMoney(total)}</Text>
         </HStack>
       </VStack>

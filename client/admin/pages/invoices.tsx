@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -28,7 +29,7 @@ export function InvoicesPage() {
     <Stack gap={4}>
       <HStack justify="between" align="end" wrap="wrap" gap={3}>
         <SelectField label="Status" value={status} onChange={(v) => { setStatus(v); setPage(1); }} options={[{ value: "", label: "All statuses" }, ...statuses]} width={200} />
-        {canManage && <Button variant="primary" label="New invoice" onClick={() => setCreating(true)} />}
+        {canManage && <Button icon={<Plus size={16} />} variant="primary" label="New invoice" onClick={() => setCreating(true)} />}
       </HStack>
       <DataTable<IAdminInvoiceResponse>
         query={query}

@@ -4,6 +4,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Text } from "@astryxdesign/core/Text";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Heading } from "@astryxdesign/core/Heading";
+import { ArrowLeft, FileText, LayoutDashboard, MessageSquareWarning, Receipt } from "lucide-react";
 import { createContext, useContext } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { ApiError } from "@/client/lib/api";
@@ -29,10 +30,10 @@ export function useLease() {
 }
 
 const tabs = [
-  { id: "", label: "Overview" },
-  { id: "invoices", label: "Invoices" },
-  { id: "requests", label: "Requests" },
-  { id: "agreement", label: "Agreement" },
+  { id: "", label: "Overview", icon: LayoutDashboard },
+  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "requests", label: "Requests", icon: MessageSquareWarning },
+  { id: "agreement", label: "Agreement", icon: FileText },
 ];
 
 export function LeaseLayout() {
@@ -50,7 +51,7 @@ export function LeaseLayout() {
   return (
     <Ctx value={{ lease, leaseId, apiPath, to }}>
       <VStack gap={4} paddingBlockEnd={5}>
-        <HStack><Button label="My leases" variant="ghost" size="sm" href="/" /></HStack>
+        <HStack><Button label="My leases" icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href="/" /></HStack>
         <VStack gap={1}>
           <HStack gap={3} align="center" wrap="wrap"><Heading level={1}>{lease.unitName}</Heading><StatusBadge status={lease.status} /></HStack>
           <Text color="secondary">{lease.propertyName} · {formatDate(lease.startDate)} → {lease.endDate ? formatDate(lease.endDate) : "open"}</Text>

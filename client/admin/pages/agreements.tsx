@@ -1,15 +1,15 @@
 "use client";
 
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITemplateListResponse, ITemplateSummaryResponse } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm, RowActions } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Link } from "@astryxdesign/core/Link";
-import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -25,7 +25,7 @@ export function AgreementsPage() {
   const nameForm = useNameForm({ open: dialog !== null, onDone: (id) => { setDialog(null); if (id) navigate(to(`agreements/${id}`)); } });
   const query = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { page, pageSize: 20 }, { keepPrevious: true });
   const remove = useSend<{ id: string }>("DELETE", (b) => apiPath(`/agreement-templates/${b.id}`), [apiPath("/agreement-templates")]);
-  const create = canManage && <Button variant="primary" label="New template" onClick={() => setDialog("new")} />;
+  const create = canManage && <Button icon={<Plus size={16} />} variant="primary" label="New template" onClick={() => setDialog("new")} />;
 
   return (
     <Stack gap={4}>
@@ -34,7 +34,7 @@ export function AgreementsPage() {
       <DataTable<ITemplateSummaryResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No agreement templates" hint="Design a lease agreement once, then attach it to leases. Placeholders such as {{tenantNames}} are filled per lease." action={create} />}
+        empty={<Empty title="No agreement templates" hint="Design a lease agreement once, then attach it to leases." action={create} />}
         columns={[
           { key: "n", header: "Name", render: (t) => <Link href={to(`agreements/${t.id}`)}>{t.name}</Link> },
           { key: "d", header: "", render: (t) => (t.isDefault ? <Tag label="Default" tone="info" /> : null) },
@@ -45,15 +45,10 @@ export function AgreementsPage() {
             header: "",
             align: "end",
             render: (t) => canManage && (
-              <DropdownMenu
-                placement="below"
-                alignment="end"
-                items={[
-                  { id: "edit", label: "Edit", onClick: () => navigate(to(`agreements/${t.id}`)) },
-                  { id: "delete", label: "Delete", onClick: () => confirm.ask({ title: `Delete "${t.name}"?`, description: "Leases keep the version they were created with.", actionLabel: "Delete", onConfirm: () => remove.mutateAsync({ id: t.id }) }) },
-                ]}
-                renderTrigger={(props) => <button type="button" {...props} aria-label="More actions" className="cursor-pointer rounded px-2 py-1 text-lg leading-none">⋯</button>}
-              />
+              <RowActions actions={[
+                { id: "edit", label: "Edit", icon: Pencil, onClick: () => navigate(to(`agreements/${t.id}`)) },
+                { id: "delete", label: "Delete", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Delete "${t.name}"?`, description: "Leases keep the version they were created with.", actionLabel: "Delete", onConfirm: () => remove.mutateAsync({ id: t.id }) }) },
+              ]} />
             ),
           },
         ]}

@@ -1,12 +1,13 @@
 "use client";
 
+import { Pencil, Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IUnitListResponse, IUnitResponse } from "@/client/lib/types";
-import { DataTable, Empty, Modal, TextField } from "@/client/ui";
+import { DataTable, Empty, Modal, TextField, RowActions } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
@@ -28,19 +29,19 @@ export function UnitsPage() {
     <Stack gap={4}>
       <HStack justify="between" align="end" wrap="wrap" gap={3}>
         <div className="w-full sm:w-72"><TextField label="Search" type="search" placeholder="Search units…" value={q} onChange={(v) => { setQ(v); setPage(1); }} width="100%" /></div>
-        {canManage && <HStack gap={2}><Button label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add unit" variant="primary" onClick={() => setEditing("new")} /></HStack>}
+        {canManage && <HStack gap={2}><Button icon={<Plus size={16} />} label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add unit" variant="primary" onClick={() => setEditing("new")} /></HStack>}
       </HStack>
       <DataTable<IUnitResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No units" hint="Units are the rooms or apartments you rent out." action={canManage && <Button variant="primary" label="Add the first unit" onClick={() => setEditing("new")} />} />}
+        empty={<Empty title="No units" hint="Units are the rooms or apartments you rent out." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add the first unit" onClick={() => setEditing("new")} />} />}
         columns={[
           { key: "name", header: "Name", render: (u) => u.name },
           { key: "floor", header: "Floor", render: (u) => u.floor },
           { key: "area", header: "Area", render: (u) => `${u.area} m²` },
           { key: "rooms", header: "Beds / baths", render: (u) => `${u.bedrooms ?? "—"} / ${u.bathrooms ?? "—"}` },
           { key: "rent", header: "Rent", render: (u) => (u.rentNegotiable ? "Negotiable" : formatMoney(u.rentPrice)) },
-          { key: "edit", header: "", align: "end", render: (u) => canManage && <Button label="Edit" size="sm" variant="ghost" onClick={() => setEditing(u)} /> },
+          { key: "edit", header: "", align: "end", render: (u) => canManage && <RowActions actions={[{ id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditing(u) }]} /> },
         ]}
       />
       <Modal open={bulk} onClose={() => setBulk(false)}>

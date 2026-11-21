@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -33,8 +34,8 @@ export function InvoiceDetailPage() {
   const canReport = (inv.status === "pending" || inv.status === "partial") && owed > 0;
   return (
     <VStack gap={5}>
-      <HStack><Button label="All invoices" variant="ghost" size="sm" href={to("invoices")} /></HStack>
-      <PageHeader title={inv.title} subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">due {formatDate(inv.dueDate)}</Text></HStack>} actions={canReport && <Button variant="primary" label="Add payment" onClick={() => setPaying(true)} />} />
+      <HStack><Button label="All invoices" icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href={to("invoices")} /></HStack>
+      <PageHeader title={inv.title} subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">due {formatDate(inv.dueDate)}</Text></HStack>} actions={canReport && <Button icon={<Plus size={16} />} variant="primary" label="Add payment" onClick={() => setPaying(true)} />} />
       <Section title="Summary"><DefList items={[["Type", label(inv.kind)], ["Total", formatMoney(inv.amount)], ["Paid", formatMoney(inv.paidAmount)], ["Outstanding", formatMoney(inv.status === "cancelled" ? 0 : inv.amount - inv.paidAmount)]]} /></Section>
       <Section title="What you're paying for">
         <DataTable<IInvoiceDetailResponse["items"][number]>

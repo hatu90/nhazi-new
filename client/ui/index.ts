@@ -22,6 +22,7 @@ export { DataTable } from "./data-table";
 export { Modal } from "./modal";
 export { useConfirm } from "./confirm";
 export { Tabs } from "./tabs";
+export { RowActions, type RowAction } from "./row-actions";
 export { StatusBadge } from "./status-badge";
 export { Tag } from "./tag";
 export { FormActions } from "./form-actions";

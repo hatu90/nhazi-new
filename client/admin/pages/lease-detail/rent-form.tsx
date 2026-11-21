@@ -22,7 +22,7 @@ export function RentFields({ x: { form, last } }: { x: ReturnType<typeof useRent
   return (
     <VStack gap={4}>
       <FDate control={form.control} name="effectiveDate" label="Effective from" hint={last ? `Must be after ${formatDate(last)}.` : undefined} min={last} required width="100%" />
-      <FNumber control={form.control} name="amount" label="Monthly rent (₫)" required width="100%" />
+      <FNumber control={form.control} name="amount" label="Monthly rent" money required width="100%" />
     </VStack>
   );
 }

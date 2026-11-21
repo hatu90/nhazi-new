@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { ITenancyListResponse, ITenancySummaryResponse, IUnitListResponse, IUnitResponse } from "@/client/lib/types";
@@ -68,7 +69,7 @@ export function UnitsByFloor() {
   const actions = canManage && (
     <HStack gap={2}>
       <Button label="Bulk add units" variant="secondary" onClick={() => setBulk(true)} />
-      <Button label="Add unit" variant="primary" onClick={() => setAdding(true)} />
+      <Button icon={<Plus size={16} />} label="Add unit" variant="primary" onClick={() => setAdding(true)} />
     </HStack>
   );
 
@@ -96,7 +97,7 @@ export function UnitsByFloor() {
                       <Card key={unit.id} padding={3}>
                         <VStack gap={3}>
                           {summary}
-                          <Button label="Add lease" size="sm" variant="secondary" onClick={() => setLeaseUnit(unit)} />
+                          <Button icon={<Plus size={16} />} label="Add lease" size="sm" variant="secondary" onClick={() => setLeaseUnit(unit)} />
                         </VStack>
                       </Card>
                     );

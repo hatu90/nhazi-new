@@ -5,7 +5,7 @@ import { Card } from "@astryxdesign/core/Card";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { isValidPhone, normalizePhone, todayIso } from "@/client/lib/format";
@@ -90,8 +90,8 @@ export function LeaseFields({ x: { form, units, templates, tenants } }: { x: Ret
       </Section>
 
       <Section title="Rent & deposit">
-        <FNumber control={form.control} name="rent" label="Monthly rent (₫)" required width="100%" />
-        <FNumber control={form.control} name="depositAmount" label="Deposit (₫)" hint="An invoice for the deposit is issued with the draft." width="100%" />
+        <FNumber control={form.control} name="rent" label="Monthly rent" money required width="100%" />
+        <FNumber control={form.control} name="depositAmount" label="Deposit" money width="100%" />
       </Section>
 
       <Section title="Agreement">
@@ -105,7 +105,7 @@ export function LeaseFields({ x: { form, units, templates, tenants } }: { x: Ret
         />
       </Section>
 
-      <Section title="Tenants" action={<Button label="Add tenant" size="sm" variant="secondary" onClick={() => tenants.append({ name: "", yearOfBirth: "", phone: "" })} />}>
+      <Section title="Tenants" action={<Button icon={<Plus size={16} />} label="Add tenant" size="sm" variant="secondary" onClick={() => tenants.append({ name: "", yearOfBirth: "", phone: "" })} />}>
         <Text size="sm" color="secondary">Everyone living in the unit. Tenants with a phone number are invited to sign in and see the lease.</Text>
         {tenants.fields.map((f, i) => (
           <Card key={f.id} padding={4}>

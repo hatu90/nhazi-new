@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -32,7 +33,7 @@ export function RequestDetailPage() {
 
   return (
     <VStack gap={5}>
-      <HStack><Button label="All requests" variant="ghost" size="sm" href={to("requests")} /></HStack>
+      <HStack><Button label="All requests" icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href={to("requests")} /></HStack>
       <PageHeader
         title={r.title}
         subtitle={<HStack gap={2} align="center"><StatusBadge status={r.status} /><Text color="secondary">{label(r.type)}</Text></HStack>}

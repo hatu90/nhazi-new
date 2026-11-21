@@ -83,7 +83,7 @@ export class GetPropertyFileUrlUseCase implements IUseCase<IGetPropertyFileUrlCo
   async execute(c: IGetPropertyFileUrlCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
     if (!c.path.startsWith(propertyFilePrefix(c.propertyId)) || c.path.includes("..")) throw new NotFoundError("File");
-    return { url: await this.storage.signedUrl(c.path, 300) };
+    return { url: this.storage.publicUrl(c.path) };
   }
 }
 
@@ -108,6 +108,6 @@ export class GetDraftFileUrlUseCase implements IUseCase<{ actor: IActor; path: s
   constructor(private readonly storage: IFileStorage) {}
   async execute({ actor, path }: { actor: IActor; path: string }) {
     if (!path.startsWith(draftFilePrefix(actor.accountId)) || path.includes("..")) throw new NotFoundError("File");
-    return { url: await this.storage.signedUrl(path, 300) };
+    return { url: this.storage.publicUrl(path) };
   }
 }

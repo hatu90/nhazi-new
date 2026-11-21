@@ -1,5 +1,6 @@
 "use client";
 
+import { MailX, Plus, UserMinus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -7,7 +8,7 @@ import { useMe } from "@/client/auth/auth-provider";
 import { formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IInvitationResponse, IMemberResponse, IPaginated, PropertyRole } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, PageSpinner, Section, SelectField, StatusBadge, useConfirm } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, PageSpinner, Section, SelectField, StatusBadge, useConfirm, RowActions } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { VStack } from "@astryxdesign/core/Stack";
@@ -30,7 +31,7 @@ export function TeamPage() {
   const inviteForm = useInviteForm({ open: inviting, onDone: () => setInviting(false) });
 
   return (
-    <Section title="Team" action={isOwner && <Button variant="primary" label="Add team member" onClick={() => setInviting(true)} />}>
+    <Section title="Team" action={isOwner && <Button icon={<Plus size={16} />} variant="primary" label="Add team member" onClick={() => setInviting(true)} />}>
       <Text size="sm" color="secondary">People who can manage this property. A new member signs in with their phone number.</Text>
       {members.isPending ? <PageSpinner /> : members.error ? <ErrorBox error={members.error} /> : (
         members.data.length === 0 ? <Empty title="No members" /> : (
@@ -46,7 +47,7 @@ export function TeamPage() {
                     ? <SelectField label={`Role of ${m.displayName}`} value={m.role} onChange={(v) => changeRole.mutate({ accountId: m.accountId, role: v as PropertyRole })} options={roleOptions} width={160} />
                     : label(m.role),
                 },
-                { key: "rm", header: "", align: "end", render: (m) => isOwner && m.accountId !== me.id && <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm.ask({ title: `Remove ${m.displayName}?`, description: "They lose access to this property.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync(m.accountId) })} /> },
+                { key: "rm", header: "", align: "end", render: (m) => isOwner && m.accountId !== me.id && <RowActions actions={[{ id: "remove", label: "Remove", icon: UserMinus, destructive: true, onClick: () => confirm.ask({ title: `Remove ${m.displayName}?`, description: "They lose access to this property.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync(m.accountId) }) }]} /> },
               ]}
             />
           )
@@ -65,7 +66,7 @@ export function TeamPage() {
                 { key: "role", header: "Role", render: (i) => (i.role ? label(i.role) : "—") },
                 { key: "status", header: "Status", render: (i) => <StatusBadge status={i.status} /> },
                 { key: "sent", header: "Sent", render: (i) => formatDate(i.createdAt) },
-                { key: "rv", header: "", align: "end", render: (i) => i.status === "pending" && <Button label="Revoke" size="sm" variant="ghost" onClick={() => revoke.mutate(i.id)} /> },
+                { key: "rv", header: "", align: "end", render: (i) => i.status === "pending" && <RowActions actions={[{ id: "revoke", label: "Revoke invite", icon: MailX, destructive: true, onClick: () => revoke.mutate(i.id) }]} /> },
               ]}
             />
           </VStack>

@@ -28,8 +28,8 @@ export function TierFields<T extends FieldValues>({ control, name, multi, unit }
           <VStack key={f.id} gap={1}>
             {multi && last && <Text size="sm" color="secondary">Tier {i + 1}: above previous</Text>}
             <HStack gap={2} align="end">
-              {multi && !last && <FNumber control={control} name={`${name}.${i}.upTo` as Path<T>} label={`Tier ${i + 1} up to (${unit})`} required width="100%" />}
-              <FNumber control={control} name={`${name}.${i}.rate` as Path<T>} label={multi ? `Rate (₫ per ${unit})` : `Price (₫ per ${unit})`} required width="100%" />
+              {multi && !last && <FNumber control={control} name={`${name}.${i}.upTo` as Path<T>} label={`Tier ${i + 1} up to`} unit={unit} required width="100%" />}
+              <FNumber control={control} name={`${name}.${i}.rate` as Path<T>} label={multi ? "Rate" : "Price"} money hint={`Per ${unit}`} required width="100%" />
               {multi && fields.length > 1 && (!last) && <IconButton label={`Remove tier ${i + 1}`} variant="ghost" icon={<Minus />} onClick={() => remove(i)} />}
               {multi && last && (
                 <IconButton icon={<Plus />} label="Add tier" onClick={() => append(emptyTier() as never)} />

@@ -19,12 +19,14 @@ import { InvoicesTab } from "./invoices-tab";
 import { OverviewTab } from "./overview-tab";
 import { StartFields, useStartForm } from "./start-form";
 
+import { CalendarRange, LayoutDashboard, Receipt, type LucideIcon } from "lucide-react";
+
 type Dialog = "start" | "end" | null;
 type TabId = "overview" | "periods" | "invoices";
-const TABS: { id: TabId; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "periods", label: "Billing periods" },
-  { id: "invoices", label: "Invoices & payments" },
+const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "periods", label: "Billing periods", icon: CalendarRange },
+  { id: "invoices", label: "Invoices & payments", icon: Receipt },
 ];
 
 export function LeaseDetailPage() {

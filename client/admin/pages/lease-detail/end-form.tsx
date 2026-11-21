@@ -281,6 +281,7 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
                     control={form.control}
                     name={`handovers.${h.id}.charge`}
                     label="Charge for damage / loss"
+                    money
                     width="100%"
                   />
                   <FArea

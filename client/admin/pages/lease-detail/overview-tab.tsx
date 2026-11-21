@@ -1,15 +1,16 @@
 "use client";
 
+import { CalendarX, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import type { ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, Section, useConfirm } from "@/client/ui";
+import { DataTable, DefList, Empty, ErrorBox, Modal, Section, useConfirm, RowActions } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { HandoverFields, useHandoverForm } from "./handover-form";
 import { LeaseAgreement } from "./lease-agreement";
@@ -52,7 +53,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
 
       {l.agreement && <LeaseAgreement lease={l} path={path} />}
 
-      <Section title="Rent history" action={canManage && l.status !== "ended" && <Button label="Add rent version" size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
+      <Section title="Rent history" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add rent version" size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
         <DataTable<{ id: string; effectiveDate: string; amount: number }>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.rentVersions.map((r) => ({ ...r, id: r.effectiveDate })), page: 1, pageSize: 1000, total: l.rentVersions.length } }}
           empty={<Empty title="No rent versions" />}
@@ -60,7 +61,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
         />
       </Section>
 
-      <Section title="People" action={canManage && l.status !== "ended" && <Button label="Add person" size="sm" variant="secondary" onClick={() => setDialog("member")} />}>
+      <Section title="People" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add person" size="sm" variant="secondary" onClick={() => setDialog("member")} />}>
         <DataTable<PersonRow>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: people, page: 1, pageSize: 1000, total: people.length } }}
           empty={<Empty title="No one yet" hint="Add the people living here. With a phone number they are invited to sign in and see the lease." />}
@@ -75,7 +76,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
         />
       </Section>
 
-      <Section title="Services" action={canManage && l.status !== "ended" && <Button label="Add service" size="sm" variant="secondary" onClick={() => setDialog("service")} />}>
+      <Section title="Services" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add service" size="sm" variant="secondary" onClick={() => setDialog("service")} />}>
         <DataTable<ISubscriptionResponse>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.subscriptions, page: 1, pageSize: 1000, total: l.subscriptions.length } }}
           empty={<Empty title="No services" hint="Subscribe the lease to electricity, water, internet…" />}
@@ -84,12 +85,12 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
             { key: "b", header: "Billed by", render: (s) => label(s.usageBase) },
             { key: "m", header: "Meter / qty", render: (s) => s.meterName ?? `×${s.quantity}` },
             { key: "p", header: "Period", render: (s) => `${formatDate(s.startDate)} → ${s.endDate ? formatDate(s.endDate) : "open"}` },
-            { key: "e", header: "", align: "end", render: (s) => canManage && !s.endDate && <Button label="End" size="sm" variant="ghost" clickAction={async () => { await endSub.mutateAsync({ id: s.id, endDate: todayIso() }); }} /> },
+            { key: "e", header: "", align: "end", render: (s) => canManage && !s.endDate && <RowActions actions={[{ id: "end", label: "End service", icon: CalendarX, onClick: () => { void (async () => { await endSub.mutateAsync({ id: s.id, endDate: todayIso() }); })(); } }]} /> },
           ]}
         />
       </Section>
 
-      <Section title="Handover" action={canManage && l.status !== "ended" && <Button label="Add item" size="sm" variant="secondary" onClick={() => setDialog("handover")} />}>
+      <Section title="Handover" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add item" size="sm" variant="secondary" onClick={() => setDialog("handover")} />}>
         <DataTable<Handover>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.handovers, page: 1, pageSize: 1000, total: l.handovers.length } }}
           empty={<Empty title="Nothing handed over" hint="List the furniture, appliances and keys the tenant receives, and their condition." />}
@@ -102,12 +103,10 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
               key: "a",
               header: "",
               align: "end",
-              render: (h) => canManage && (
-                <HStack gap={1} justify="end">
-                  <Button label="Edit" size="sm" variant="ghost" onClick={() => setEditingHandover(h)} />
-                  <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm.ask({ title: `Remove "${h.itemName}"?`, description: "It is removed from this lease's handover.", actionLabel: "Remove", onConfirm: () => removeHandover.mutateAsync({ id: h.id }) })} />
-                </HStack>
-              ),
+              render: (h) => canManage && <RowActions actions={[
+                { id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditingHandover(h) },
+                { id: "remove", label: "Remove", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Remove "${h.itemName}"?`, description: "It is removed from this lease's handover.", actionLabel: "Remove", onConfirm: () => removeHandover.mutateAsync({ id: h.id }) }) },
+              ]} />,
             },
           ]}
         />

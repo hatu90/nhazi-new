@@ -1,14 +1,14 @@
 "use client";
 
+import { Gauge, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IMeterListResponse, IMeterResponse } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm, RowActions } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
-import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { BulkMetersFields, useBulkMetersForm } from "../bulk/bulk-meters-form";
@@ -32,12 +32,12 @@ export function MetersPage() {
 
   return (
     <Stack gap={4}>
-      {canManage && <HStack justify="end" gap={2}><Button label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add meter" variant="primary" onClick={() => setCreating(true)} /></HStack>}
+      {canManage && <HStack justify="end" gap={2}><Button icon={<Plus size={16} />} label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add meter" variant="primary" onClick={() => setCreating(true)} /></HStack>}
       {remove.error && <ErrorBox error={remove.error} />}
       <DataTable<IMeterResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No meters" hint="Add a meter to a unit to record electricity or water readings." action={canManage && <Button variant="primary" label="Add a meter" onClick={() => setCreating(true)} />} />}
+        empty={<Empty title="No meters" hint="Add a meter to a unit to record electricity or water readings." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add a meter" onClick={() => setCreating(true)} />} />}
         columns={[
           { key: "name", header: "Meter", render: (m) => <HStack gap={2} align="center">{m.name}{m.removedAt && <Tag label="removed" />}</HStack> },
           { key: "unit", header: "Unit", render: (m) => m.unitName },
@@ -45,20 +45,11 @@ export function MetersPage() {
           { key: "serial", header: "Serial", render: (m) => m.serialNumber ?? "—" },
           { key: "installed", header: "Installed", render: (m) => formatDate(m.installedAt) },
           { key: "go", header: "", align: "end", render: (m) => (
-            <HStack gap={1} justify="end" align="center">
-              <Button label="Readings" size="sm" variant="ghost" onClick={() => setViewing(m)} />
-              {canManage && (
-                <DropdownMenu
-                  placement="below"
-                  alignment="end"
-                  items={[
-                    { id: "edit", label: "Edit", onClick: () => setEditing(m) },
-                    { id: "remove", label: "Remove", onClick: () => confirm.ask({ title: `Remove meter "${m.name}"?`, description: "The meter and its readings are removed.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
-                  ]}
-                  renderTrigger={(props) => <button type="button" {...props} aria-label="More actions" className="cursor-pointer rounded px-2 py-1 text-lg leading-none">⋯</button>}
-                />
-              )}
-            </HStack>
+            <RowActions actions={[
+                { id: "readings", label: "Readings", icon: Gauge, onClick: () => setViewing(m) },
+                canManage && { id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditing(m) },
+                canManage && { id: "remove", label: "Remove", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Remove meter "${m.name}"?`, description: "The meter and its readings are removed.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
+              ]} />
           ) },
         ]}
       />

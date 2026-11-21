@@ -50,11 +50,11 @@ export function UnitFields({ x: { form } }: { x: ReturnType<typeof useUnitForm> 
   return (
     <VStack gap={4}>
       <FText control={form.control} name="name" label="Name" required width="100%" />
-      <FNumber control={form.control} name="area" label="Area (m²)" required width="100%" />
+      <FNumber control={form.control} name="area" label="Area" unit="m²" required width="100%" />
       <FNumber control={form.control} name="floor" label="Floor" required width="100%" />
       <FNumber control={form.control} name="bedrooms" label="Bedrooms" width="100%" />
       <FNumber control={form.control} name="bathrooms" label="Bathrooms" width="100%" />
-      <FNumber control={form.control} name="rentPrice" label="Rent (₫ / month)" width="100%" />
+      <FNumber control={form.control} name="rentPrice" label="Monthly rent" money width="100%" />
       <FCheck control={form.control} name="rentNegotiable" label="Negotiable" />
       <FArea control={form.control} name="description" label="Description" width="100%" />
     </VStack>

@@ -100,8 +100,8 @@ export function PropertyFields({ x: { form, initial, path, headerImage, setHeade
       </Section>
 
       <Section title="Rent">
-        <FNumber control={form.control} name="rentPriceFrom" label="Rent from (₫)" width="100%" />
-        <FNumber control={form.control} name="rentPriceTo" label="Rent to (₫)" width="100%" />
+        <FNumber control={form.control} name="rentPriceFrom" label="Rent from" money width="100%" />
+        <FNumber control={form.control} name="rentPriceTo" label="Rent to" money width="100%" />
         <FCheck control={form.control} name="rentNegotiable" label="Rent is negotiable" />
       </Section>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -27,9 +28,9 @@ export function ServicesPage() {
 
   return (
     <Stack gap={4}>
-      {canManage && <HStack justify="end"><Button variant="primary" label="Add service" onClick={() => setCreating(true)} /></HStack>}
+      {canManage && <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label="Add service" onClick={() => setCreating(true)} /></HStack>}
       {isPending ? <PageSpinner /> : error ? <ErrorBox error={error} retry={() => void refetch()} /> : data.items.length === 0 ? (
-        <Card padding={4}><Empty title="No services" hint="Things you bill besides rent." action={canManage && <Button variant="primary" label="Add the first service" onClick={() => setCreating(true)} />} /></Card>
+        <Card padding={4}><Empty title="No services" hint="Things you bill besides rent." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add the first service" onClick={() => setCreating(true)} />} /></Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {data.items.map((s) => {
@@ -52,7 +53,7 @@ export function ServicesPage() {
                   </VStack>
                   <HStack justify="between" align="center" gap={2}>
                     <Text size="sm" color="secondary">{s.prices.length} price {s.prices.length === 1 ? "version" : "versions"} · latest from {formatDate(latest?.effectiveDate)}</Text>
-                    {canManage && <Button label="New price" size="sm" variant="secondary" onClick={() => setPricing(s)} />}
+                    {canManage && <Button icon={<Plus size={16} />} label="New price" size="sm" variant="secondary" onClick={() => setPricing(s)} />}
                   </HStack>
                 </VStack>
               </Card>

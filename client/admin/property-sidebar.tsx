@@ -1,22 +1,23 @@
 "use client";
 
 import { SideNav, SideNavItem, SideNavSection } from "@astryxdesign/core/SideNav";
+import { Building2, ClipboardList, FileSignature, FileText, Gauge, LayoutDashboard, Package, Receipt, Settings, Wrench, DoorOpen, type LucideIcon } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { AccountSection } from "@/client/spa/account-section";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyListResponse } from "@/client/lib/types";
 
-const items = [
-  { id: "", label: "Overview" },
-  { id: "units", label: "Units" },
-  { id: "leases", label: "Leases" },
-  { id: "services", label: "Services" },
-  { id: "inventory", label: "Inventory" },
-  { id: "meters", label: "Meters" },
-  { id: "requests", label: "Requests" },
-  { id: "invoices", label: "Invoices" },
-  { id: "agreements", label: "Agreements" },
-  { id: "settings", label: "Settings" },
+const items: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "", label: "Overview", icon: LayoutDashboard },
+  { id: "units", label: "Units", icon: DoorOpen },
+  { id: "leases", label: "Leases", icon: FileSignature },
+  { id: "services", label: "Services", icon: Wrench },
+  { id: "inventory", label: "Inventory", icon: Package },
+  { id: "meters", label: "Meters", icon: Gauge },
+  { id: "requests", label: "Requests", icon: ClipboardList },
+  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "agreements", label: "Agreements", icon: FileText },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 /** Sidebar for /admin/properties/:propertyId/*: the current property's sections, then a switcher for the others. */
@@ -34,13 +35,13 @@ export function PropertySidebar({ withAccount = false }: { withAccount?: boolean
     <SideNav>
       <SideNavSection title={current?.name ?? "Property"}>
         {items.map((i) => (
-          <SideNavItem key={i.id} label={i.label} isSelected={section === i.id} onClick={() => navigate(`/properties/${propertyId}${i.id ? `/${i.id}` : ""}`)} />
+          <SideNavItem key={i.id} label={i.label} icon={i.icon} isSelected={section === i.id} onClick={() => navigate(`/properties/${propertyId}${i.id ? `/${i.id}` : ""}`)} />
         ))}
       </SideNavSection>
       {others.length > 0 && (
         <SideNavSection title="Other properties">
           {others.map((p) => (
-            <SideNavItem key={p.id} label={p.name} onClick={() => navigate(`/properties/${p.id}`)} />
+            <SideNavItem key={p.id} label={p.name} icon={Building2} onClick={() => navigate(`/properties/${p.id}`)} />
           ))}
         </SideNavSection>
       )}

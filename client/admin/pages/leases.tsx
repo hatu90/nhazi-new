@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -26,7 +27,7 @@ export function LeasesPage() {
   const navigate = useNavigate();
   const leaseForm = useLeaseForm({ open: creating, onDone: (id) => { setCreating(false); navigate(to(`leases/${id}`)); } });
   const query = useGet<ITenancyListResponse>(apiPath("/leases"), { page, pageSize: 20, status }, { keepPrevious: true });
-  const newLease = canManage && <Button variant="primary" label="New lease" onClick={() => setCreating(true)} />;
+  const newLease = canManage && <Button icon={<Plus size={16} />} variant="primary" label="New lease" onClick={() => setCreating(true)} />;
 
   return (
     <Stack gap={4}>

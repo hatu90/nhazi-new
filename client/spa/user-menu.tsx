@@ -3,6 +3,7 @@
 import { useMe } from "@/client/auth/auth-provider";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { DropdownMenu, type DropdownMenuOption } from "@astryxdesign/core/DropdownMenu";
+import { LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAccountActions } from "./use-account-actions";
 
@@ -11,10 +12,10 @@ export function UserMenu() {
   const me = useMe();
   const { goDashboard, goSettings, logOut } = useAccountActions();
   const items: DropdownMenuOption[] = [
-    { id: "dashboard", label: t("dashboard"), onClick: goDashboard },
-    ...(goSettings ? [{ id: "settings", label: t("settings"), onClick: goSettings }] : []),
+    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard, onClick: goDashboard },
+    ...(goSettings ? [{ id: "settings", label: t("settings"), icon: Settings, onClick: goSettings }] : []),
     { type: "divider" as const },
-    { id: "signout", label: t("signOut"), onClick: logOut },
+    { id: "signout", label: t("signOut"), icon: LogOut, onClick: logOut },
   ];
   return (
     <DropdownMenu
