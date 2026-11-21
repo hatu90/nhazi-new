@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Pencil, Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -16,6 +17,8 @@ import { useProperty } from "../property-layout";
 import { UnitFields, useUnitForm } from "./unit-form";
 
 export function UnitsPage() {
+  const t = useTranslations("Units");
+  const c = useTranslations("Common");
   const { apiPath, canManage } = useProperty();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
@@ -28,20 +31,20 @@ export function UnitsPage() {
   return (
     <Stack gap={4}>
       <HStack justify="between" align="end" wrap="wrap" gap={3}>
-        <div className="w-full sm:w-72"><TextField label="Search" type="search" placeholder="Search units…" value={q} onChange={(v) => { setQ(v); setPage(1); }} width="100%" /></div>
-        {canManage && <HStack gap={2}><Button icon={<Plus size={16} />} label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add unit" variant="primary" onClick={() => setEditing("new")} /></HStack>}
+        <div className="w-full sm:w-72"><TextField label={c("search")} type="search" value={q} onChange={(v) => { setQ(v); setPage(1); }} width="100%" /></div>
+        {canManage && <HStack gap={2}><Button icon={<Plus size={16} />} label={t("bulkAdd")} variant="secondary" onClick={() => setBulk(true)} /><Button label={t("addUnit")} variant="primary" onClick={() => setEditing("new")} /></HStack>}
       </HStack>
       <DataTable<IUnitResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No units" hint="Units are the rooms or apartments you rent out." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add the first unit" onClick={() => setEditing("new")} />} />}
+        empty={<Empty title={t("empty")} action={canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("addUnit")} onClick={() => setEditing("new")} />} />}
         columns={[
-          { key: "name", header: "Name", render: (u) => u.name },
-          { key: "floor", header: "Floor", render: (u) => u.floor },
-          { key: "area", header: "Area", render: (u) => `${u.area} m²` },
-          { key: "rooms", header: "Beds / baths", render: (u) => `${u.bedrooms ?? "—"} / ${u.bathrooms ?? "—"}` },
-          { key: "rent", header: "Rent", render: (u) => (u.rentNegotiable ? "Negotiable" : formatMoney(u.rentPrice)) },
-          { key: "edit", header: "", align: "end", render: (u) => canManage && <RowActions actions={[{ id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditing(u) }]} /> },
+          { key: "name", header: c("name"), render: (u) => u.name },
+          { key: "floor", header: t("floor"), render: (u) => u.floor },
+          { key: "area", header: t("area"), render: (u) => `${u.area} m²` },
+          { key: "rooms", header: t("bedsBaths"), render: (u) => `${u.bedrooms ?? "—"} / ${u.bathrooms ?? "—"}` },
+          { key: "rent", header: t("rent"), render: (u) => (u.rentNegotiable ? t("negotiable") : formatMoney(u.rentPrice)) },
+          { key: "edit", header: "", align: "end", render: (u) => canManage && <RowActions actions={[{ id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(u) }]} /> },
         ]}
       />
       <Modal open={bulk} onClose={() => setBulk(false)}>
@@ -49,7 +52,7 @@ export function UnitsPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Bulk add units"} onOpenChange={(o) => { if (!o) setBulk(false); }} />}
+            header={<DialogHeader title={t("bulkTitle")} onOpenChange={(o) => { if (!o) setBulk(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><BulkUnitsFields x={bulkForm} /></LayoutContent>}
             footer={<LayoutFooter padding={5}><FormFooter error={bulkForm.error} busy={bulkForm.busy} submitLabel={bulkForm.submitLabel} onCancel={() => setBulk(false)} /></LayoutFooter>}
           />
@@ -60,9 +63,9 @@ export function UnitsPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={editing === "new" ? "Add unit" : "Edit unit"} onOpenChange={(o) => { if (!o) setEditing(null); }} />}
+            header={<DialogHeader title={editing === "new" ? t("addUnit") : t("editUnit")} onOpenChange={(o) => { if (!o) setEditing(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><UnitFields x={unitForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={unitForm.error} busy={unitForm.busy} submitLabel={editing === "new" ? "Add unit" : "Save"} onCancel={() => setEditing(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={unitForm.error} busy={unitForm.busy} submitLabel={editing === "new" ? t("addUnit") : c("save")} onCancel={() => setEditing(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>

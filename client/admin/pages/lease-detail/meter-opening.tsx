@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { formatDate, formatDateTime } from "@/client/lib/format";
+import { useLocale } from "next-intl";
 import { useGet } from "@/client/lib/hooks";
 import type { IReadingListResponse } from "@/client/lib/types";
 import { num } from "@/client/ui/form";
@@ -18,6 +20,8 @@ export type StartValues = { startDate: string; periodEnd: string; recordNew: Rec
  * and saves what is typed as a new reading taken now (it must not be below the latest reading).
  */
 export function MeterOpening({ form, meterId, name, startDate }: { form: UseFormReturn<StartValues>; meterId: string; name: string; startDate: string }) {
+  const t = useTranslations("LeaseDetail");
+  const locale = useLocale();
   const { apiPath } = useProperty();
   const path = apiPath(`/meters/${meterId}/readings`);
   // The latest reading on/before the start date, else the nearest later one.
@@ -31,7 +35,7 @@ export function MeterOpening({ form, meterId, name, startDate }: { form: UseForm
   const recordNew = useWatch({ control: form.control as Control<StartValues>, name: `recordNew.${meterId}` }) === true;
 
   const recording = !last || recordNew;
-  const bound = latest ? `Must be ${latest.value} or more (latest reading ${formatDateTime(latest.readAt)}).` : undefined;
+  const bound = latest ? t("mustBe", { value: latest.value, at: formatDateTime(latest.readAt, locale) }) : undefined;
 
   // Locked: show the last reading. Unticking puts it back.
   useEffect(() => {
@@ -46,20 +50,20 @@ export function MeterOpening({ form, meterId, name, startDate }: { form: UseForm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, !last, meterId, form]);
 
-  if (before.isPending || latestQ.isPending || (before.data?.items.length === 0 && after.isPending)) return <Text size="sm" color="secondary">{name} · loading reading…</Text>;
+  if (before.isPending || latestQ.isPending || (before.data?.items.length === 0 && after.isPending)) return <Text size="sm" color="secondary">{t("loadingReading", { name })}</Text>;
   return (
     <VStack gap={1}>
       <FNumber
         control={form.control}
         name={`readings.${meterId}`}
         label={`${name} · ${formatDate(startDate)}`}
-        hint={last ? (recording ? bound : `Reading of ${formatDate(last.on)}, used as the starting value.`) : "No reading yet — enter the starting value."}
+        hint={last ? (recording ? bound : t("lastReading", { date: formatDate(last.on) })) : t("noReading")}
         disabled={!recording}
         required
         rules={latest ? { validate: (v) => num(String(v)) === undefined || num(String(v))! >= latest.value || bound } : undefined}
         width="100%"
       />
-      {last && <FCheck control={form.control} name={`recordNew.${meterId}`} label="Record a new reading" />}
+      {last && <FCheck control={form.control} name={`recordNew.${meterId}`} label={t("recordNew")} />}
     </VStack>
   );
 }

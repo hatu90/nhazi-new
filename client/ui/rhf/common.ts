@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { useController, type Control, type ControllerProps, type FieldPath, type FieldValues } from "react-hook-form";
 
 export interface Common<T extends FieldValues> {
@@ -9,7 +10,8 @@ export interface Common<T extends FieldValues> {
 }
 
 export function useBound<T extends FieldValues>({ control, name, required, rules }: Common<T>) {
-  const { field, fieldState } = useController({ control, name, rules: { ...(required ? { required: "This field is required" } : {}), ...rules } as ControllerProps<T>["rules"] });
+  const t = useTranslations("Errors");
+  const { field, fieldState } = useController({ control, name, rules: { ...(required ? { required: t("required") } : {}), ...rules } as ControllerProps<T>["rules"] });
   return { field, error: fieldState.error?.message };
 }
 

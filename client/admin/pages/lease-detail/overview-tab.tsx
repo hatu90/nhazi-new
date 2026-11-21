@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CalendarX, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -7,7 +8,8 @@ import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
-import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
+import { formatDate, formatMoney, todayIso } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { useSend } from "@/client/lib/hooks";
 import type { ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { DataTable, DefList, Empty, ErrorBox, Modal, Section, useConfirm, RowActions } from "@/client/ui";
@@ -23,6 +25,9 @@ type Dialog = "rent" | "member" | "service" | "handover" | null;
 
 /** Terms, agreement, rent history, people, services and the handover list. */
 export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse; path: string }) {
+  const t = useTranslations("LeaseDetail");
+  const c = useTranslations("Common");
+  const en = useEnum();
   const confirm = useConfirm();
   const { canManage } = useProperty();
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -41,71 +46,71 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
     <VStack gap={5}>
       {(endSub.error || removeHandover.error) && <ErrorBox error={endSub.error ?? removeHandover.error} />}
 
-      <Section title="Terms">
+      <Section title={t("terms")}>
         <DefList items={[
-          ["Current rent", formatMoney(l.currentRent)],
-          ["Deposit", formatMoney(l.depositAmount)],
-          ["Billing day", `Day ${l.billingCycleDay} of the month`],
-          ["First period ends", formatDate(l.firstPeriodEnd)],
-          ...(l.terminatedAt ? ([["Ended on", `${formatDate(l.terminatedAt)}${l.terminationReason ? ` — ${l.terminationReason}` : ""}`]] as [string, string][]) : []),
+          [t("currentRent"), formatMoney(l.currentRent)],
+          [t("deposit"), formatMoney(l.depositAmount)],
+          [t("billingDay"), t("billingDayValue", { n: l.billingCycleDay })],
+          [t("firstPeriodEnds"), formatDate(l.firstPeriodEnd)],
+          ...(l.terminatedAt ? ([[t("endedOn"), `${formatDate(l.terminatedAt)}${l.terminationReason ? ` — ${l.terminationReason}` : ""}`]] as [string, string][]) : []),
         ]} />
       </Section>
 
       {l.agreement && <LeaseAgreement lease={l} path={path} />}
 
-      <Section title="Rent history" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add rent version" size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
+      <Section title={t("rentHistory")} action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label={t("addRentVersion")} size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
         <DataTable<{ id: string; effectiveDate: string; amount: number }>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.rentVersions.map((r) => ({ ...r, id: r.effectiveDate })), page: 1, pageSize: 1000, total: l.rentVersions.length } }}
-          empty={<Empty title="No rent versions" />}
-          columns={[{ key: "d", header: "Effective from", render: (r) => formatDate(r.effectiveDate) }, { key: "a", header: "Monthly rent", render: (r) => formatMoney(r.amount) }]}
+          empty={<Empty title={t("noRentVersions")} />}
+          columns={[{ key: "d", header: t("effectiveFrom"), render: (r) => formatDate(r.effectiveDate) }, { key: "a", header: t("monthlyRent"), render: (r) => formatMoney(r.amount) }]}
         />
       </Section>
 
-      <Section title="People" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add person" size="sm" variant="secondary" onClick={() => setDialog("member")} />}>
+      <Section title={t("people")} action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label={t("addPerson")} size="sm" variant="secondary" onClick={() => setDialog("member")} />}>
         <DataTable<PersonRow>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: people, page: 1, pageSize: 1000, total: people.length } }}
-          empty={<Empty title="No one yet" hint="Add the people living here. With a phone number they are invited to sign in and see the lease." />}
+          empty={<Empty title={t("noPeople")} />}
           columns={[
-            { key: "n", header: "Name", render: (m) => m.name },
-            { key: "p", header: "Phone", render: (m) => m.phoneNumber ?? "—" },
-            { key: "a", header: "App access", render: (m) => (m.tenant ? "Has access" : m.phoneNumber ? "Not joined yet" : "—") },
-            { key: "y", header: "Born", render: (m) => m.yearOfBirth ?? "—" },
-            { key: "j", header: "Joined", render: (m) => formatDate(m.joinedAt) },
-            { key: "l", header: "Left", render: (m) => formatDate(m.leftAt) },
+            { key: "n", header: c("name"), render: (m) => m.name },
+            { key: "p", header: c("phone"), render: (m) => m.phoneNumber ?? "—" },
+            { key: "a", header: t("appAccess"), render: (m) => (m.tenant ? t("hasAccess") : m.phoneNumber ? t("notJoined") : "—") },
+            { key: "y", header: t("born"), render: (m) => m.yearOfBirth ?? "—" },
+            { key: "j", header: t("joined"), render: (m) => formatDate(m.joinedAt) },
+            { key: "l", header: t("left"), render: (m) => formatDate(m.leftAt) },
           ]}
         />
       </Section>
 
-      <Section title="Services" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add service" size="sm" variant="secondary" onClick={() => setDialog("service")} />}>
+      <Section title={t("services")} action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label={t("addService")} size="sm" variant="secondary" onClick={() => setDialog("service")} />}>
         <DataTable<ISubscriptionResponse>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.subscriptions, page: 1, pageSize: 1000, total: l.subscriptions.length } }}
-          empty={<Empty title="No services" hint="Subscribe the lease to electricity, water, internet…" />}
+          empty={<Empty title={t("noServices")} />}
           columns={[
-            { key: "s", header: "Service", render: (s) => s.serviceName },
-            { key: "b", header: "Billed by", render: (s) => label(s.usageBase) },
-            { key: "m", header: "Meter / qty", render: (s) => s.meterName ?? `×${s.quantity}` },
-            { key: "p", header: "Period", render: (s) => `${formatDate(s.startDate)} → ${s.endDate ? formatDate(s.endDate) : "open"}` },
-            { key: "e", header: "", align: "end", render: (s) => canManage && !s.endDate && <RowActions actions={[{ id: "end", label: "End service", icon: CalendarX, onClick: () => { void (async () => { await endSub.mutateAsync({ id: s.id, endDate: todayIso() }); })(); } }]} /> },
+            { key: "s", header: t("service"), render: (s) => s.serviceName },
+            { key: "b", header: t("billedBy"), render: (s) => en("usageBase", s.usageBase) },
+            { key: "m", header: t("meterQty"), render: (s) => s.meterName ?? `×${s.quantity}` },
+            { key: "p", header: t("period"), render: (s) => `${formatDate(s.startDate)} → ${s.endDate ? formatDate(s.endDate) : c("open")}` },
+            { key: "e", header: "", align: "end", render: (s) => canManage && !s.endDate && <RowActions actions={[{ id: "end", label: t("endService"), icon: CalendarX, onClick: () => { void (async () => { await endSub.mutateAsync({ id: s.id, endDate: todayIso() }); })(); } }]} /> },
           ]}
         />
       </Section>
 
-      <Section title="Handover" action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label="Add item" size="sm" variant="secondary" onClick={() => setDialog("handover")} />}>
+      <Section title={t("handover")} action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label={t("addItem")} size="sm" variant="secondary" onClick={() => setDialog("handover")} />}>
         <DataTable<Handover>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: l.handovers, page: 1, pageSize: 1000, total: l.handovers.length } }}
-          empty={<Empty title="Nothing handed over" hint="List the furniture, appliances and keys the tenant receives, and their condition." />}
+          empty={<Empty title={t("nothingHandedOver")} />}
           columns={[
-            { key: "i", header: "Item", render: (h) => h.itemName },
-            { key: "q", header: "Quantity", render: (h) => h.quantity },
-            { key: "c", header: "Condition", render: (h) => label(h.condition) },
-            { key: "d", header: "Note", render: (h) => h.description ?? "—" },
+            { key: "i", header: t("item"), render: (h) => h.itemName },
+            { key: "q", header: t("quantity"), render: (h) => h.quantity },
+            { key: "c", header: t("condition"), render: (h) => en("condition", h.condition) },
+            { key: "d", header: t("note"), render: (h) => h.description ?? "—" },
             {
               key: "a",
               header: "",
               align: "end",
               render: (h) => canManage && <RowActions actions={[
-                { id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditingHandover(h) },
-                { id: "remove", label: "Remove", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Remove "${h.itemName}"?`, description: "It is removed from this lease's handover.", actionLabel: "Remove", onConfirm: () => removeHandover.mutateAsync({ id: h.id }) }) },
+                { id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditingHandover(h) },
+                { id: "remove", label: c("remove"), icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: t("removeTitle", { name: h.itemName }), description: t("removeBody"), actionLabel: c("remove"), onConfirm: () => removeHandover.mutateAsync({ id: h.id }) }) },
               ]} />,
             },
           ]}
@@ -117,9 +122,9 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add rent version"} onOpenChange={(o) => { if (!o) done(); }} />}
+            header={<DialogHeader title={t("addRentVersion")} onOpenChange={(o) => { if (!o) done(); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><RentFields x={rentForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={rentForm.error} busy={rentForm.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={rentForm.error} busy={rentForm.busy} submitLabel={c("add")} onCancel={() => done()} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -128,9 +133,9 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add person"} onOpenChange={(o) => { if (!o) done(); }} />}
+            header={<DialogHeader title={t("addPerson")} onOpenChange={(o) => { if (!o) done(); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><MemberFields x={memberForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={memberForm.error} busy={memberForm.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={memberForm.error} busy={memberForm.busy} submitLabel={c("add")} onCancel={() => done()} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -139,9 +144,9 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add handover item"} onOpenChange={(o) => { if (!o) done(); }} />}
+            header={<DialogHeader title={t("addHandoverItem")} onOpenChange={(o) => { if (!o) done(); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><HandoverFields x={addHandover} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={addHandover.error} busy={addHandover.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={addHandover.error} busy={addHandover.busy} submitLabel={c("add")} onCancel={() => done()} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -150,9 +155,9 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Edit handover item"} onOpenChange={(o) => { if (!o) setEditingHandover(null); }} />}
+            header={<DialogHeader title={t("editHandoverItem")} onOpenChange={(o) => { if (!o) setEditingHandover(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><HandoverFields x={editHandover} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={editHandover.error} busy={editHandover.busy} submitLabel={"Save"} onCancel={() => setEditingHandover(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={editHandover.error} busy={editHandover.busy} submitLabel={c("save")} onCancel={() => setEditingHandover(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -161,9 +166,9 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add service"} onOpenChange={(o) => { if (!o) done(); }} />}
+            header={<DialogHeader title={t("addService")} onOpenChange={(o) => { if (!o) done(); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><SubscriptionFields x={subscribeForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={subscribeForm.error} busy={subscribeForm.busy} submitLabel={"Subscribe"} onCancel={() => done()} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={subscribeForm.error} busy={subscribeForm.busy} submitLabel={t("subscribe")} onCancel={() => done()} /></LayoutFooter>}
           />
         </form>
       </Modal>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import "./globals.css";
 import { IntlProvider } from "@/client/ui/intl-provider";
@@ -15,12 +16,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: { default: "Nhazi — rental management", template: "%s · Nhazi" },
-  description: "Manage properties, leases, utilities and invoices — and give your tenants one place to see it all.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Meta");
+  return { title: { default: t("appTitle"), template: "%s · Nhazi" }, description: t("appDescription") };
+}
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#357d9d" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { IconButton } from "@astryxdesign/core/IconButton";
@@ -69,13 +70,15 @@ export function useLeaseForm({ open, unitId, onDone }: { open: boolean; unitId?:
 }
 
 export function LeaseFields({ x: { form, units, templates, tenants } }: { x: ReturnType<typeof useLeaseForm> }) {
+  const t = useTranslations("LeaseForm");
+  const c = useTranslations("Common");
   return (
     <VStack gap={4}>
-      <Section title="Unit & term">
+      <Section title={t("unitTerm")}>
         <FSelect
           control={form.control}
           name="unitId"
-          label="Unit"
+          label={c("unit")}
           required
           search
           options={(units.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))}
@@ -85,44 +88,43 @@ export function LeaseFields({ x: { form, units, templates, tenants } }: { x: Ret
           }}
           width="100%"
         />
-        <FDate control={form.control} name="startDate" label="Start date" required width="100%" />
-        <FDate control={form.control} name="endDate" label="End date" hint="Leave empty for an open-ended lease." width="100%" />
+        <FDate control={form.control} name="startDate" label={t("startDate")} required width="100%" />
+        <FDate control={form.control} name="endDate" label={t("endDate")} hint={t("endHint")} width="100%" />
       </Section>
 
-      <Section title="Rent & deposit">
-        <FNumber control={form.control} name="rent" label="Monthly rent" money required width="100%" />
-        <FNumber control={form.control} name="depositAmount" label="Deposit" money width="100%" />
+      <Section title={t("rentDeposit")}>
+        <FNumber control={form.control} name="rent" label={t("monthlyRent")} money required width="100%" />
+        <FNumber control={form.control} name="depositAmount" label={t("deposit")} money width="100%" />
       </Section>
 
-      <Section title="Agreement">
+      <Section title={t("agreement")}>
         <FSelect
           control={form.control}
           name="templateId"
-          label="Agreement template"
-          hint="Optional. The current version is pinned to this lease."
-          options={[{ value: "", label: "None" }, ...(templates.data?.items ?? []).map((t) => ({ value: t.id, label: t.isDefault ? `${t.name} (default)` : t.name }))]}
+          label={t("template")}
+          options={[{ value: "", label: c("none") }, ...(templates.data?.items ?? []).map((tpl) => ({ value: tpl.id, label: tpl.isDefault ? t("defaultSuffix", { name: tpl.name }) : tpl.name }))]}
           width="100%"
         />
       </Section>
 
-      <Section title="Tenants" action={<Button icon={<Plus size={16} />} label="Add tenant" size="sm" variant="secondary" onClick={() => tenants.append({ name: "", yearOfBirth: "", phone: "" })} />}>
-        <Text size="sm" color="secondary">Everyone living in the unit. Tenants with a phone number are invited to sign in and see the lease.</Text>
+      <Section title={t("tenants")} action={<Button icon={<Plus size={16} />} label={t("addTenant")} size="sm" variant="secondary" onClick={() => tenants.append({ name: "", yearOfBirth: "", phone: "" })} />}>
+        <Text size="sm" color="secondary">{t("tenantsHint")}</Text>
         {tenants.fields.map((f, i) => (
           <Card key={f.id} padding={4}>
             <VStack gap={3}>
               <HStack justify="between" align="center" gap={2}>
-                <Text weight="semibold">Tenant {i + 1}</Text>
-                {tenants.fields.length > 1 && <IconButton label={`Remove tenant ${i + 1}`} variant="ghost" size="sm" icon={<X />} onClick={() => tenants.remove(i)} />}
+                <Text weight="semibold">{t("tenantN", { n: i + 1 })}</Text>
+                {tenants.fields.length > 1 && <IconButton label={t("removeTenant", { n: i + 1 })} variant="ghost" size="sm" icon={<X />} onClick={() => tenants.remove(i)} />}
               </HStack>
-              <FText control={form.control} name={`tenants.${i}.name`} label="Name" required width="100%" />
-              <FNumber control={form.control} name={`tenants.${i}.yearOfBirth`} label="Year of birth" required width="100%" />
+              <FText control={form.control} name={`tenants.${i}.name`} label={c("name")} required width="100%" />
+              <FNumber control={form.control} name={`tenants.${i}.yearOfBirth`} label={t("yearOfBirth")} required width="100%" />
               <FText
                 control={form.control}
                 name={`tenants.${i}.phone`}
-                label="Phone number"
+                label={c("phone")}
                 type="tel"
                 placeholder="0912 345 678"
-                rules={{ validate: (v) => !String(v ?? "").trim() || isValidPhone(String(v)) || "Enter a valid phone number" }}
+                rules={{ validate: (v) => !String(v ?? "").trim() || isValidPhone(String(v)) || c("invalidPhone") }}
                 width="100%"
               />
             </VStack>

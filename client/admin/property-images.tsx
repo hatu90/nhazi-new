@@ -1,6 +1,8 @@
 "use client";
 
-import { api, errorMessage } from "@/client/lib/api";
+import { useTranslations } from "next-intl";
+import { api } from "@/client/lib/api";
+import { useErrorMessage } from "@/client/lib/use-error-message";
 import { useGet } from "@/client/lib/hooks";
 import { Button } from "@astryxdesign/core/Button";
 import { IconButton } from "@astryxdesign/core/IconButton";
@@ -14,6 +16,7 @@ interface IUploaded {
 }
 
 function Thumb({ base, path, selected, onSelect, actions }: { base: string; path: string; selected: boolean; onSelect: () => void; actions: React.ReactNode }) {
+  const t = useTranslations("Property");
   const url = useGet<{ url: string }>(`${base}/files`, { path });
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -21,15 +24,15 @@ function Thumb({ base, path, selected, onSelect, actions }: { base: string; path
         role="button"
         tabIndex={0}
         aria-pressed={selected}
-        aria-label={selected ? "Cover image" : "Set as cover image"}
-        title={selected ? "Cover image" : "Click to set as cover"}
+        aria-label={selected ? t("coverImage") : t("setCover")}
+        title={selected ? t("coverImage") : t("setCover")}
         onClick={onSelect}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
         style={{ position: "relative", flex: 1, height: 160, borderRadius: 8, overflow: "hidden", background: "rgba(128,128,128,0.15)", cursor: selected ? "default" : "pointer", outline: selected ? "2px solid currentColor" : undefined, outlineOffset: 2 }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {url.data && <img src={url.data.url} alt="Property image" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-        {selected && <span style={{ position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "rgba(0,0,0,0.65)", color: "#fff" }}>Cover</span>}
+        {url.data && <img src={url.data.url} alt={t("image")} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+        {selected && <span style={{ position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "rgba(0,0,0,0.65)", color: "#fff" }}>{t("cover")}</span>}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>{actions}</div>
     </div>
@@ -38,6 +41,8 @@ function Thumb({ base, path, selected, onSelect, actions }: { base: string; path
 
 /** Images for a property, one per row. One is the cover (header), picked by click; the arrows only reorder the gallery. `base` is `/api/admin/properties/:id` (or the draft area); values are storage keys. */
 export function PropertyImages({ base, headerImage, images, onHeaderImage, onImages, onBusy }: { base: string; headerImage: string | null; images: string[]; onHeaderImage: (p: string | null) => void; onImages: (p: string[]) => void; onBusy: (b: boolean) => void }) {
+  const t = useTranslations("Property");
+  const message = useErrorMessage();
   const input = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +73,7 @@ export function PropertyImages({ base, headerImage, images, onHeaderImage, onIma
         done.push((await api<IUploaded>(`${base}/uploads`, { method: "POST", body })).path);
       }
     } catch (e) {
-      setError(errorMessage(e));
+      setError(message(e));
     } finally {
       setUploading(false);
       onBusy(false);
@@ -79,7 +84,7 @@ export function PropertyImages({ base, headerImage, images, onHeaderImage, onIma
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <Text color="secondary">JPG, PNG or WebP, up to 5 MB. Click an image to set the cover.</Text>
+      <Text color="secondary">{t("imagesHint")}</Text>
       <input ref={input} type="file" multiple accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => void upload(e.target.files)} />
       {images.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -92,9 +97,9 @@ export function PropertyImages({ base, headerImage, images, onHeaderImage, onIma
               onSelect={() => onHeaderImage(p)}
               actions={
                 <>
-                  <IconButton label="Move up" variant="ghost" icon={<ChevronUp />} isDisabled={i === 0} onClick={() => move(i, -1)} />
-                  <IconButton label="Move down" variant="ghost" icon={<ChevronDown />} isDisabled={i === images.length - 1} onClick={() => move(i, 1)} />
-                  <IconButton label="Remove image" variant="ghost" icon={<Trash2 />} onClick={() => setAll(images.filter((x) => x !== p))} />
+                  <IconButton label={t("moveUp")} variant="ghost" icon={<ChevronUp />} isDisabled={i === 0} onClick={() => move(i, -1)} />
+                  <IconButton label={t("moveDown")} variant="ghost" icon={<ChevronDown />} isDisabled={i === images.length - 1} onClick={() => move(i, 1)} />
+                  <IconButton label={t("removeImage")} variant="ghost" icon={<Trash2 />} onClick={() => setAll(images.filter((x) => x !== p))} />
                 </>
               }
             />
@@ -102,7 +107,7 @@ export function PropertyImages({ base, headerImage, images, onHeaderImage, onIma
         </div>
       )}
       <div>
-        <Button label={uploading ? "Uploading…" : "Add images"} variant="secondary" size="sm" onClick={() => input.current?.click()} />
+        <Button label={uploading ? t("uploading") : t("addImages")} variant="secondary" size="sm" onClick={() => input.current?.click()} />
       </div>
       {error && <Text color="accent">{error}</Text>}
     </div>

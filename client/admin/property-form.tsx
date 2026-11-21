@@ -1,8 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { label } from "@/client/lib/format";
+import { useEnumOptions } from "@/client/lib/use-enum";
 import { useSend } from "@/client/lib/hooks";
 import type { IAdminPropertyResponse, PropertyCategory } from "@/client/lib/types";
 import { FArea, FCheck, FNumber, FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -82,35 +83,38 @@ export function usePropertyForm({ initial, method, path, open, onDone }: { initi
 }
 
 export function PropertyFields({ x: { form, initial, path, headerImage, setHeaderImage, images, setImages, refs, setRefs, setUploading, provinces, wards, provinceCode, provinceList, wardList } }: { x: ReturnType<typeof usePropertyForm> }) {
+  const t = useTranslations("Property");
+  const c = useTranslations("Common");
+  const options = useEnumOptions();
   return (
     <VStack gap={4}>
-      <Section title="Basics">
-        <FText control={form.control} name="name" label="Name" required width="100%" />
-        <FSelect control={form.control} name="category" label="Category" options={categories.map((c) => ({ value: c, label: label(c) }))} width="100%" />
+      <Section title={t("basics")}>
+        <FText control={form.control} name="name" label={c("name")} required width="100%" />
+        <FSelect control={form.control} name="category" label={t("category")} options={options("category", categories)} width="100%" />
       </Section>
 
-      <Section title="Address">
-        <FText control={form.control} name="street" label="Street address" required width="100%" />
-        <FSelect control={form.control} name="provinceCode" label="Province / city" required search options={provinceList.map((p) => ({ value: String(p.code), label: p.name }))} placeholder={provinces.isPending ? "Loading…" : "Select…"} onValueChange={() => form.setValue("wardCode", "")} width="100%" />
-        <FSelect control={form.control} name="wardCode" label="Ward" required search disabled={!provinceCode} options={wardList.map((w) => ({ value: String(w.code), label: w.name }))} placeholder={wards.isPending && provinceCode ? "Loading…" : "Select…"} width="100%" />
+      <Section title={t("address")}>
+        <FText control={form.control} name="street" label={t("street")} required width="100%" />
+        <FSelect control={form.control} name="provinceCode" label={t("province")} required search options={provinceList.map((p) => ({ value: String(p.code), label: p.name }))} placeholder={provinces.isPending ? `${c("loading")}…` : c("select")} onValueChange={() => form.setValue("wardCode", "")} width="100%" />
+        <FSelect control={form.control} name="wardCode" label={t("ward")} required search disabled={!provinceCode} options={wardList.map((w) => ({ value: String(w.code), label: w.name }))} placeholder={wards.isPending && provinceCode ? `${c("loading")}…` : c("select")} width="100%" />
       </Section>
 
-      <Section title="Nearby places">
+      <Section title={t("nearby")}>
         <ReferenceAddressPicker value={refs} onChange={setRefs} />
       </Section>
 
-      <Section title="Rent">
-        <FNumber control={form.control} name="rentPriceFrom" label="Rent from" money width="100%" />
-        <FNumber control={form.control} name="rentPriceTo" label="Rent to" money width="100%" />
-        <FCheck control={form.control} name="rentNegotiable" label="Rent is negotiable" />
+      <Section title={t("rent")}>
+        <FNumber control={form.control} name="rentPriceFrom" label={t("rentFrom")} money width="100%" />
+        <FNumber control={form.control} name="rentPriceTo" label={t("rentTo")} money width="100%" />
+        <FCheck control={form.control} name="rentNegotiable" label={t("rentNegotiable")} />
       </Section>
 
-      <Section title="Images">
+      <Section title={t("images")}>
         <PropertyImages base={initial ? path : "/api/admin/drafts"} headerImage={headerImage} images={images} onHeaderImage={setHeaderImage} onImages={setImages} onBusy={setUploading} />
       </Section>
 
-      <Section title="House rules">
-        <FArea control={form.control} name="rules" label="Rules" hint="One rule per line." width="100%" />
+      <Section title={t("houseRules")}>
+        <FArea control={form.control} name="rules" label={t("rules")} hint={t("rulesHint")} width="100%" />
       </Section>
     </VStack>
   );

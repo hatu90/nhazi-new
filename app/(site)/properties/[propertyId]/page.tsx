@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
-import { formatMoney, label as humanize } from "@/client/lib/format";
+import { formatMoney } from "@/client/lib/format";
+import { getTranslations } from "next-intl/server";
 import { EnquiryButton } from "@/client/site/enquiry-button";
 import { PageSpinner, Tag } from "@/client/ui";
 import { Divider } from "@astryxdesign/core/Divider";
@@ -31,11 +32,14 @@ export async function generateMetadata({ params }: PageProps<"/properties/[prope
   return { title: p.name, description: `${p.street}, ${p.ward.name}, ${p.province.name}` };
 }
 
-const priceText = (s: IPublicServiceResponse) => {
+type T = Awaited<ReturnType<typeof getTranslations<"Site">>>;
+
+const priceText = (s: IPublicServiceResponse, t: T) => {
   if (s.tiers.length === 0) return "—";
-  const per = s.unitOfMeasure ? ` / ${s.unitOfMeasure}` : s.usageBase === "member" ? " / person" : s.usageBase === "lease" ? " / month" : "";
+  const per = s.unitOfMeasure ? t("perUnit", { unit: s.unitOfMeasure }) : s.usageBase === "member" ? t("perPerson") : s.usageBase === "lease" ? t("perMonth") : "";
   const [first, ...rest] = s.tiers;
-  return rest.length ? `from ${formatMoney(first.rate)}${per}` : `${formatMoney(first.rate)}${per}`;
+  const price = `${formatMoney(first.rate)}${per}`;
+  return rest.length ? t("priceFrom", { price }) : price;
 };
 
 export default function PropertyPageRoute({ params }: PageProps<"/properties/[propertyId]">) {
@@ -46,8 +50,8 @@ export default function PropertyPageRoute({ params }: PageProps<"/properties/[pr
   );
 }
 
-const rentText = (negotiable: boolean, from: number | null, to: number | null) =>
-  negotiable && from == null ? "Negotiable" : from == null ? "—" : to && to !== from ? `${formatMoney(from)} – ${formatMoney(to)}` : formatMoney(from);
+const rentText = (t: T, negotiable: boolean, from: number | null, to: number | null) =>
+  negotiable && from == null ? t("negotiable") : from == null ? "—" : to && to !== from ? `${formatMoney(from)} – ${formatMoney(to)}` : formatMoney(from);
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -61,6 +65,8 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 }
 
 async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]">, "params">) {
+  const t = await getTranslations("Site");
+  const e = await getTranslations("Enums");
   const { propertyId } = await params;
   const p = await load(propertyId);
   const empty = new Set(p.emptyUnitIds);
@@ -69,7 +75,7 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8">
       <VStack gap={5}>
-        <Link href="/find-property" className="text-sm text-[var(--text-secondary,#71717a)] hover:underline">← Find a property</Link>
+        <Link href="/find-property" className="text-sm text-[var(--text-secondary,#71717a)] hover:underline">{t("backToSearch")}</Link>
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* main column */}
@@ -77,20 +83,20 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
             <VStack gap={2}>
               <HStack gap={2} align="center" wrap="wrap">
                 <Heading level={1}>{p.name}</Heading>
-                <Tag label={humanize(p.category)} tone="info" />
+                <Tag label={e(`category.${p.category}`)} tone="info" />
               </HStack>
               <Text color="secondary">{p.street}, {p.ward.name}, {p.province.name}</Text>
               {p.referenceAddresses.length > 0 && (
                 <HStack gap={2} wrap="wrap" align="center">
-                  <Text size="sm" color="secondary">Near</Text>
+                  <Text size="sm" color="secondary">{t("near")}</Text>
                   {p.referenceAddresses.map((r) => <Tag key={r.slug} label={r.distance != null ? `${r.name} · ${r.distance} m` : r.name} />)}
                 </HStack>
               )}
             </VStack>
 
-            <Panel title={`Available units (${available.length})`}>
+            <Panel title={t("availableUnits", { count: available.length })}>
               {available.length === 0 ? (
-                <Text color="secondary">No units are available right now. You can still send an enquiry.</Text>
+                <Text color="secondary">{t("noAvailable")}</Text>
               ) : (
                 <VStack gap={0}>
                   {available.map((u, i) => (
@@ -100,12 +106,12 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
                         <VStack gap={0}>
                           <Text>{u.name}</Text>
                           <Text size="sm" color="secondary">
-                            Floor {u.floor} · {u.area} m²
-                            {u.bedrooms != null && ` · ${u.bedrooms} bed`}
-                            {u.bathrooms != null && ` · ${u.bathrooms} bath`}
+                            {t("floorArea", { floor: u.floor, area: u.area })}
+                            {u.bedrooms != null && t("bed", { n: u.bedrooms })}
+                            {u.bathrooms != null && t("bath", { n: u.bathrooms })}
                           </Text>
                         </VStack>
-                        <Text>{rentText(u.rentNegotiable, u.rentPrice, null)}</Text>
+                        <Text>{rentText(t, u.rentNegotiable, u.rentPrice, null)}</Text>
                       </HStack>
                     </div>
                   ))}
@@ -113,9 +119,9 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
               )}
             </Panel>
 
-            <Panel title="Services">
+            <Panel title={t("services")}>
               {p.services.length === 0 ? (
-                <Text color="secondary">No services listed.</Text>
+                <Text color="secondary">{t("noServices")}</Text>
               ) : (
                 <VStack gap={0}>
                   {p.services.map((s, i) => (
@@ -126,7 +132,7 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
                           <Text>{s.name}</Text>
                           {s.description && <Text size="sm" color="secondary">{s.description}</Text>}
                         </VStack>
-                        <Text>{priceText(s)}</Text>
+                        <Text>{priceText(s, t)}</Text>
                       </HStack>
                     </div>
                   ))}
@@ -135,16 +141,16 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
             </Panel>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <Panel title="House rules">
+              <Panel title={t("houseRules")}>
                 {p.rules.length === 0 ? (
-                  <Text color="secondary">No rules listed.</Text>
+                  <Text color="secondary">{t("noRules")}</Text>
                 ) : (
                   <ul className="list-disc space-y-1 pl-5 text-sm">{p.rules.map((r, i) => <li key={i}>{r}</li>)}</ul>
                 )}
               </Panel>
-              <Panel title="Provided items">
+              <Panel title={t("providedItems")}>
                 {p.inventoryItems.length === 0 ? (
-                  <Text color="secondary">No items listed.</Text>
+                  <Text color="secondary">{t("noItems")}</Text>
                 ) : (
                   <HStack gap={2} wrap="wrap">{p.inventoryItems.map((n) => <Tag key={n} label={n} />)}</HStack>
                 )}
@@ -157,13 +163,13 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
             <Card padding={5}>
               <VStack gap={4}>
                 <VStack gap={1}>
-                  <Text size="sm" color="secondary">Rent per month</Text>
-                  <Heading level={2}>{rentText(p.rentNegotiable, p.rentPriceFrom, p.rentPriceTo)}</Heading>
+                  <Text size="sm" color="secondary">{t("rentPerMonth")}</Text>
+                  <Heading level={2}>{rentText(t, p.rentNegotiable, p.rentPriceFrom, p.rentPriceTo)}</Heading>
                 </VStack>
                 <Divider />
                 <HStack justify="between">
-                  <Text color="secondary">Available units</Text>
-                  <Text>{p.emptyUnitCount} of {p.units.length}</Text>
+                  <Text color="secondary">{t("availableLabel")}</Text>
+                  <Text>{t("availableOf", { empty: p.emptyUnitCount, total: p.units.length })}</Text>
                 </HStack>
                 <EnquiryButton propertyId={p.id} units={available.map((u) => ({ id: u.id, name: u.name }))} />
               </VStack>

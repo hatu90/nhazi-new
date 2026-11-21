@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
-import { formatDate, formatMoney, label } from "@/client/lib/format";
+import { formatDate, formatMoney } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IAdminInvoiceDetailResponse } from "@/client/lib/types";
 import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge, useConfirm } from "@/client/ui";
@@ -16,6 +18,9 @@ import { useProperty } from "../property-layout";
 import { PaymentFields, usePaymentForm } from "./invoice-payment-form";
 
 export function InvoiceDetailPage() {
+  const t = useTranslations("Invoices");
+  const c = useTranslations("Common");
+  const en = useEnum();
   const confirm = useConfirm();
   const { invoiceId = "" } = useParams();
   const { apiPath, canManage, to } = useProperty();
@@ -34,51 +39,51 @@ export function InvoiceDetailPage() {
 
   return (
     <VStack gap={5}>
-      <HStack><Button label="All invoices" variant="ghost" size="sm" href={to("invoices")} /></HStack>
+      <HStack><Button label={t("allInvoices")} variant="ghost" size="sm" href={to("invoices")} /></HStack>
       <PageHeader
         title={inv.title}
-        subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{inv.unitName} · due {formatDate(inv.dueDate)}</Text></HStack>}
+        subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{t("dueOn", { unit: inv.unitName, date: formatDate(inv.dueDate) })}</Text></HStack>}
         actions={canManage && open && (
           <>
-            <Button variant="primary" label="Record payment" onClick={() => setPaying(true)} />
-            <Button label="Cancel invoice" variant="secondary" isLoading={cancel.isPending} onClick={() => confirm.ask({ title: "Cancel this invoice?", description: "The invoice is marked cancelled and can no longer be paid.", actionLabel: "Cancel invoice", onConfirm: () => cancel.mutateAsync(undefined) })} />
+            <Button variant="primary" label={t("recordPayment")} onClick={() => setPaying(true)} />
+            <Button label={t("cancelInvoice")} variant="secondary" isLoading={cancel.isPending} onClick={() => confirm.ask({ title: t("cancelTitle"), description: t("cancelBody"), actionLabel: t("cancelInvoice"), onConfirm: () => cancel.mutateAsync(undefined) })} />
           </>
         )}
       />
       {cancel.error && <ErrorBox error={cancel.error} />}
-      <Section title="Summary">
-        <DefList items={[["Type", label(inv.kind)], ["Total", formatMoney(inv.amount)], ["Paid", formatMoney(inv.paidAmount)], ["Outstanding", formatMoney(inv.status === "cancelled" ? 0 : owed)]]} />
+      <Section title={t("summary")}>
+        <DefList items={[[c("type"), en("invoiceKind", inv.kind)], [c("total"), formatMoney(inv.amount)], [c("paid"), formatMoney(inv.paidAmount)], [t("outstanding"), formatMoney(inv.status === "cancelled" ? 0 : owed)]]} />
       </Section>
-      <Section title="Lines">
+      <Section title={t("lines")}>
         <DataTable<IAdminInvoiceDetailResponse["items"][number]>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: inv.items.filter((i) => !i.voided), page: 1, pageSize: 1000, total: inv.items.length } }}
-          empty={<Empty title="No lines" />}
+          empty={<Empty title={t("noLines")} />}
           columns={[
-            { key: "t", header: "Description", render: (i) => i.title },
-            { key: "k", header: "Type", render: (i) => label(i.kind) },
-            { key: "d", header: "Usage", render: (i) => (i.detail ? `${i.detail.quantity} × price → ${formatMoney(i.detail.calculatedAmount)}` : "") },
-            { key: "a", header: "Amount", align: "end", render: (i) => formatMoney(i.amount) },
+            { key: "t", header: c("description"), render: (i) => i.title },
+            { key: "k", header: c("type"), render: (i) => en("itemKind", i.kind) },
+            { key: "d", header: t("usage"), render: (i) => (i.detail ? t("usageDetail", { quantity: i.detail.quantity, amount: formatMoney(i.detail.calculatedAmount) }) : "") },
+            { key: "a", header: c("amount"), align: "end", render: (i) => formatMoney(i.amount) },
           ]}
         />
       </Section>
-      <Section title="Payments">
+      <Section title={t("payments")}>
         <DataTable<IAdminInvoiceDetailResponse["payments"][number]>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: inv.payments, page: 1, pageSize: 1000, total: inv.payments.length } }}
-          empty={<Empty title="No payments yet" />}
+          empty={<Empty title={t("noPayments")} />}
           columns={[
-            { key: "d", header: "Paid on", render: (p) => formatDate(p.paidOn) },
-            { key: "m", header: "Method", render: (p) => label(p.method) },
-            { key: "r", header: "Reference", render: (p) => p.reference ?? "—" },
-            { key: "a", header: "Amount", align: "end", render: (p) => formatMoney(p.amount) },
-            { key: "s", header: "Status", render: (p) => <StatusBadge status={p.status} /> },
+            { key: "d", header: t("paidOn"), render: (p) => formatDate(p.paidOn) },
+            { key: "m", header: t("method"), render: (p) => en("paymentMethod", p.method) },
+            { key: "r", header: t("reference"), render: (p) => p.reference ?? "—" },
+            { key: "a", header: c("amount"), align: "end", render: (p) => formatMoney(p.amount) },
+            { key: "s", header: c("status"), render: (p) => <StatusBadge status={p.status} /> },
             {
               key: "x",
               header: "",
               align: "end",
               render: (p) => canManage && p.status === "pending" && (
                 <HStack gap={2} justify="end">
-                  <Button label="Reject" size="sm" variant="secondary" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "reject" }); }} />
-                  <Button variant="primary" label="Confirm" size="sm" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
+                  <Button label={c("reject")} size="sm" variant="secondary" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "reject" }); }} />
+                  <Button variant="primary" label={c("confirm")} size="sm" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
                 </HStack>
               ),
             },
@@ -91,9 +96,9 @@ export function InvoiceDetailPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Record payment"} onOpenChange={(o) => { if (!o) setPaying(false); }} />}
+            header={<DialogHeader title={t("recordPayment")} onOpenChange={(o) => { if (!o) setPaying(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><PaymentFields x={paymentForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={paymentForm.error} busy={paymentForm.busy} submitLabel={"Record payment"} onCancel={() => setPaying(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={paymentForm.error} busy={paymentForm.busy} submitLabel={t("recordPayment")} onCancel={() => setPaying(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>

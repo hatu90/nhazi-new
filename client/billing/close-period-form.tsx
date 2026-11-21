@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useQuery } from "@tanstack/react-query";
@@ -84,17 +85,18 @@ export function useClosePeriodForm({ path, invalidate, period, meters = [], askN
 }
 
 export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readings, ready, preview, today } }: { x: ReturnType<typeof useClosePeriodForm> }) {
+  const t = useTranslations("ClosePeriod");
   if (!period) return null;
   return (
     <VStack gap={4}>
-      <Section title="Billing period">
-        <Text size="sm" color="secondary">Closing {formatDate(period.startDate)} → {formatDate(period.endDate)} and starting the next period.</Text>
-        <FDate control={form.control} name="endDate" label="Last day of this period" required width="100%" />
-        {askNextEnd && <FDate control={form.control} name="nextEnd" label="Next period ends" required width="100%" />}
+      <Section title={t("billingPeriod")}>
+        <Text size="sm" color="secondary">{t("closing", { from: formatDate(period.startDate), to: formatDate(period.endDate) })}</Text>
+        <FDate control={form.control} name="endDate" label={t("lastDay")} required width="100%" />
+        {askNextEnd && <FDate control={form.control} name="nextEnd" label={t("nextEnds")} required width="100%" />}
       </Section>
 
       {meters.length > 0 && (
-        <Section title="Meter readings">
+        <Section title={t("readings")}>
           <VStack gap={2}>
             {meters.map((m) => {
               const value = Number(readings?.[m.meterId]);
@@ -104,15 +106,15 @@ export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readi
                   <VStack gap={2}>
                     <HStack justify="between" align="center" gap={2} wrap="wrap">
                       <Text weight="semibold">{m.serviceName}</Text>
-                      <Text size="sm" color="secondary">Previous reading: {m.openingValue}</Text>
+                      <Text size="sm" color="secondary">{t("previous", { n: m.openingValue })}</Text>
                     </HStack>
                     <FNumber
                       control={form.control}
                       name={`readings.${m.meterId}`}
-                      label="New reading"
+                      label={t("newReading")}
                       required
-                      rules={{ validate: (v) => Number(v) >= m.openingValue || `Must be at least ${m.openingValue}` }}
-                      hint={used !== null && used >= 0 ? `Used this period: ${used}` : undefined}
+                      rules={{ validate: (v) => Number(v) >= m.openingValue || t("min", { n: m.openingValue }) }}
+                      hint={used !== null && used >= 0 ? t("used", { n: used }) : undefined}
                       width="100%"
                     />
                   </VStack>
@@ -123,19 +125,19 @@ export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readi
         </Section>
       )}
 
-      <Section title="Invoice that will be issued">
+      <Section title={t("invoice")}>
         {!ready ? (
-          <Text size="sm" color="secondary">Enter the meter readings to see the invoice: next period&apos;s rent, services billed in advance and this period&apos;s metered services.</Text>
+          <Text size="sm" color="secondary">{t("enterReadings")}</Text>
         ) : preview.isPending ? (
-          <Text size="sm" color="secondary">Calculating…</Text>
+          <Text size="sm" color="secondary">{t("calculating")}</Text>
         ) : preview.error ? (
           <Text size="sm" color="secondary">{preview.error.message}</Text>
         ) : !preview.data.items.length ? (
-          <Text size="sm" color="secondary">Nothing to invoice.</Text>
+          <Text size="sm" color="secondary">{t("nothing")}</Text>
         ) : (
           <Raised>
             <VStack gap={2}>
-              <Text size="sm" color="secondary">{preview.data.title} · issued {formatDate(today)}</Text>
+              <Text size="sm" color="secondary">{t("issued", { title: preview.data.title ?? "", date: formatDate(today) })}</Text>
               {preview.data.items.map((it, i) => (
                 <HStack key={i} justify="between" gap={2}>
                   <Text size="sm">{it.title}</Text>
@@ -143,7 +145,7 @@ export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readi
                 </HStack>
               ))}
               <HStack justify="between" gap={2}>
-                <Text weight="semibold">Total</Text>
+                <Text weight="semibold">{t("total")}</Text>
                 <Text weight="semibold">{formatMoney(preview.data.total)}</Text>
               </HStack>
             </VStack>

@@ -21,7 +21,7 @@ export function RequireAccount({ children }: { children: ReactNode }) {
   if (state.status === "error") {
     return (
       <div className="mx-auto max-w-md p-8">
-        <ErrorBox error={new Error(state.message)} retry={() => void reload()} />
+        <ErrorBox error={state.error} retry={() => void reload()} />
       </div>
     );
   }

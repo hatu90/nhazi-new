@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useEnum, useEnumOptions } from "@/client/lib/use-enum";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -39,10 +41,7 @@ interface Values {
     { quantity: string; condition: string; note: string; charge: string }
   >;
 }
-const CONDITIONS = ["good", "damaged", "missing"].map((c) => ({
-  value: c,
-  label: c[0].toUpperCase() + c.slice(1),
-}));
+const CONDITIONS = ["good", "damaged", "missing"];
 type Meter = { meterId: string; serviceName: string; openingValue: number };
 
 /**
@@ -50,6 +49,9 @@ type Meter = { meterId: string; serviceName: string; openingValue: number };
  * (deposit, unused rent, unused non-metered services). Everything is calculated here from the loaded data; the server re-checks it.
  */
 export function useEndForm({ path, leaseId, handovers, open, onDone }: { path: string; leaseId: string; handovers: Handover[]; open: boolean; onDone: () => void }) {
+  const t = useTranslations("LeaseDetail");
+  const e = useTranslations("Enums");
+  const en = useEnum();
   const { apiPath } = useProperty();
   const periods = useGet<IBillingPeriodListResponse>(apiPath("/billing-periods"), { leaseId, pageSize: 100 }, { enabled: open });
   const invoices = useGet<IAdminInvoiceListResponse>(apiPath("/invoices"), { leaseId, pageSize: 100 }, { enabled: open });
@@ -106,7 +108,7 @@ export function useEndForm({ path, leaseId, handovers, open, onDone }: { path: s
     return charge && charge > 0
       ? [
           {
-            title: `${h.itemName}: ${x?.condition ?? h.condition}`,
+            title: t("chargeTitle", { item: h.itemName, condition: en("condition", x?.condition ?? h.condition) }),
             amount: charge,
           },
         ]
@@ -139,6 +141,7 @@ export function useEndForm({ path, leaseId, handovers, open, onDone }: { path: s
             readings: readingValues,
             billed,
             extraCharges,
+            depositLabel: e("refundKind.deposit"),
           })
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by value (extraKey / readingKey)
@@ -146,7 +149,7 @@ export function useEndForm({ path, leaseId, handovers, open, onDone }: { path: s
   );
 
   // + deposit + unused rent + unused services - metered usage - handover charges
-  const credit = (s?.refund ?? []).reduce((t, l) => t + l.gross, 0);
+  const credit = (s?.refund ?? []).reduce((sum, l) => sum + l.gross, 0);
   const balance = credit - (s?.charged ?? 0);
 
   const submit = useSubmit(
@@ -177,32 +180,31 @@ export function useEndForm({ path, leaseId, handovers, open, onDone }: { path: s
 }
 
 export function EndFields({ x: { form, loading, period, meters, handovers, w, s, balance } }: { x: ReturnType<typeof useEndForm> }) {
-  if (loading) return <Text color="secondary">Loading…</Text>;
-  if (!period) return <Text color="secondary">This lease has no billing period.</Text>;
+  const t = useTranslations("LeaseDetail");
+  const c = useTranslations("Common");
+  const en = useEnum();
+  const options = useEnumOptions();
+  if (loading) return <Text color="secondary">{c("loading")}…</Text>;
+  if (!period) return <Text color="secondary">{t("noPeriod")}</Text>;
   return (
     <VStack gap={4}>
-      <Text color="secondary">
-        Ends the lease on this date: closes the running billing period (no new
-        one opens), ends its services and settles the final invoice against the
-        deposit, unused rent and unused services.
-      </Text>
       <FDate
         control={form.control}
         name="terminatedAt"
-        label="Last day"
+        label={t("lastDay")}
         required
         width="100%"
       />
       <FArea
         control={form.control}
         name="reason"
-        label="Reason"
+        label={t("reason")}
         rows={2}
         width="100%"
       />
 
       {meters.length > 0 && (
-        <Section title="Final meter readings">
+        <Section title={t("finalReadings")}>
           <VStack gap={2}>
             {meters.map((m) => {
               const v = w.readings?.[m.meterId];
@@ -218,22 +220,22 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
                     >
                       <Text weight="semibold">{m.serviceName}</Text>
                       <Text size="sm" color="secondary">
-                        Previous reading: {m.openingValue}
+                        {t("previousReading", { n: m.openingValue })}
                       </Text>
                     </HStack>
                     <FNumber
                       control={form.control}
                       name={`readings.${m.meterId}`}
-                      label="Final reading"
+                      label={t("finalReading")}
                       required
                       rules={{
                         validate: (x) =>
                           Number(x) >= m.openingValue ||
-                          `Must be at least ${m.openingValue}`,
+                          t("minReading", { n: m.openingValue }),
                       }}
                       hint={
                         used !== null && used >= 0
-                          ? `Used this period: ${used}`
+                          ? t("used", { n: used })
                           : undefined
                       }
                       width="100%"
@@ -247,11 +249,10 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
       )}
 
       {handovers.length > 0 && (
-        <Section title="Handover check-out">
+        <Section title={t("checkOut")}>
           <VStack gap={2}>
             <Text size="sm" color="secondary">
-              Record what the tenant gives back. A charge for damaged or missing
-              items is added to the final invoice and taken from the deposit.
+              {t("checkOutHint")}
             </Text>
             {handovers.map((h) => (
               <Raised key={h.id}>
@@ -259,35 +260,35 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
                   <HStack justify="between" align="center" gap={2} wrap="wrap">
                     <Text weight="semibold">{h.itemName}</Text>
                     <Text size="sm" color="secondary">
-                      Handed over: {h.quantity} · {h.condition}
+                      {t("handedOver", { quantity: h.quantity, condition: en("condition", h.condition) })}
                     </Text>
                   </HStack>
                   <HStack gap={2} wrap="wrap">
                     <FNumber
                       control={form.control}
                       name={`handovers.${h.id}.quantity`}
-                      label="Returned"
+                      label={t("returned")}
                       width="100%"
                     />
                     <FSelect
                       control={form.control}
                       name={`handovers.${h.id}.condition`}
-                      label="Condition"
-                      options={CONDITIONS}
+                      label={t("condition")}
+                      options={options("condition", CONDITIONS)}
                       width="100%"
                     />
                   </HStack>
                   <FNumber
                     control={form.control}
                     name={`handovers.${h.id}.charge`}
-                    label="Charge for damage / loss"
+                    label={t("charge")}
                     money
                     width="100%"
                   />
                   <FArea
                     control={form.control}
                     name={`handovers.${h.id}.note`}
-                    label="Note"
+                    label={t("note")}
                     rows={1}
                     width="100%"
                   />
@@ -298,10 +299,10 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
         </Section>
       )}
 
-      <Section title="Settlement">
+      <Section title={t("settlement")}>
         {!s ? (
           <Text size="sm" color="secondary">
-            Enter the final meter readings to see the balance.
+            {t("enterReadings")}
           </Text>
         ) : (
           <Raised>
@@ -315,8 +316,8 @@ export function EndFields({ x: { form, loading, period, meters, handovers, w, s,
               <Row
                 label={
                   balance >= 0
-                    ? "We pay the tenant (refund)"
-                    : "The tenant pays (invoice)"
+                    ? t("weOwe")
+                    : t("tenantOwes")
                 }
                 amount={Math.abs(balance)}
                 bold

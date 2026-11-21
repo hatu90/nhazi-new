@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
-import { formatDate, label } from "@/client/lib/format";
+import { formatDate } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { useGet } from "@/client/lib/hooks";
 import type { IRequestListResponse, IRequestResponse } from "@/client/lib/types";
 import { DataTable, Empty, Modal, StatusBadge } from "@/client/ui";
@@ -16,6 +18,10 @@ import { useLease } from "../lease-layout";
 import { RequestFields, useRequestForm } from "./request-form";
 
 export function RequestsPage() {
+  const t = useTranslations("Requests");
+  const d = useTranslations("Dashboard");
+  const c = useTranslations("Common");
+  const en = useEnum();
   const { apiPath, to, lease } = useLease();
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
@@ -23,16 +29,16 @@ export function RequestsPage() {
   const query = useGet<IRequestListResponse>(apiPath("/requests"), { page, pageSize: 20 }, { keepPrevious: true });
   return (
     <Stack gap={4}>
-      <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label="New request" onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} /></HStack>
+      <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label={t("newRequest")} onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} /></HStack>
       <DataTable<IRequestResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No requests" hint="Report a repair, ask a question, or ask to end your lease." action={<Button icon={<Plus size={16} />} variant="primary" label="New request" onClick={() => setCreating(true)} />} />}
+        empty={<Empty title={t("empty")} action={<Button icon={<Plus size={16} />} variant="primary" label={t("newRequest")} onClick={() => setCreating(true)} />} />}
         columns={[
-          { key: "t", header: "Request", render: (r) => <Link href={to(`requests/${r.id}`)}>{r.title}</Link> },
-          { key: "ty", header: "Type", render: (r) => label(r.type) },
-          { key: "c", header: "Created", render: (r) => formatDate(r.createdAt) },
-          { key: "s", header: "Status", render: (r) => <StatusBadge status={r.status} /> },
+          { key: "t", header: t("request"), render: (r) => <Link href={to(`requests/${r.id}`)}>{r.title}</Link> },
+          { key: "ty", header: c("type"), render: (r) => en("requestType", r.type) },
+          { key: "c", header: t("created"), render: (r) => formatDate(r.createdAt) },
+          { key: "s", header: c("status"), render: (r) => <StatusBadge status={r.status} /> },
         ]}
       />
       <Modal open={creating} onClose={() => setCreating(false)}>
@@ -40,9 +46,9 @@ export function RequestsPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"New request"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            header={<DialogHeader title={t("newRequest")} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><RequestFields x={newRequest} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={newRequest.error} busy={newRequest.busy} submitLabel={"Send request"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={newRequest.error} busy={newRequest.busy} submitLabel={d("sendRequest")} onCancel={() => setCreating(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>

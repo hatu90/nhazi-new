@@ -6,7 +6,8 @@ import { Text } from "@astryxdesign/core/Text";
 import { createContext, useContext } from "react";
 import { Outlet, useParams } from "react-router";
 import { ApiError } from "@/client/lib/api";
-import { label } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
+import { useTranslations } from "next-intl";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyResponse, PropertyRole } from "@/client/lib/types";
 import { NotFound } from "@/client/spa/not-found";
@@ -33,6 +34,8 @@ export function useProperty() {
 }
 
 export function PropertyLayout() {
+  const t = useTranslations("Common");
+  const en = useEnum();
   const { propertyId = "" } = useParams();
   const apiPath = (suffix = "") => `/api/admin/properties/${propertyId}${suffix}`;
   const to = (suffix = "") => `/properties/${propertyId}${suffix ? `/${suffix}` : ""}`;
@@ -40,7 +43,7 @@ export function PropertyLayout() {
 
   if (isPending) return <PageSpinner />;
   if (error) {
-    return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label="Back to dashboard" /> : <ErrorBox error={error} retry={() => void refetch()} />;
+    return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label={t("backToDashboard")} /> : <ErrorBox error={error} retry={() => void refetch()} />;
   }
 
   const role = property.role;
@@ -52,7 +55,7 @@ export function PropertyLayout() {
         <VStack gap={1}>
           <HStack gap={3} align="center" wrap="wrap">
             <Heading level={1}>{property.name}</Heading>
-            <Tag label={label(role)} tone="info" />
+            <Tag label={en("role", role)} tone="info" />
           </HStack>
           <Text color="secondary">{property.street}, {property.ward.name}, {property.province.name}</Text>
         </VStack>

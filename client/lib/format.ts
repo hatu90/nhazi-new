@@ -8,8 +8,8 @@ export const formatDate = (iso: string | null | undefined) => {
   return `${d}/${m}/${y}`;
 };
 
-export const formatDateTime = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+export const formatDateTime = (iso: string, locale = "en") =>
+  new Date(iso).toLocaleString(locale === "vi" ? "vi-VN" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
 
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 export const endOfMonthIso = (iso: string) => {
@@ -23,5 +23,3 @@ export const normalizePhone = (v: string) => {
   return s.startsWith("+") ? s : s.startsWith("0") ? `+84${s.slice(1)}` : s.startsWith("84") ? `+${s}` : s;
 };
 export const isValidPhone = (v: string) => /^\+\d{8,15}$/.test(normalizePhone(v));
-
-export const label = (v: string) => v.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());

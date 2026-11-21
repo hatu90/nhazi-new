@@ -1,9 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useForm } from "react-hook-form";
-import { label } from "@/client/lib/format";
+import { useEnumOptions } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IItemListResponse, ItemCondition } from "@/client/lib/types";
 import { num, text } from "@/client/ui/form";
@@ -12,7 +13,6 @@ import { useProperty } from "../../property-layout";
 import type { Handover } from "./types";
 
 const CONDITIONS: ItemCondition[] = ["good", "damaged", "missing"];
-const conditionOptions = CONDITIONS.map((c) => ({ value: c, label: label(c) }));
 
 interface Values {
   itemId: string;
@@ -41,16 +41,18 @@ export function useHandoverForm({ path, handover, taken, open, onDone }: { path:
 }
 
 export function HandoverFields({ x: { form, handover, items, available } }: { x: ReturnType<typeof useHandoverForm> }) {
+  const t = useTranslations("LeaseDetail");
+  const options = useEnumOptions();
   return (
     <VStack gap={4}>
       {handover ? (
         <Text weight="semibold">{handover.itemName}</Text>
       ) : (
-        <FSelect control={form.control} name="itemId" label="Item" required options={available.map((i) => ({ value: i.id, label: i.name }))} hint={items.data && available.length === 0 ? "No items left. Add more under Inventory." : undefined} width="100%" />
+        <FSelect control={form.control} name="itemId" label={t("item")} required options={available.map((i) => ({ value: i.id, label: i.name }))} hint={items.data && available.length === 0 ? t("noItemsLeft") : undefined} width="100%" />
       )}
-      <FNumber control={form.control} name="quantity" label="Quantity" required width="100%" />
-      <FSelect control={form.control} name="condition" label="Condition" required options={conditionOptions} width="100%" />
-      <FArea control={form.control} name="description" label="Note" rows={2} width="100%" />
+      <FNumber control={form.control} name="quantity" label={t("quantity")} required width="100%" />
+      <FSelect control={form.control} name="condition" label={t("condition")} required options={options("condition", CONDITIONS)} width="100%" />
+      <FArea control={form.control} name="description" label={t("note")} rows={2} width="100%" />
     </VStack>
   );
 }

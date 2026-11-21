@@ -1,8 +1,10 @@
 "use client";
 
+import { Logo } from "@/client/ui/logo";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { MobileNav } from "@astryxdesign/core/MobileNav";
 import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
+import { useTranslations } from "next-intl";
 import { type ReactNode } from "react";
 import { PlainAnchor } from "./plain-anchor";
 import { UserMenu } from "./user-menu";
@@ -16,16 +18,17 @@ export function SpaShell({
   sideNav?: (withAccount: boolean) => ReactNode;
   children: ReactNode;
 }) {
+  const t = useTranslations("Common");
   return (
     <AppShell
       height="auto"
       variant="section"
       sideNav={sideNav?.(false)}
-      mobileNav={sideNav ? { content: <MobileNav label="Menu">{sideNav(true)}</MobileNav> } : undefined}
+      mobileNav={sideNav ? { content: <MobileNav label={t("menu")}>{sideNav(true)}</MobileNav> } : undefined}
       topNav={
         <TopNav
-          label="Main navigation"
-          heading={<TopNavHeading heading="Nhazi" headingHref="/dashboard" as={PlainAnchor} />}
+          label={t("mainNav")}
+          heading={<TopNavHeading logo={<Logo size={28} />} heading="Nhazi" headingHref="/dashboard" as={PlainAnchor} />}
           endContent={
             // With a drawer, the account lives inside it on mobile.
             <span className={`items-center gap-3 ${sideNav ? "hidden md:inline-flex" : "inline-flex"}`}><UserMenu /></span>

@@ -1,6 +1,7 @@
 "use client";
 
-import { label } from "@/client/lib/format";
+import { useTranslations } from "next-intl";
+import { useEnumOptions } from "@/client/lib/use-enum";
 import { useSend } from "@/client/lib/hooks";
 import { text } from "@/client/ui/form";
 import { FArea, FDate, FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -40,13 +41,17 @@ export function useRequestForm({ open, onDone }: { open: boolean; onDone: () => 
 }
 
 export function RequestFields({ x: { form, type } }: { x: ReturnType<typeof useRequestForm> }) {
+  const t = useTranslations("Requests");
+  const d = useTranslations("Dashboard");
+  const c = useTranslations("Common");
+  const options = useEnumOptions();
   return (
     <VStack gap={4}>
-      <FSelect control={form.control} name="type" label="Type" options={types.map((t) => ({ value: t, label: label(t) }))} width="100%" />
-      <FText control={form.control} name="title" label="Title" required width="100%" />
-      <FArea control={form.control} name="description" label="Details" width="100%" />
-      <FSelect control={form.control} name="priority" label="Priority" options={priorities.map((p) => ({ value: p, label: label(p) }))} width="100%" />
-      {type === "close_lease" && <FDate control={form.control} name="requestedCloseDate" label="Move-out date" required width="100%" />}
+      <FSelect control={form.control} name="type" label={c("type")} options={options("requestType", types)} width="100%" />
+      <FText control={form.control} name="title" label={t("title")} required width="100%" />
+      <FArea control={form.control} name="description" label={d("requestDetails")} width="100%" />
+      <FSelect control={form.control} name="priority" label={t("priority")} options={options("priority", priorities)} width="100%" />
+      {type === "close_lease" && <FDate control={form.control} name="requestedCloseDate" label={d("moveOut")} required width="100%" />}
     </VStack>
   );
 }

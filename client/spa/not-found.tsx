@@ -1,8 +1,10 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
+import { useTranslations } from "next-intl";
 import { Empty } from "@/client/ui";
 
-export const NotFound = ({ backTo = "/", label = "Back" }: { backTo?: string; label?: string }) => (
-  <Empty title="Page not found" hint="This page doesn't exist, or you don't have access to it." action={<Button label={label} variant="secondary" href={backTo} />} />
-);
+export function NotFound({ backTo = "/", label }: { backTo?: string; label?: string }) {
+  const t = useTranslations("Common");
+  return <Empty title={t("notFound")} hint={t("notFoundHint")} action={<Button label={label ?? t("back")} variant="secondary" href={backTo} />} />;
+}

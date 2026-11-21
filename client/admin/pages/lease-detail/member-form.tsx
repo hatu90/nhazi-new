@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { VStack } from "@astryxdesign/core/Stack";
 import { useForm } from "react-hook-form";
 import { isValidPhone, normalizePhone } from "@/client/lib/format";
@@ -18,11 +19,13 @@ export function useMemberForm({ path, open, onDone }: { path: string; open: bool
 }
 
 export function MemberFields({ x: { form } }: { x: ReturnType<typeof useMemberForm> }) {
+  const t = useTranslations("LeaseDetail");
+  const c = useTranslations("Common");
   return (
     <VStack gap={4}>
-      <FText control={form.control} name="name" label="Name" required width="100%" />
-      <FNumber control={form.control} name="yearOfBirth" label="Year of birth" required width="100%" />
-      <FText control={form.control} name="phone" label="Phone number" hint="Optional. With a number, the person is invited to sign in and see this lease." type="tel" placeholder="0912 345 678" rules={{ validate: (v) => !String(v).trim() || isValidPhone(String(v)) || "Enter a valid phone number" }} width="100%" />
+      <FText control={form.control} name="name" label={c("name")} required width="100%" />
+      <FNumber control={form.control} name="yearOfBirth" label={t("yearOfBirth")} required width="100%" />
+      <FText control={form.control} name="phone" label={c("phone")} type="tel" placeholder="0912 345 678" rules={{ validate: (v) => !String(v).trim() || isValidPhone(String(v)) || c("invalidPhone") }} width="100%" />
     </VStack>
   );
 }

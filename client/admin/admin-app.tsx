@@ -1,6 +1,7 @@
 "use client";
 
 import { NotFound } from "@/client/spa/not-found";
+import { useTranslations } from "next-intl";
 import { SpaProviders } from "@/client/spa/providers";
 import { RequireAccount } from "@/client/spa/require-account";
 import { BrowserRouter, Route, Routes } from "react-router";
@@ -25,6 +26,7 @@ import { PropertyLayout } from "./property-layout";
 import { ToDashboard } from "./to-dashboard";
 
 export default function AdminApp() {
+  const t = useTranslations("Common");
   return (
     <BrowserRouter basename="/admin">
       <SpaProviders>
@@ -50,7 +52,7 @@ export default function AdminApp() {
                 <Route path="team" element={<TeamPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
-              <Route path="*" element={<NotFound backTo="/" label="Back to dashboard" />} />
+              <Route path="*" element={<NotFound backTo="/" label={t("backToDashboard")} />} />
             </Route>
           </Routes>
         </RequireAccount>

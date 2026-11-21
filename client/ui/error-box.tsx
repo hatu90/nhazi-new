@@ -2,8 +2,11 @@
 
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
-import { errorMessage } from "@/client/lib/api";
+import { useTranslations } from "next-intl";
+import { useErrorMessage } from "@/client/lib/use-error-message";
 
 export function ErrorBox({ error, retry }: { error: unknown; retry?: () => void }) {
-  return <Banner status="error" title={errorMessage(error)} endContent={retry && <Button label="Retry" variant="secondary" size="sm" onClick={retry} />} />;
+  const t = useTranslations("Common");
+  const message = useErrorMessage();
+  return <Banner status="error" title={message(error)} endContent={retry && <Button label={t("retry")} variant="secondary" size="sm" onClick={retry} />} />;
 }

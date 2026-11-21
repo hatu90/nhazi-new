@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { AuthFlow } from "@/client/site/auth-flow";
 
-export const metadata: Metadata = { title: "Sign in" };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Meta");
+  return { title: t("signIn") };
+}
 
 export default function AuthPage() {
   return (

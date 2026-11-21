@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { formatDate, formatDateTime } from "@/client/lib/format";
+import { useLocale } from "next-intl";
 import { useGet } from "@/client/lib/hooks";
 import type { IMeterResponse, IReadingListResponse, IReadingResponse } from "@/client/lib/types";
 import { DataTable, DefList, Empty, ErrorBox, Modal, PageSpinner, Section } from "@/client/ui";
@@ -15,6 +17,9 @@ import { useProperty } from "../property-layout";
 import { ReadingFields, useReadingForm } from "./reading-form";
 
 export function MeterPage() {
+  const t = useTranslations("Meters");
+  const c = useTranslations("Common");
+  const locale = useLocale();
   const { meterId = "" } = useParams();
   const { apiPath, role, to } = useProperty();
   const [page, setPage] = useState(1);
@@ -29,18 +34,18 @@ export function MeterPage() {
 
   return (
     <VStack gap={5}>
-      <HStack><Button label="All meters" variant="ghost" size="sm" href={to("meters")} /></HStack>
-      <Section title={m.name} action={role !== "viewer" && <Button variant="primary" label="Record reading" size="sm" onClick={() => setAdding(true)} />}>
-        <DefList items={[["Unit", m.unitName], ["Service", m.serviceName], ["Serial number", m.serialNumber], ["Installed", formatDate(m.installedAt)], ["Max value", m.maxValue]]} />
+      <HStack><Button label={t("allMeters")} variant="ghost" size="sm" href={to("meters")} /></HStack>
+      <Section title={m.name} action={role !== "viewer" && <Button variant="primary" label={t("recordReading")} size="sm" onClick={() => setAdding(true)} />}>
+        <DefList items={[[c("unit"), m.unitName], [t("service"), m.serviceName], [t("serial"), m.serialNumber], [t("installed"), formatDate(m.installedAt)], [t("maxValue"), m.maxValue]]} />
       </Section>
       <DataTable<IReadingResponse>
         query={readings}
         paging={setPage}
-        empty={<Empty title="No readings yet" />}
+        empty={<Empty title={t("noReadings")} />}
         columns={[
-          { key: "date", header: "Read at", render: (r) => formatDateTime(r.readAt) },
-          { key: "value", header: "Value", render: (r) => r.value },
-          { key: "at", header: "Recorded", render: (r) => formatDateTime(r.createdAt) },
+          { key: "date", header: t("readAt"), render: (r) => formatDateTime(r.readAt, locale) },
+          { key: "value", header: t("value"), render: (r) => r.value },
+          { key: "at", header: t("recorded"), render: (r) => formatDateTime(r.createdAt, locale) },
         ]}
       />
       <Modal open={adding} onClose={() => setAdding(false)}>
@@ -48,9 +53,9 @@ export function MeterPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Record a reading"} onOpenChange={(o) => { if (!o) setAdding(false); }} />}
+            header={<DialogHeader title={t("recordTitle")} onOpenChange={(o) => { if (!o) setAdding(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><ReadingFields x={readingForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={readingForm.error} busy={readingForm.busy} submitLabel={"Save reading"} onCancel={() => setAdding(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={readingForm.error} busy={readingForm.busy} submitLabel={t("saveReading")} onCancel={() => setAdding(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>

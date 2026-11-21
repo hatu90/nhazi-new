@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useEnum } from "@/client/lib/use-enum";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Heading } from "@astryxdesign/core/Heading";
@@ -15,6 +17,9 @@ type Item = { type: "invitation"; id: string; invitation: IInvitationResponse } 
 
 /** One card that pages through everything waiting for the user: invitations, requests, invoices to pay, payments to confirm. */
 export function NotificationsCard() {
+  const t = useTranslations("Dashboard");
+  const c = useTranslations("Common");
+  const en = useEnum();
   const navigate = useNavigate();
   const invitations = useGet<IPaginated<IInvitationResponse>>("/api/me/invitations", { status: "pending", pageSize: 20 });
   const notifications = useGet<INotificationListResponse>("/api/me/notifications");
@@ -35,9 +40,9 @@ export function NotificationsCard() {
 
   return (
     <VStack gap={3}>
-      <Heading level={2}>Notifications</Heading>
+      <Heading level={2}>{t("notifications")}</Heading>
       {!current ? (
-        <Text color="secondary" size="sm">{invitations.isPending || notifications.isPending ? "Loading…" : "You're all caught up."}</Text>
+        <Text color="secondary" size="sm">{invitations.isPending || notifications.isPending ? `${c("loading")}…` : t("caughtUp")}</Text>
       ) : (
         <Card padding={4}>
           <VStack gap={3}>
@@ -47,7 +52,7 @@ export function NotificationsCard() {
                   <>
                     <Text weight="semibold">{current.invitation.property.name}{current.invitation.lease ? ` · ${current.invitation.lease.unitName}` : ""}</Text>
                     <Text size="sm" color="secondary">
-                      {current.invitation.invitedBy.displayName} invited you {current.invitation.kind === "lease" ? "as a tenant" : `to the team as ${current.invitation.role}`}.
+                      {current.invitation.kind === "lease" ? t("invitedTenant", { name: current.invitation.invitedBy.displayName }) : t("invitedTeam", { name: current.invitation.invitedBy.displayName, role: en("role", current.invitation.role ?? "") })}
                     </Text>
                   </>
                 ) : (
@@ -59,11 +64,11 @@ export function NotificationsCard() {
               </VStack>
               {current.type === "invitation" ? (
                 <HStack gap={2}>
-                  <Button label="Decline" variant="secondary" isLoading={respond.isPending} clickAction={() => decide(current.id, "decline")} />
-                  <Button variant="primary" label="Accept" isLoading={respond.isPending} clickAction={() => decide(current.id, "accept")} />
+                  <Button label={t("decline")} variant="secondary" isLoading={respond.isPending} clickAction={() => decide(current.id, "decline")} />
+                  <Button variant="primary" label={t("accept")} isLoading={respond.isPending} clickAction={() => decide(current.id, "accept")} />
                 </HStack>
               ) : (
-                <Button label="View" variant="secondary" onClick={() => open(current.notification)} />
+                <Button label={t("view")} variant="secondary" onClick={() => open(current.notification)} />
               )}
             </HStack>
             <HStack justify="end" align="center" gap={2}>

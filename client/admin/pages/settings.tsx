@@ -1,12 +1,14 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@astryxdesign/core/Button";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
-import { formatMoney, label } from "@/client/lib/format";
+import { formatMoney } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { DefList, Modal, Section } from "@/client/ui";
 import { FormFooter } from "../../ui/rhf";
 import { PropertyFields, usePropertyForm } from "../property-form";
@@ -17,6 +19,9 @@ const formatDistance = (m: number | null) => (m === null ? null : m >= 1000 ? `$
 
 /** Flat page: a heading and its content per block, blocks separated by a divider (no cards around cards). */
 export function SettingsPage() {
+  const t = useTranslations("Settings");
+  const c = useTranslations("Common");
+  const en = useEnum();
   const { property, canManage, apiPath } = useProperty();
   const [editing, setEditing] = useState(false);
   const imageCount = property.images.length + (property.headerImage ? 1 : 0);
@@ -24,16 +29,16 @@ export function SettingsPage() {
 
   return (
     <VStack gap={6}>
-      <Section title="Property" action={canManage && <Button variant="primary" label="Edit property" onClick={() => setEditing(true)} />}>
+      <Section title={t("property")} action={canManage && <Button variant="primary" label={t("edit")} onClick={() => setEditing(true)} />}>
         <DefList items={[
-          ["Name", property.name],
-          ["Category", label(property.category)],
-          ["Address", `${property.street}, ${property.ward.name}, ${property.province.name}`],
-          ["Asking rent", property.rentNegotiable ? "Negotiable" : property.rentPriceFrom === null ? "—" : `${formatMoney(property.rentPriceFrom)}${property.rentPriceTo !== null ? ` – ${formatMoney(property.rentPriceTo)}` : ""}`],
-          ["Images", imageCount === 0 ? "None" : `${imageCount}`],
+          [c("name"), property.name],
+          [t("category"), en("category", property.category)],
+          [t("address"), `${property.street}, ${property.ward.name}, ${property.province.name}`],
+          [t("askingRent"), property.rentNegotiable ? t("negotiable") : property.rentPriceFrom === null ? "—" : `${formatMoney(property.rentPriceFrom)}${property.rentPriceTo !== null ? ` – ${formatMoney(property.rentPriceTo)}` : ""}`],
+          [t("images"), imageCount === 0 ? c("none") : `${imageCount}`],
         ]} />
         <VStack gap={1}>
-          <Text size="sm" color="secondary">Nearby places</Text>
+          <Text size="sm" color="secondary">{t("nearby")}</Text>
           {property.referenceAddresses.length > 0 && (
             <VStack gap={1}>
               {property.referenceAddresses.map((r) => (
@@ -46,7 +51,7 @@ export function SettingsPage() {
           )}
         </VStack>
         <VStack gap={1}>
-          <Text size="sm" color="secondary">House rules</Text>
+          <Text size="sm" color="secondary">{t("rules")}</Text>
           {property.rules.length === 0 ? <Text>—</Text> : <ul className="list-disc space-y-1 pl-5">{property.rules.map((r, i) => <li key={i}><Text>{r}</Text></li>)}</ul>}
         </VStack>
       </Section>
@@ -56,11 +61,11 @@ export function SettingsPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title="Edit property" onOpenChange={(o) => { if (!o) setEditing(false); }} />}
+            header={<DialogHeader title={t("edit")} onOpenChange={(o) => { if (!o) setEditing(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}>
               <PropertyFields x={propertyForm} />
             </LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={propertyForm.error} busy={propertyForm.busy} submitLabel="Save changes" onCancel={() => setEditing(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={propertyForm.error} busy={propertyForm.busy} submitLabel={t("saveChanges")} onCancel={() => setEditing(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>

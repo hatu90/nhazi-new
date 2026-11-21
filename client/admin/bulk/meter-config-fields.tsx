@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TextField } from "@/client/ui";
 import { FDate, FSelect, FText } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
@@ -21,19 +22,21 @@ export function MeterConfigFields({ control, index: i, serviceOptions, serviceNa
   setValue: (name: `meters.${number}.${keyof MeterConfig}`, v: string) => void;
   onRemove?: () => void;
 }) {
+  const t = useTranslations("Meters");
+  const c = useTranslations("Common");
   return (
     <VStack gap={3}>
       <HStack justify="between" align="center">
-        <Text weight="semibold">Meter {i + 1}</Text>
-        {onRemove && <Button label="Remove" size="sm" variant="ghost" onClick={onRemove} />}
+        <Text weight="semibold">{t("meterN", { n: i + 1 })}</Text>
+        {onRemove && <Button label={c("remove")} size="sm" variant="ghost" onClick={onRemove} />}
       </HStack>
       <FSelect
         control={control}
         name={`meters.${i}.serviceId`}
-        label="Service"
+        label={t("service")}
         required
         options={serviceOptions}
-        hint={serviceOptions.length === 0 ? "No metered service yet — add one on the Services tab first." : undefined}
+        hint={serviceOptions.length === 0 ? t("noService") : undefined}
         onValueChange={(next) => {
           // the prefix follows the service name until it has been edited by hand
           const current = getValues(`meters.${i}.prefix`);
@@ -42,12 +45,12 @@ export function MeterConfigFields({ control, index: i, serviceOptions, serviceNa
         width="100%"
       />
       <HStack gap={2} align="end">
-        <FText control={control} name={`meters.${i}.prefix`} label="Prefix" placeholder="Electricity" width="100%" />
-        <TextField label="Room name" value={sampleRoom ?? "Room name"} onChange={() => {}} disabled width="100%" />
-        <FText control={control} name={`meters.${i}.postfix`} label="Postfix" width="100%" />
+        <FText control={control} name={`meters.${i}.prefix`} label={t("prefix")} width="100%" />
+        <TextField label={t("roomName")} value={sampleRoom ?? t("roomName")} onChange={() => {}} disabled width="100%" />
+        <FText control={control} name={`meters.${i}.postfix`} label={t("postfix")} width="100%" />
       </HStack>
-      <Text size="sm" color="secondary">Preview: {meterName(prefix, sampleRoom ?? "Room", postfix)}</Text>
-      <FDate control={control} name={`meters.${i}.installedAt`} label="Installed on" hint="Optional." width="100%" />
+      <Text size="sm" color="secondary">{t("preview", { name: meterName(prefix, sampleRoom ?? t("roomName"), postfix) })}</Text>
+      <FDate control={control} name={`meters.${i}.installedAt`} label={t("installedOn")} width="100%" />
     </VStack>
   );
 }

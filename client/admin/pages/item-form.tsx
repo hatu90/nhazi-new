@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useSend } from "@/client/lib/hooks";
 import type { IItemResponse } from "@/client/lib/types";
 import { FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -17,5 +18,6 @@ export function useItemForm({ item, open, onDone }: { item?: IItemResponse; open
 }
 
 export function ItemFields({ x }: { x: ReturnType<typeof useItemForm> }) {
-  return <FText control={x.form.control} name="name" label="Name" required width="100%" />;
+  const t = useTranslations("Common");
+  return <FText control={x.form.control} name="name" label={t("name")} required width="100%" />;
 }

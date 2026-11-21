@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/client/lib/format";
+import { useTranslations } from "next-intl";
 import { useSend } from "@/client/lib/hooks";
 import type { IServiceResponse } from "@/client/lib/types";
 import { FDate, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -27,12 +27,13 @@ export function usePriceForm({ service, onDone }: { service: IServiceResponse | 
 }
 
 export function PriceFields({ x: { form, service, last } }: { x: ReturnType<typeof usePriceForm> }) {
+  const t = useTranslations("Services");
   if (!service) return null;
   const multi = service.usageBase === "meter" || service.usageBase === "member";
   return (
     <VStack gap={4}>
-      <FDate control={form.control} name="effectiveDate" label="Effective from" hint={last ? `After ${formatDate(last.effectiveDate)}` : undefined} min={last?.effectiveDate} required width="100%" />
-      <TierFields control={form.control} name="tiers" multi={multi} unit={service.unitOfMeasure ?? "unit"} />
+      <FDate control={form.control} name="effectiveDate" label={t("effectiveFrom")} min={last?.effectiveDate} required width="100%" />
+      <TierFields control={form.control} name="tiers" multi={multi} unit={service.unitOfMeasure ?? t("unitFallback")} />
     </VStack>
   );
 }

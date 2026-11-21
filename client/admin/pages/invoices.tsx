@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
-import { formatDate, formatMoney, label } from "@/client/lib/format";
+import { formatDate, formatMoney } from "@/client/lib/format";
+import { useEnum, useEnumOptions } from "@/client/lib/use-enum";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminInvoiceListResponse, IAdminInvoiceResponse } from "@/client/lib/types";
 import { DataTable, Empty, Modal, SelectField, StatusBadge } from "@/client/ui";
@@ -15,9 +17,13 @@ import { useState } from "react";
 import { useProperty } from "../property-layout";
 import { InvoiceFields, useInvoiceForm } from "./invoice-form";
 
-const statuses = ["pending", "partial", "paid", "cancelled"].map((s) => ({ value: s, label: s }));
+const statuses = ["pending", "partial", "paid", "cancelled"];
 
 export function InvoicesPage() {
+  const t = useTranslations("Invoices");
+  const c = useTranslations("Common");
+  const en = useEnum();
+  const options = useEnumOptions();
   const { apiPath, canManage, to } = useProperty();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
@@ -28,21 +34,21 @@ export function InvoicesPage() {
   return (
     <Stack gap={4}>
       <HStack justify="between" align="end" wrap="wrap" gap={3}>
-        <SelectField label="Status" value={status} onChange={(v) => { setStatus(v); setPage(1); }} options={[{ value: "", label: "All statuses" }, ...statuses]} width={200} />
-        {canManage && <Button icon={<Plus size={16} />} variant="primary" label="New invoice" onClick={() => setCreating(true)} />}
+        <SelectField label={c("status")} value={status} onChange={(v) => { setStatus(v); setPage(1); }} options={[{ value: "", label: c("allStatuses") }, ...options("status", statuses)]} width={200} />
+        {canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("newInvoice")} onClick={() => setCreating(true)} />}
       </HStack>
       <DataTable<IAdminInvoiceResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No invoices" hint="Invoices appear when a lease starts or ends, or when you create one." />}
+        empty={<Empty title={t("empty")} />}
         columns={[
-          { key: "t", header: "Invoice", render: (i) => <Link href={to(`invoices/${i.id}`)}>{i.title}</Link> },
-          { key: "u", header: "Unit", render: (i) => i.unitName },
-          { key: "k", header: "Type", render: (i) => label(i.kind) },
-          { key: "a", header: "Amount", render: (i) => formatMoney(i.amount) },
-          { key: "p", header: "Paid", render: (i) => formatMoney(i.paidAmount) },
-          { key: "d", header: "Due", render: (i) => formatDate(i.dueDate) },
-          { key: "s", header: "Status", render: (i) => <StatusBadge status={i.status} /> },
+          { key: "t", header: t("invoice"), render: (i) => <Link href={to(`invoices/${i.id}`)}>{i.title}</Link> },
+          { key: "u", header: c("unit"), render: (i) => i.unitName },
+          { key: "k", header: c("type"), render: (i) => en("invoiceKind", i.kind) },
+          { key: "a", header: c("amount"), render: (i) => formatMoney(i.amount) },
+          { key: "p", header: c("paid"), render: (i) => formatMoney(i.paidAmount) },
+          { key: "d", header: c("due"), render: (i) => formatDate(i.dueDate) },
+          { key: "s", header: c("status"), render: (i) => <StatusBadge status={i.status} /> },
         ]}
       />
       <Modal open={creating} onClose={() => setCreating(false)}>
@@ -50,9 +56,9 @@ export function InvoicesPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"New invoice"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            header={<DialogHeader title={t("newInvoice")} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><InvoiceFields x={invoiceForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={invoiceForm.error} busy={invoiceForm.busy} submitLabel={"Create invoice"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={invoiceForm.error} busy={invoiceForm.busy} submitLabel={t("createInvoice")} onCancel={() => setCreating(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>

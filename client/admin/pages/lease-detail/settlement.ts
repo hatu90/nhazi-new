@@ -94,6 +94,8 @@ export function settle(input: {
   readings: Record<string, number>;
   billed: IBilledLine[];
   extraCharges: { title: string; amount: number }[];
+  /** Translated title of the deposit refund line. */
+  depositLabel: string;
 }): ISettlement {
   const { period, terminatedAt: t } = input;
   // closing invoice
@@ -124,7 +126,7 @@ export function settle(input: {
     if (gross <= 0) continue;
     const cap = Math.min(gross, invoiceRoom);
     room.set(b.invoiceId, invoiceRoom - cap);
-    lines.push({ key: keyOf(b), title: b.role === "deposit" ? "Deposit" : b.title, gross, net: gross, cap });
+    lines.push({ key: keyOf(b), title: b.role === "deposit" ? input.depositLabel : b.title, gross, net: gross, cap });
   }
 
   // what is owed is taken from the deposit, then rent, then services

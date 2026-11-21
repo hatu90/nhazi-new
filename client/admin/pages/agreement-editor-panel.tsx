@@ -1,10 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
-import { config, emptyPage, toPages } from "@/client/agreement/config";
+import { createConfig, emptyPage, toPages } from "@/client/agreement/config";
 import type { TemplatePage } from "@/client/agreement/types";
-import { fieldProblems } from "@/client/agreement/metadata";
-import { ApiError } from "@/client/lib/api";
+import { fieldProblems, type FieldProblem } from "@/client/agreement/metadata";
 import { useSend } from "@/client/lib/hooks";
 import type { ITemplateDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Tag, useConfirm } from "@/client/ui";
@@ -13,14 +13,18 @@ import { HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { Puck } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useProperty } from "../property-layout";
 
 export const MM_TO_PX = 96 / 25.4;
 
-export const A4_VIEWPORTS = [{ width: 210 * MM_TO_PX + 64 + 16, height: 297 * MM_TO_PX + 64, label: "A4 Portrait", icon: "Tablet" as const }];
+export const a4Viewports = (label: string) => [{ width: 210 * MM_TO_PX + 64 + 16, height: 297 * MM_TO_PX + 64, label, icon: "Tablet" as const }];
 
 export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITemplateDetailResponse; path: string; canManage: boolean; back: string }) {
+  const t = useTranslations("Agreements");
+  const c = useTranslations("Common");
+  const editor = useTranslations("AgreementEditor");
+  const config = useMemo(() => createConfig(editor), [editor]);
   const confirm = useConfirm();
   const { apiPath } = useProperty();
   const save = useSend<{ baseVersion: number; data: { pages: TemplatePage[] } }>("POST", `${path}/versions`, [path, apiPath("/agreement-templates")]);
@@ -33,9 +37,8 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
   };
   const [pages, setPages] = useState<TemplatePage[]>(() => toPages(tpl.currentData));
   const [active, setActive] = useState(0);
-  const [problems, setProblems] = useState<string[]>([]);
+  const [problems, setProblems] = useState<FieldProblem[]>([]);
   const [saved, setSaved] = useState(false);
-  const stale = save.error instanceof ApiError && save.error.code === "STALE_VERSION";
 
   // keep the edits of the page being edited, so switching pages never loses them
   const onChange = useCallback((page: TemplatePage) => setPages((cur) => cur.map((p, i) => (i === active ? page : p))), [active]);
@@ -57,9 +60,9 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
   const removePage = () => {
     if (pages.length <= 1) return;
     confirm.ask({
-      title: `Remove page ${active + 1}?`,
-      description: "The page and its content are removed from this version.",
-      actionLabel: "Remove page",
+      title: t("removePageTitle", { n: active + 1 }),
+      description: t("removePageBody"),
+      actionLabel: t("removePage"),
       onConfirm: () => {
         setPages((cur) => cur.filter((_, i) => i !== active));
         setActive((i) => Math.max(0, i - 1));
@@ -70,9 +73,9 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
   return (
     <div className="fixed inset-0 z-50 flex flex-col gap-2 bg-white p-3">
       <HStack gap={2} align="center" wrap="wrap">
-        <Button label="Templates" variant="ghost" size="sm" href={back} />
+        <Button label={t("templates")} variant="ghost" size="sm" href={back} />
         <input
-          aria-label="Agreement name"
+          aria-label={t("nameLabel")}
           value={title}
           maxLength={100}
           readOnly={!canManage}
@@ -82,12 +85,12 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
           className="min-w-64 rounded border border-transparent px-2 py-1 text-lg font-semibold hover:border-neutral-300 focus:border-neutral-400 focus:outline-none"
         />
         <Tag label={`v${tpl.currentVersion}`} />
-        {saved && <Text size="sm" color="secondary">Saved as a new version</Text>}
+        {saved && <Text size="sm" color="secondary">{t("saved")}</Text>}
       </HStack>
-      {!canManage && <Text color="secondary">You can view this template but not change it.</Text>}
-      {problems.length > 0 && <ErrorBox error={new Error(problems.join(" "))} />}
+      {!canManage && <Text color="secondary">{t("viewOnly")}</Text>}
+      {problems.length > 0 && <ErrorBox error={new Error(problems.map((p) => (p.kind === "noName" ? t("problemNoName", { label: p.label }) : t("problemDuplicate", { name: p.name, count: p.count }))).join(" "))} />}
       {rename.error && <ErrorBox error={rename.error} />}
-      {save.error && <ErrorBox error={stale ? new Error("Someone saved a newer version. Reload the page to get it, then redo your changes.") : save.error} />}
+      {save.error && <ErrorBox error={save.error} />}
       <div className="min-h-0 flex-1 overflow-hidden rounded border border-neutral-300">
         <Puck
           // remount per page: each page has its own editor state and history
@@ -98,16 +101,16 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
           onPublish={publish}
           permissions={{ publish: canManage }}
           headerTitle={title}
-          viewports={A4_VIEWPORTS}
-          dictionary={{ "header-publish": "Save" }}
+          viewports={a4Viewports(t("a4"))}
+          dictionary={{ "header-publish": c("save") }}
           overrides={{
             headerActions: ({ children }) => (
               <HStack gap={3} align="center">
-                <Button label="Previous page" variant="ghost" isDisabled={active === 0} onClick={() => setActive(active - 1)}>‹</Button>
-                <Text>Page {active + 1} of {pages.length}</Text>
-                <Button label="Next page" variant="ghost" isDisabled={active === pages.length - 1} onClick={() => setActive(active + 1)}>›</Button>
-                {canManage && <Button icon={<Plus size={16} />} label="Add page" variant="ghost" onClick={addPage}>Add page</Button>}
-                {canManage && <Button label="Remove page" variant="ghost" isDisabled={pages.length <= 1} onClick={removePage}>Remove page</Button>}
+                <Button label={t("prevPage")} variant="ghost" isDisabled={active === 0} onClick={() => setActive(active - 1)}>‹</Button>
+                <Text>{t("pageOf", { n: active + 1, total: pages.length })}</Text>
+                <Button label={t("nextPage")} variant="ghost" isDisabled={active === pages.length - 1} onClick={() => setActive(active + 1)}>›</Button>
+                {canManage && <Button icon={<Plus size={16} />} label={t("addPage")} variant="ghost" onClick={addPage}>{t("addPage")}</Button>}
+                {canManage && <Button label={t("removePage")} variant="ghost" isDisabled={pages.length <= 1} onClick={removePage}>{t("removePage")}</Button>}
                 {children}
               </HStack>
             ),

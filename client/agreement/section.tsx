@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Section } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
@@ -16,7 +17,7 @@ import { buildVars, type LeaseFacts } from "./vars";
  * With `onSaveValues` (admin) the template's form fields can be filled in; the result is what the tenant sees.
  */
 export function AgreementSection({
-  title = "Agreement",
+  title,
   content,
   facts,
   values,
@@ -30,19 +31,21 @@ export function AgreementSection({
   onSaveValues?: (values: Record<string, string>) => Promise<unknown>;
   extra?: ReactNode;
 }) {
+  const t = useTranslations("Agreements");
   const [editing, setEditing] = useState(false);
-  const vars = useMemo(() => buildVars(facts), [facts]);
+  const vars = useMemo(() => buildVars(facts, { openEnded: t("openEnded"), billingDay: (n) => t("billingDay", { n }) }), [facts, t]);
   const filled = useMemo(() => withDefaults(toPages(content), values), [content, values]);
   const canEdit = !!onSaveValues && hasFields(content);
 
-  if (!content) return <Section title={title}><Text color="secondary">This agreement version is not available.</Text></Section>;
+  const heading = title ?? t("title");
+  if (!content) return <Section title={heading}><Text color="secondary">{t("unavailable")}</Text></Section>;
   return (
     <Section
-      title={title}
+      title={heading}
       action={
         <HStack gap={2}>
-          {canEdit && !editing && <Button label="Fill in" size="sm" variant="secondary" onClick={() => setEditing(true)} />}
-          {!editing && <Button label="Print / save as PDF" size="sm" variant="secondary" onClick={() => window.print()} />}
+          {canEdit && !editing && <Button label={t("fillIn")} size="sm" variant="secondary" onClick={() => setEditing(true)} />}
+          {!editing && <Button label={t("print")} size="sm" variant="secondary" onClick={() => window.print()} />}
         </HStack>
       }
     >

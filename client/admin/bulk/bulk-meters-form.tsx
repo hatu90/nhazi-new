@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { api } from "@/client/lib/api";
 import { useGet } from "@/client/lib/hooks";
@@ -21,6 +22,7 @@ const emptyMeter = (): MeterConfig => ({ serviceId: "", prefix: "", postfix: "",
  * The API call is all-or-nothing.
  */
 export function useBulkMetersForm({ open, onDone }: { open: boolean; onDone: () => void }) {
+  const t = useTranslations("Meters");
   const { apiPath } = useProperty();
   const qc = useQueryClient();
   const form = useForm<BulkMetersValues>({
@@ -54,7 +56,7 @@ export function useBulkMetersForm({ open, onDone }: { open: boolean; onDone: () 
   useOpenReset(open, () => { form.reset({ unitIds: [], meters: [emptyMeter()] }); run.reset(); });
   const submit = form.handleSubmit((v) => {
     const total = roomNames.length * v.meters.length;
-    if (total > 200) return form.setError("unitIds", { message: `That would create ${total} meters; the limit is 200 at a time` });
+    if (total > 200) return form.setError("unitIds", { message: t("limit", { total }) });
     run.mutate(v);
   });
 
@@ -62,15 +64,17 @@ export function useBulkMetersForm({ open, onDone }: { open: boolean; onDone: () 
 }
 
 export function BulkMetersFields({ x: { form, configs, meters, existingUnits, services, serviceOptions, roomNames } }: { x: ReturnType<typeof useBulkMetersForm> }) {
+  const t = useTranslations("Meters");
+  const c = useTranslations("Common");
   return (
     <VStack gap={4}>
-      <FMulti control={form.control} name="unitIds" label="Units" required options={(existingUnits.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))} placeholder={existingUnits.isPending ? "Loading…" : "Select units…"} width="100%" />
+      <FMulti control={form.control} name="unitIds" label={t("units")} required options={(existingUnits.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))} placeholder={existingUnits.isPending ? `${c("loading")}…` : t("selectUnits")} width="100%" />
 
       <VStack gap={5}>
           {configs.fields.map((f, i) => (
             <MeterConfigFields key={f.id} control={form.control} index={i} serviceOptions={serviceOptions} prefix={meters[i]?.prefix ?? ""} postfix={meters[i]?.postfix ?? ""} sampleRoom={roomNames[0]} serviceNames={Object.fromEntries((services.data?.items ?? []).map((x) => [x.id, x.name]))} getValues={form.getValues} setValue={form.setValue} onRemove={configs.fields.length > 1 ? () => configs.remove(i) : undefined} />
           ))}
-          <HStack><Button icon={<Plus size={16} />} label="Add another meter" size="sm" variant="secondary" onClick={() => configs.append(emptyMeter())} /></HStack>
+          <HStack><Button icon={<Plus size={16} />} label={t("addAnother")} size="sm" variant="secondary" onClick={() => configs.append(emptyMeter())} /></HStack>
       </VStack>
     </VStack>
   );

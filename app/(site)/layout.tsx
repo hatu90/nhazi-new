@@ -1,3 +1,4 @@
+import { Logo } from "@/client/ui/logo";
 import { AuthProvider } from "@/client/auth/auth-provider";
 import { AccountMenu } from "@/client/site/account-menu";
 import { Button } from "@astryxdesign/core/Button";
@@ -12,7 +13,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
     <AuthProvider>
       <header>
         <HStack align="center" justify="between" paddingInline={5} paddingBlock={3} gap={3}>
-          <Button label="Nhazi" variant="ghost" href="/" />
+          <Button label="Nhazi" variant="ghost" href="/" icon={<Logo size={24} />} />
           <HStack align="center" gap={1}>
             <Button label={t("about")} variant="ghost" href="/about" />
             <Button label={t("terms")} variant="ghost" href="/term" />

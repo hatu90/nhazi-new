@@ -1,6 +1,7 @@
 "use client";
 
 import { NotFound } from "@/client/spa/not-found";
+import { useTranslations } from "next-intl";
 import { SpaProviders } from "@/client/spa/providers";
 import { RequireAccount } from "@/client/spa/require-account";
 import { BrowserRouter, Route, Routes } from "react-router";
@@ -15,6 +16,7 @@ import { RequestDetailPage } from "./pages/request-detail";
 import { RequestsPage } from "./pages/requests";
 
 export default function DashboardApp() {
+  const t = useTranslations("Dashboard");
   return (
     <BrowserRouter basename="/dashboard">
       <SpaProviders>
@@ -30,7 +32,7 @@ export default function DashboardApp() {
                 <Route path="requests/:requestId" element={<RequestDetailPage />} />
                 <Route path="agreement" element={<AgreementPage />} />
               </Route>
-              <Route path="*" element={<NotFound backTo="/" label="Back to my leases" />} />
+              <Route path="*" element={<NotFound backTo="/" label={t("backToLeases")} />} />
             </Route>
           </Routes>
         </RequireAccount>

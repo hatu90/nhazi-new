@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useSend } from "@/client/lib/hooks";
 import type { IUnitResponse } from "@/client/lib/types";
 import { num, text } from "@/client/ui/form";
@@ -47,16 +48,18 @@ export function useUnitForm({ unit, open, onDone }: { unit?: IUnitResponse; open
 }
 
 export function UnitFields({ x: { form } }: { x: ReturnType<typeof useUnitForm> }) {
+  const t = useTranslations("Units");
+  const c = useTranslations("Common");
   return (
     <VStack gap={4}>
-      <FText control={form.control} name="name" label="Name" required width="100%" />
-      <FNumber control={form.control} name="area" label="Area" unit="m²" required width="100%" />
-      <FNumber control={form.control} name="floor" label="Floor" required width="100%" />
-      <FNumber control={form.control} name="bedrooms" label="Bedrooms" width="100%" />
-      <FNumber control={form.control} name="bathrooms" label="Bathrooms" width="100%" />
-      <FNumber control={form.control} name="rentPrice" label="Monthly rent" money width="100%" />
-      <FCheck control={form.control} name="rentNegotiable" label="Negotiable" />
-      <FArea control={form.control} name="description" label="Description" width="100%" />
+      <FText control={form.control} name="name" label={c("name")} required width="100%" />
+      <FNumber control={form.control} name="area" label={t("area")} unit="m²" required width="100%" />
+      <FNumber control={form.control} name="floor" label={t("floor")} required width="100%" />
+      <FNumber control={form.control} name="bedrooms" label={t("bedrooms")} width="100%" />
+      <FNumber control={form.control} name="bathrooms" label={t("bathrooms")} width="100%" />
+      <FNumber control={form.control} name="rentPrice" label={t("monthlyRent")} money width="100%" />
+      <FCheck control={form.control} name="rentNegotiable" label={t("negotiable")} />
+      <FArea control={form.control} name="description" label={c("description")} width="100%" />
     </VStack>
   );
 }

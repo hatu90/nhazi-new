@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { starterDocument } from "@/client/agreement/config";
 import { useSend } from "@/client/lib/hooks";
 import type { ITemplateSummaryResponse } from "@/client/lib/types";
@@ -18,5 +19,6 @@ export function useNameForm({ template, open, onDone }: { template?: ITemplateSu
 }
 
 export function NameFields({ x }: { x: ReturnType<typeof useNameForm> }) {
-  return <FText control={x.form.control} name="name" label="Name" required width="100%" />;
+  const t = useTranslations("Common");
+  return <FText control={x.form.control} name="name" label={t("name")} required width="100%" />;
 }

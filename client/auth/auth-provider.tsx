@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiError, api, errorMessage, setTokenSource } from "@/client/lib/api";
+import { ApiError, api, setTokenSource } from "@/client/lib/api";
 import type { IMeResponse } from "@/client/lib/types";
 import { getSessionUser, getToken, onSessionChange, signOut as sessionSignOut } from "./session";
 
@@ -11,7 +11,7 @@ export type AuthState =
   /** Signed in with a verified phone, but no account yet: registration is next. */
   | { status: "unregistered"; phone: string | null; displayName: string | null }
   | { status: "ready"; me: IMeResponse }
-  | { status: "error"; message: string };
+  | { status: "error"; error: unknown };
 
 interface AuthContextValue {
   state: AuthState;
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await sessionSignOut();
         return setState({ status: "anonymous" });
       }
-      setState({ status: "error", message: errorMessage(err) });
+      setState({ status: "error", error: err });
     }
   }, []);
 

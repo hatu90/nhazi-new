@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { todayIso } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import { FDate, FNumber, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -23,11 +24,12 @@ export function useReadingForm({ meterId, open, onDone }: { meterId: string; ope
 }
 
 export function ReadingFields({ x: { form } }: { x: ReturnType<typeof useReadingForm> }) {
+  const t = useTranslations("Meters");
   return (
     <VStack gap={4}>
-      <FDate control={form.control} name="readOn" label="Read on" required width="100%" />
-      <FText control={form.control} name="time" label="Time (HH:mm)" required placeholder="14:30" rules={{ pattern: { value: /^([01]\d|2[0-3]):[0-5]\d$/, message: "Use HH:mm" } }} width="100%" />
-      <FNumber control={form.control} name="value" label="Value" required width="100%" />
+      <FDate control={form.control} name="readOn" label={t("readOn")} required width="100%" />
+      <FText control={form.control} name="time" label={t("time")} required rules={{ pattern: { value: /^([01]\d|2[0-3]):[0-5]\d$/, message: t("timeFormat") } }} width="100%" />
+      <FNumber control={form.control} name="value" label={t("value")} required width="100%" />
     </VStack>
   );
 }

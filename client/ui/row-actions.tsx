@@ -2,6 +2,7 @@
 
 import { MoreMenu } from "@astryxdesign/core/MoreMenu";
 import type { LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export interface RowAction {
   id: string;
@@ -12,12 +13,13 @@ export interface RowAction {
 }
 
 /** Overflow (⋯) menu for a table row: one entry per action, destructive ones in red. Renders nothing when empty. */
-export function RowActions({ actions, label = "More actions" }: { actions: (RowAction | false | null | undefined)[]; label?: string }) {
+export function RowActions({ actions }: { actions: (RowAction | false | null | undefined)[] }) {
+  const t = useTranslations("Common");
   const items = actions.filter((a): a is RowAction => !!a);
   if (items.length === 0) return null;
   return (
     <MoreMenu
-      label={label}
+      label={t("moreActions")}
       size="sm"
       placement="below"
       alignment="end"

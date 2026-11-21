@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { Suspense } from "react";
-import { formatMoney, label as humanize } from "@/client/lib/format";
+import { formatMoney } from "@/client/lib/format";
 import { PropertySearchForm } from "@/client/site/property-search-form";
 import { Empty, PageSpinner, Tag } from "@/client/ui";
 import { getContainer } from "@/server/container";
@@ -11,8 +12,6 @@ import { Card } from "@astryxdesign/core/Card";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
-
-export const metadata: Metadata = { title: "Find a property" };
 
 const PAGE_SIZE = 12;
 
@@ -25,6 +24,8 @@ async function Results({
 }: {
   searchParams: PageProps<"/find-property">["searchParams"];
 }) {
+  const t = await getTranslations("Site");
+  const e = await getTranslations("Enums");
   const sp = (await searchParams) as Params;
   const raw = {
     q: first(sp.q),
@@ -50,9 +51,9 @@ async function Results({
   };
 
   return !results ? (
-    <Empty title="Invalid filters" hint="Check your search and try again." />
+    <Empty title={t("invalidFilters")} />
   ) : results.items.length === 0 ? (
-    <Empty title="No properties found" hint="Try different filters." />
+    <Empty title={t("noResults")} />
   ) : (
     <VStack gap={4}>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -63,18 +64,18 @@ async function Results({
                 <Link href={`/properties/${p.id}`} className="hover:underline">
                   <Heading level={3}>{p.name}</Heading>
                 </Link>
-                <Tag label={humanize(p.category)} tone="info" />
+                <Tag label={e(`category.${p.category}`)} tone="info" />
               </HStack>
               <Text color="secondary" size="sm">
                 {p.street}, {p.ward.name}, {p.province.name}
               </Text>
               <HStack justify="between">
                 <Text size="sm" color="secondary">
-                  {p.unitCount} {p.unitCount === 1 ? "unit" : "units"}
+                  {t("unitCount", { count: p.unitCount })}
                 </Text>
                 <Text size="sm">
                   {p.rentNegotiable && p.rentPriceFrom == null
-                    ? "Negotiable"
+                    ? t("negotiable")
                     : p.rentPriceFrom == null
                       ? "—"
                       : p.rentPriceTo && p.rentPriceTo !== p.rentPriceFrom
@@ -89,19 +90,19 @@ async function Results({
       {results.total > results.pageSize && (
         <HStack justify="between" align="center">
           <Text size="sm" color="secondary">
-            Page {results.page} of {Math.ceil(results.total / results.pageSize)}
+            {t("pageOf", { page: results.page, total: Math.ceil(results.total / results.pageSize) })}
           </Text>
           <HStack gap={2}>
             {results.page > 1 && (
               <Button
-                label="Previous"
+                label={t("previous")}
                 variant="secondary"
                 href={href(results.page - 1)}
               />
             )}
             {results.page * results.pageSize < results.total && (
               <Button
-                label="Next"
+                label={t("next")}
                 variant="secondary"
                 href={href(results.page + 1)}
               />
@@ -113,15 +114,21 @@ async function Results({
   );
 }
 
-export default function FindPropertyPage({
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Meta");
+  return { title: t("findProperty") };
+}
+
+export default async function FindPropertyPage({
   searchParams,
 }: PageProps<"/find-property">) {
+  const t = await getTranslations("Site");
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-10">
       <VStack gap={5}>
         <VStack gap={1}>
-          <Heading level={1}>Find a property</Heading>
-          <Text color="secondary">Search places to rent.</Text>
+          <Heading level={1}>{t("findTitle")}</Heading>
+          <Text color="secondary">{t("findSubtitle")}</Text>
         </VStack>
         <Card padding={5} variant="muted">
           <Suspense>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Gauge, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -17,6 +18,8 @@ import { MeterFields, useMeterForm } from "./meter-form";
 import { MeterReadingsDrawer } from "./meter-readings-drawer";
 
 export function MetersPage() {
+  const t = useTranslations("Meters");
+  const c = useTranslations("Common");
   const confirm = useConfirm();
   const { apiPath, canManage } = useProperty();
   const [page, setPage] = useState(1);
@@ -32,23 +35,23 @@ export function MetersPage() {
 
   return (
     <Stack gap={4}>
-      {canManage && <HStack justify="end" gap={2}><Button icon={<Plus size={16} />} label="Bulk add" variant="secondary" onClick={() => setBulk(true)} /><Button label="Add meter" variant="primary" onClick={() => setCreating(true)} /></HStack>}
+      {canManage && <HStack justify="end" gap={2}><Button icon={<Plus size={16} />} label={t("bulkAdd")} variant="secondary" onClick={() => setBulk(true)} /><Button label={t("addMeter")} variant="primary" onClick={() => setCreating(true)} /></HStack>}
       {remove.error && <ErrorBox error={remove.error} />}
       <DataTable<IMeterResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No meters" hint="Add a meter to a unit to record electricity or water readings." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add a meter" onClick={() => setCreating(true)} />} />}
+        empty={<Empty title={t("empty")} action={canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("addMeter")} onClick={() => setCreating(true)} />} />}
         columns={[
-          { key: "name", header: "Meter", render: (m) => <HStack gap={2} align="center">{m.name}{m.removedAt && <Tag label="removed" />}</HStack> },
-          { key: "unit", header: "Unit", render: (m) => m.unitName },
-          { key: "service", header: "Service", render: (m) => m.serviceName },
-          { key: "serial", header: "Serial", render: (m) => m.serialNumber ?? "—" },
-          { key: "installed", header: "Installed", render: (m) => formatDate(m.installedAt) },
+          { key: "name", header: t("meter"), render: (m) => <HStack gap={2} align="center">{m.name}{m.removedAt && <Tag label={t("removed")} />}</HStack> },
+          { key: "unit", header: c("unit"), render: (m) => m.unitName },
+          { key: "service", header: t("service"), render: (m) => m.serviceName },
+          { key: "serial", header: t("serial"), render: (m) => m.serialNumber ?? "—" },
+          { key: "installed", header: t("installed"), render: (m) => formatDate(m.installedAt) },
           { key: "go", header: "", align: "end", render: (m) => (
             <RowActions actions={[
-                { id: "readings", label: "Readings", icon: Gauge, onClick: () => setViewing(m) },
-                canManage && { id: "edit", label: "Edit", icon: Pencil, onClick: () => setEditing(m) },
-                canManage && { id: "remove", label: "Remove", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Remove meter "${m.name}"?`, description: "The meter and its readings are removed.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
+                { id: "readings", label: t("readingsAction"), icon: Gauge, onClick: () => setViewing(m) },
+                canManage && { id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(m) },
+                canManage && { id: "remove", label: c("remove"), icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: t("removeTitle", { name: m.name }), description: t("removeBody"), actionLabel: c("remove"), onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
               ]} />
           ) },
         ]}
@@ -58,9 +61,9 @@ export function MetersPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Bulk add meters"} onOpenChange={(o) => { if (!o) setBulk(false); }} />}
+            header={<DialogHeader title={t("bulkTitle")} onOpenChange={(o) => { if (!o) setBulk(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><BulkMetersFields x={bulkForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={bulkForm.error} busy={bulkForm.busy} submitLabel={"Create meters"} onCancel={() => setBulk(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={bulkForm.error} busy={bulkForm.busy} submitLabel={t("createMeters")} onCancel={() => setBulk(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -69,9 +72,9 @@ export function MetersPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add meter"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            header={<DialogHeader title={t("addMeter")} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><MeterFields x={createForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={createForm.error} busy={createForm.busy} submitLabel={"Add meter"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={createForm.error} busy={createForm.busy} submitLabel={t("addMeter")} onCancel={() => setCreating(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -80,9 +83,9 @@ export function MetersPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Edit meter"} onOpenChange={(o) => { if (!o) setEditing(null); }} />}
+            header={<DialogHeader title={t("editMeter")} onOpenChange={(o) => { if (!o) setEditing(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><MeterFields x={editForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={editForm.error} busy={editForm.busy} submitLabel={"Save"} onCancel={() => setEditing(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={editForm.error} busy={editForm.busy} submitLabel={c("save")} onCancel={() => setEditing(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>

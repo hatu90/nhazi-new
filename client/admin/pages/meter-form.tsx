@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IMeterResponse, IServiceListResponse, IUnitListResponse } from "@/client/lib/types";
 import { text } from "@/client/ui/form";
@@ -32,13 +33,14 @@ export function useMeterForm({ meter, open, onDone }: { meter?: IMeterResponse; 
 }
 
 export function MeterFields({ x: { form, meter, units, services } }: { x: ReturnType<typeof useMeterForm> }) {
+  const t = useTranslations("Meters");
   return (
     <VStack gap={4}>
-      {!meter && <FSelect control={form.control} name="unitId" label="Unit" required search options={(units.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))} width="100%" />}
-      {!meter && <FSelect control={form.control} name="serviceId" label="Service" required options={(services.data?.items ?? []).map((x) => ({ value: x.id, label: x.name }))} hint={services.data?.items.length === 0 ? "Create a metered service first (Services tab)." : undefined} width="100%" />}
-      <FText control={form.control} name="name" label="Name" placeholder="Electric meter" required width="100%" />
-      <FText control={form.control} name="serialNumber" label="Serial number" width="100%" />
-      <FDate control={form.control} name="installedAt" label="Installed on" width="100%" />
+      {!meter && <FSelect control={form.control} name="unitId" label={t("unit")} required search options={(units.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))} width="100%" />}
+      {!meter && <FSelect control={form.control} name="serviceId" label={t("service")} required options={(services.data?.items ?? []).map((x) => ({ value: x.id, label: x.name }))} hint={services.data?.items.length === 0 ? t("noService") : undefined} width="100%" />}
+      <FText control={form.control} name="name" label={t("name")} required width="100%" />
+      <FText control={form.control} name="serialNumber" label={t("serial")} width="100%" />
+      <FDate control={form.control} name="installedAt" label={t("installedOn")} width="100%" />
     </VStack>
   );
 }

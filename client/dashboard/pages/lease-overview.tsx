@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -17,6 +18,9 @@ import { useLease } from "../lease-layout";
 
 /** One column: property & unit, the running billing period (+ request to close), the cost chart; the agreement and history follow. Invoices and requests have their own tabs. */
 export function LeaseOverviewPage() {
+  const t = useTranslations("Dashboard");
+  const d = useTranslations("LeaseDetail");
+  const c = useTranslations("Common");
   const { lease: l, apiPath, to } = useLease();
   const billing = useGet<IMyBillingResponse>(apiPath("/billing"));
   const [closing, setClosing] = useState(false);
@@ -25,37 +29,37 @@ export function LeaseOverviewPage() {
   return (
     <VStack gap={6}>
       <VStack gap={4}>
-        <Section title="Property & unit" action={<StatusBadge status={l.status} />}>
+        <Section title={t("propertyUnit")} action={<StatusBadge status={l.status} />}>
           <DefList items={[
-            ["Property", l.propertyName],
-            ["Unit", l.unitName],
-            ["Term", `${formatDate(l.startDate)} → ${l.endDate ? formatDate(l.endDate) : "open-ended"}`],
-            ["Monthly rent", formatMoney(l.currentRent)],
-            ["Deposit", formatMoney(l.depositAmount)],
-            ["Billing day", `Day ${l.billingCycleDay} of the month`],
-            ...(l.terminatedAt ? ([["Ended on", formatDate(l.terminatedAt)]] as [string, string][]) : []),
+            [t("property"), l.propertyName],
+            [c("unit"), l.unitName],
+            [t("term"), `${formatDate(l.startDate)} → ${l.endDate ? formatDate(l.endDate) : t("openEnded")}`],
+            [d("monthlyRent"), formatMoney(l.currentRent)],
+            [d("deposit"), formatMoney(l.depositAmount)],
+            [d("billingDay"), d("billingDayValue", { n: l.billingCycleDay })],
+            ...(l.terminatedAt ? ([[d("endedOn"), formatDate(l.terminatedAt)]] as [string, string][]) : []),
           ]} />
         </Section>
 
-        <Section title="Current billing period">
-          {billing.isPending ? <Text color="secondary" size="sm">Loading…</Text> : billing.error ? <ErrorBox error={billing.error} retry={() => void billing.refetch()} /> : !billing.data.current ? (
-            <Text color="secondary" size="sm">{l.status === "draft" ? "Billing starts when your landlord starts the lease." : "No billing period is running."}</Text>
+        <Section title={t("currentPeriod")}>
+          {billing.isPending ? <Text color="secondary" size="sm">{c("loading")}…</Text> : billing.error ? <ErrorBox error={billing.error} retry={() => void billing.refetch()} /> : !billing.data.current ? (
+            <Text color="secondary" size="sm">{l.status === "draft" ? t("billingNotStarted") : t("noPeriodRunning")}</Text>
           ) : (
             <>
               <DefList items={[
-                ["Period", `${formatDate(billing.data.current.startDate)} → ${formatDate(billing.data.current.endDate)}`],
-                ["Rent", formatMoney(billing.data.current.rentAmount)],
-                ["Services", billing.data.current.services.map((s) => s.serviceName).join(", ") || "None"],
+                [d("period"), `${formatDate(billing.data.current.startDate)} → ${formatDate(billing.data.current.endDate)}`],
+                [t("rent"), formatMoney(billing.data.current.rentAmount)],
+                [t("services"), billing.data.current.services.map((s) => s.serviceName).join(", ") || c("none")],
               ]} />
-              {l.status === "active" && <HStack><Button variant="primary" label="Close billing period" onClick={() => setClosing(true)} /></HStack>}
+              {l.status === "active" && <HStack><Button variant="primary" label={t("closeBilling")} onClick={() => setClosing(true)} /></HStack>}
               <Modal open={closing} onClose={() => setClosing(false)}>
                 <form noValidate onSubmit={closeForm.submit} className="flex min-h-0 flex-1 flex-col">
                   <Layout
                     height="fill"
                     padding={5}
-                    header={<DialogHeader title={"Close billing period"} onOpenChange={(o) => { if (!o) setClosing(false); }} />}
+                    header={<DialogHeader title={d("closeTitle")} onOpenChange={(o) => { if (!o) setClosing(false); }} />}
                     content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><ClosePeriodFields x={closeForm} /></LayoutContent>}
-                    footer={<LayoutFooter padding={5}><FormFooter error={closeForm.error} busy={closeForm.busy} submitLabel={"Close period"} onCancel={() => setClosing(false)} /></LayoutFooter>}
+                    footer={<LayoutFooter padding={5}><FormFooter error={closeForm.error} busy={closeForm.busy} submitLabel={d("closePeriod")} onCancel={() => setClosing(false)} /></LayoutFooter>}
                   />
                 </form>
               </Modal>
@@ -64,8 +68,8 @@ export function LeaseOverviewPage() {
         </Section>
 
         {billing.data && (
-          <Section title="Costs by month">
-            {billing.data.months.some((m) => m.total > 0) ? <MonthChart months={billing.data.months} /> : <Text color="secondary" size="sm">Nothing has been invoiced yet.</Text>}
+          <Section title={t("costsByMonth")}>
+            {billing.data.months.some((m) => m.total > 0) ? <MonthChart months={billing.data.months} /> : <Text color="secondary" size="sm">{t("nothingInvoiced")}</Text>}
           </Section>
         )}
       </VStack>

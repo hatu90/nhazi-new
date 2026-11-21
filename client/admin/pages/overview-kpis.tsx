@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IPropertyStatsResponse, ITenancyListResponse, IUnitListResponse } from "@/client/lib/types";
@@ -9,6 +10,7 @@ import { useNavigate } from "react-router";
 import { useProperty } from "../property-layout";
 
 export function Kpis() {
+  const t = useTranslations("Overview");
   const { apiPath, to } = useProperty();
   const navigate = useNavigate();
   // same keys as UnitsByFloor: one request each, shared through the query cache
@@ -21,10 +23,10 @@ export function Kpis() {
   const occupied = new Set(leases.data.items.filter((l) => l.status === "active").map((l) => l.unitId)).size;
   return (
     <Grid columns={{ minWidth: 220 }} gap={3}>
-      <Kpi title="Units" value={units.data.total} detail={`${occupied} occupied`} onClick={() => navigate(to("units"))} />
-      <Kpi title="Maintenance requests" value={requests.maintenanceOpen} detail={`${requests.closeLeaseOpen} lease termination ${requests.closeLeaseOpen === 1 ? "request" : "requests"}`} onClick={() => navigate(to("requests"))} />
-      <Kpi title="Payments this month" value={formatMoney(payments.collectedThisMonth)} detail={`${payments.awaitingConfirmation} awaiting confirmation`} onClick={() => navigate(to("invoices"))} />
-      <Kpi title="Overdue invoices" value={invoices.overdue} detail={`${invoices.dueThisMonth} invoices due this month`} onClick={() => navigate(to("invoices"))} />
+      <Kpi title={t("units")} value={units.data.total} detail={t("occupied", { n: occupied })} onClick={() => navigate(to("units"))} />
+      <Kpi title={t("maintenance")} value={requests.maintenanceOpen} detail={t("endLease", { n: requests.closeLeaseOpen })} onClick={() => navigate(to("requests"))} />
+      <Kpi title={t("paymentsMonth")} value={formatMoney(payments.collectedThisMonth)} detail={t("awaiting", { n: payments.awaitingConfirmation })} onClick={() => navigate(to("invoices"))} />
+      <Kpi title={t("overdue")} value={invoices.overdue} detail={t("dueMonth", { n: invoices.dueThisMonth })} onClick={() => navigate(to("invoices"))} />
     </Grid>
   );
 }

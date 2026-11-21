@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -17,6 +18,8 @@ import { useProperty } from "../property-layout";
 import { NameFields, useNameForm } from "./agreement-name-form";
 
 export function AgreementsPage() {
+  const t = useTranslations("Agreements");
+  const c = useTranslations("Common");
   const confirm = useConfirm();
   const { apiPath, canManage, to } = useProperty();
   const navigate = useNavigate();
@@ -25,7 +28,7 @@ export function AgreementsPage() {
   const nameForm = useNameForm({ open: dialog !== null, onDone: (id) => { setDialog(null); if (id) navigate(to(`agreements/${id}`)); } });
   const query = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { page, pageSize: 20 }, { keepPrevious: true });
   const remove = useSend<{ id: string }>("DELETE", (b) => apiPath(`/agreement-templates/${b.id}`), [apiPath("/agreement-templates")]);
-  const create = canManage && <Button icon={<Plus size={16} />} variant="primary" label="New template" onClick={() => setDialog("new")} />;
+  const create = canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("newTemplate")} onClick={() => setDialog("new")} />;
 
   return (
     <Stack gap={4}>
@@ -34,20 +37,20 @@ export function AgreementsPage() {
       <DataTable<ITemplateSummaryResponse>
         query={query}
         paging={setPage}
-        empty={<Empty title="No agreement templates" hint="Design a lease agreement once, then attach it to leases." action={create} />}
+        empty={<Empty title={t("empty")} action={create} />}
         columns={[
-          { key: "n", header: "Name", render: (t) => <Link href={to(`agreements/${t.id}`)}>{t.name}</Link> },
-          { key: "d", header: "", render: (t) => (t.isDefault ? <Tag label="Default" tone="info" /> : null) },
-          { key: "v", header: "Version", render: (t) => `v${t.currentVersion}` },
-          { key: "u", header: "Updated", render: (t) => formatDate(t.updatedAt) },
+          { key: "n", header: c("name"), render: (row) => <Link href={to(`agreements/${row.id}`)}>{row.name}</Link> },
+          { key: "d", header: "", render: (row) => (row.isDefault ? <Tag label={t("default")} tone="info" /> : null) },
+          { key: "v", header: t("version"), render: (row) => `v${row.currentVersion}` },
+          { key: "u", header: t("updated"), render: (row) => formatDate(row.updatedAt) },
           {
             key: "x",
             header: "",
             align: "end",
-            render: (t) => canManage && (
+            render: (row) => canManage && (
               <RowActions actions={[
-                { id: "edit", label: "Edit", icon: Pencil, onClick: () => navigate(to(`agreements/${t.id}`)) },
-                { id: "delete", label: "Delete", icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: `Delete "${t.name}"?`, description: "Leases keep the version they were created with.", actionLabel: "Delete", onConfirm: () => remove.mutateAsync({ id: t.id }) }) },
+                { id: "edit", label: c("edit"), icon: Pencil, onClick: () => navigate(to(`agreements/${row.id}`)) },
+                { id: "delete", label: c("delete"), icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: t("deleteTitle", { name: row.name }), description: t("deleteBody"), actionLabel: c("delete"), onConfirm: () => remove.mutateAsync({ id: row.id }) }) },
               ]} />
             ),
           },
@@ -58,9 +61,9 @@ export function AgreementsPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"New template"} onOpenChange={(o) => { if (!o) setDialog(null); }} />}
+            header={<DialogHeader title={t("newTemplate")} onOpenChange={(o) => { if (!o) setDialog(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><NameFields x={nameForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={nameForm.error} busy={nameForm.busy} submitLabel={"Create and edit"} onCancel={() => setDialog(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={nameForm.error} busy={nameForm.busy} submitLabel={t("createAndEdit")} onCancel={() => setDialog(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>

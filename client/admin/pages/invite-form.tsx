@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { isValidPhone, normalizePhone } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import type { PropertyRole } from "@/client/lib/types";
@@ -7,7 +8,7 @@ import { FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { VStack } from "@astryxdesign/core/Stack";
 import { useForm } from "react-hook-form";
 import { useProperty } from "../property-layout";
-import { roleOptions } from "./role-options";
+import { useEnumOptions } from "@/client/lib/use-enum";
 
 const defaults: { phone: string; role: PropertyRole } = { phone: "", role: "admin" };
 
@@ -20,11 +21,15 @@ export function useInviteForm({ open, onDone }: { open: boolean; onDone: () => v
   return { form, submit, error: invite.error, busy: invite.isPending };
 }
 
+const roles: PropertyRole[] = ["owner", "admin", "technician", "viewer"];
+
 export function InviteFields({ x: { form } }: { x: ReturnType<typeof useInviteForm> }) {
+  const c = useTranslations("Common");
+  const options = useEnumOptions();
   return (
     <VStack gap={4}>
-      <FText control={form.control} name="phone" label="Phone number" type="tel" placeholder="0912 345 678" required rules={{ validate: (v) => isValidPhone(String(v)) || "Enter a valid phone number" }} width="100%" />
-      <FSelect control={form.control} name="role" label="Role" options={roleOptions} width="100%" />
+      <FText control={form.control} name="phone" label={c("phone")} type="tel" placeholder="0912 345 678" required rules={{ validate: (v) => isValidPhone(String(v)) || c("invalidPhone") }} width="100%" />
+      <FSelect control={form.control} name="role" label={c("role")} options={options("role", roles)} width="100%" />
     </VStack>
   );
 }

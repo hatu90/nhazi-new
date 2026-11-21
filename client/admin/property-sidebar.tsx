@@ -1,27 +1,29 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { SideNav, SideNavItem, SideNavSection } from "@astryxdesign/core/SideNav";
-import { Building2, ClipboardList, FileSignature, FileText, Gauge, LayoutDashboard, Package, Receipt, Settings, Wrench, DoorOpen, type LucideIcon } from "lucide-react";
+import { Building2, ClipboardList, FileSignature, FileText, Gauge, LayoutDashboard, Package, Receipt, Settings, Wrench, DoorOpen } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { AccountSection } from "@/client/spa/account-section";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyListResponse } from "@/client/lib/types";
 
-const items: { id: string; label: string; icon: LucideIcon }[] = [
-  { id: "", label: "Overview", icon: LayoutDashboard },
-  { id: "units", label: "Units", icon: DoorOpen },
-  { id: "leases", label: "Leases", icon: FileSignature },
-  { id: "services", label: "Services", icon: Wrench },
-  { id: "inventory", label: "Inventory", icon: Package },
-  { id: "meters", label: "Meters", icon: Gauge },
-  { id: "requests", label: "Requests", icon: ClipboardList },
-  { id: "invoices", label: "Invoices", icon: Receipt },
-  { id: "agreements", label: "Agreements", icon: FileText },
-  { id: "settings", label: "Settings", icon: Settings },
-];
+const items = [
+  { id: "", key: "overview", icon: LayoutDashboard },
+  { id: "units", key: "units", icon: DoorOpen },
+  { id: "leases", key: "leases", icon: FileSignature },
+  { id: "services", key: "services", icon: Wrench },
+  { id: "inventory", key: "inventory", icon: Package },
+  { id: "meters", key: "meters", icon: Gauge },
+  { id: "requests", key: "requests", icon: ClipboardList },
+  { id: "invoices", key: "invoices", icon: Receipt },
+  { id: "agreements", key: "agreements", icon: FileText },
+  { id: "settings", key: "settings", icon: Settings },
+] as const;
 
 /** Sidebar for /admin/properties/:propertyId/*: the current property's sections, then a switcher for the others. */
 export function PropertySidebar({ withAccount = false }: { withAccount?: boolean }) {
+  const t = useTranslations("AdminNav");
   const { propertyId } = useParams();
   const navigate = useNavigate();
   const section = useLocation().pathname.split("/")[3] ?? "";
@@ -33,13 +35,13 @@ export function PropertySidebar({ withAccount = false }: { withAccount?: boolean
 
   return (
     <SideNav>
-      <SideNavSection title={current?.name ?? "Property"}>
+      <SideNavSection title={current?.name ?? t("property")}>
         {items.map((i) => (
-          <SideNavItem key={i.id} label={i.label} icon={i.icon} isSelected={section === i.id} onClick={() => navigate(`/properties/${propertyId}${i.id ? `/${i.id}` : ""}`)} />
+          <SideNavItem key={i.id} label={t(i.key)} icon={i.icon} isSelected={section === i.id} onClick={() => navigate(`/properties/${propertyId}${i.id ? `/${i.id}` : ""}`)} />
         ))}
       </SideNavSection>
       {others.length > 0 && (
-        <SideNavSection title="Other properties">
+        <SideNavSection title={t("otherProperties")}>
           {others.map((p) => (
             <SideNavItem key={p.id} label={p.name} icon={Building2} onClick={() => navigate(`/properties/${p.id}`)} />
           ))}

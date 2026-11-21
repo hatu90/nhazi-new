@@ -1,6 +1,8 @@
 "use client";
 
-import { endOfMonthIso, formatDate, formatMoney, label } from "@/client/lib/format";
+import { useTranslations } from "next-intl";
+import { endOfMonthIso, formatDate, formatMoney } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IServiceListResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Section } from "@/client/ui";
@@ -51,39 +53,40 @@ export function useStartForm({ path, lease, open, onDone }: { path: string; leas
 }
 
 export function StartFields({ x: { form, lease, services, invoice, startDate, periodEnd, fixed, metered } }: { x: ReturnType<typeof useStartForm> }) {
+  const t = useTranslations("LeaseDetail");
+  const c = useTranslations("Common");
+  const en = useEnum();
   if (!lease) return null;
   return (
     <VStack gap={4}>
-      <Text color="secondary">Starts the lease, opens its first billing period and issues the move-in invoice.</Text>
-
-      <Section title="Billing period">
-        <FDate control={form.control} name="startDate" label="Start date" required max={lease.endDate ?? undefined} hint="Moves the lease start; its first rent, services and people follow." onChange={(v) => { if (v && periodEnd && periodEnd < v) form.setValue("periodEnd", v); }} width="100%" />
-        <FDate control={form.control} name="periodEnd" label="First period ends" required min={startDate || lease.startDate} max={lease.endDate ?? undefined} hint="Rent and services are prorated to this date. Pick any date, including next month." width="100%" />
+      <Section title={t("billingPeriod")}>
+        <FDate control={form.control} name="startDate" label={t("startDate")} required max={lease.endDate ?? undefined} onChange={(v) => { if (v && periodEnd && periodEnd < v) form.setValue("periodEnd", v); }} width="100%" />
+        <FDate control={form.control} name="periodEnd" label={t("firstPeriodEnds")} required min={startDate || lease.startDate} max={lease.endDate ?? undefined} hint={t("periodHint")} width="100%" />
       </Section>
 
-      <Section title="Fixed services">
+      <Section title={t("fixedServices")}>
         <VStack gap={1}>
-          <Text size="sm" color="secondary">Billed in advance</Text>
-          {fixed.length === 0 ? <Text size="sm">None</Text> : fixed.map((s) => <Text key={s.id} size="sm">{s.serviceName} · {label(s.usageBase)} ×{s.quantity}</Text>)}
+          <Text size="sm" color="secondary">{t("billedAdvance")}</Text>
+          {fixed.length === 0 ? <Text size="sm">{c("none")}</Text> : fixed.map((s) => <Text key={s.id} size="sm">{s.serviceName} · {en("usageBase", s.usageBase)} ×{s.quantity}</Text>)}
         </VStack>
       </Section>
 
       {metered.length > 0 && startDate && (
-        <Section title="Opening meter readings">
-          <Text size="sm" color="secondary">Starting values on {formatDate(startDate)} · usage is billed from here when the period closes</Text>
+        <Section title={t("openingReadings")}>
+          <Text size="sm" color="secondary">{t("openingHint", { date: formatDate(startDate) })}</Text>
           {metered.map((s) => (
             <MeterOpening key={s.id} form={form} meterId={s.meterId!} name={`${s.serviceName}${s.meterName ? ` · ${s.meterName}` : ""}`} startDate={startDate} />
           ))}
         </Section>
       )}
 
-      <Section title="Move-in invoice">
-        {services.error ? <ErrorBox error={services.error} /> : !invoice ? <Text size="sm">Calculating…</Text> : invoice.error ? <ErrorBox error={invoice.error} /> : (
+      <Section title={t("moveInInvoice")}>
+        {services.error ? <ErrorBox error={services.error} /> : !invoice ? <Text size="sm">{t("calculating")}</Text> : invoice.error ? <ErrorBox error={invoice.error} /> : (
           <VStack gap={1}>
             {invoice.lines.map((ln) => (
               <HStack key={ln.key} justify="between"><Text size="sm">{ln.title}</Text><Text size="sm">{formatMoney(ln.amount)}</Text></HStack>
             ))}
-            <HStack justify="between"><Text weight="semibold">Total</Text><Text weight="semibold">{formatMoney(invoice.total)}</Text></HStack>
+            <HStack justify="between"><Text weight="semibold">{t("total")}</Text><Text weight="semibold">{formatMoney(invoice.total)}</Text></HStack>
           </VStack>
         )}
       </Section>

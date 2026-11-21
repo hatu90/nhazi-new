@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@astryxdesign/core/Button";
 import { Text } from "@astryxdesign/core/Text";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
@@ -30,13 +31,15 @@ export function useLease() {
 }
 
 const tabs = [
-  { id: "", label: "Overview", icon: LayoutDashboard },
-  { id: "invoices", label: "Invoices", icon: Receipt },
-  { id: "requests", label: "Requests", icon: MessageSquareWarning },
-  { id: "agreement", label: "Agreement", icon: FileText },
-];
+  { id: "", key: "overview", icon: LayoutDashboard },
+  { id: "invoices", key: "invoices", icon: Receipt },
+  { id: "requests", key: "requests", icon: MessageSquareWarning },
+  { id: "agreement", key: "agreement", icon: FileText },
+] as const;
 
 export function LeaseLayout() {
+  const t = useTranslations("Dashboard");
+  const c = useTranslations("Common");
   const { leaseId = "" } = useParams();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -45,18 +48,18 @@ export function LeaseLayout() {
   const { data: lease, error, isPending, refetch } = useGet<ILeaseDetailResponse>(apiPath());
 
   if (isPending) return <PageSpinner />;
-  if (error) return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label="Back to my leases" /> : <ErrorBox error={error} retry={() => void refetch()} />;
+  if (error) return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label={t("backToLeases")} /> : <ErrorBox error={error} retry={() => void refetch()} />;
 
   const section = pathname.split("/")[3] ?? "";
   return (
     <Ctx value={{ lease, leaseId, apiPath, to }}>
       <VStack gap={4} paddingBlockEnd={5}>
-        <HStack><Button label="My leases" icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href="/" /></HStack>
+        <HStack><Button label={t("myLeases")} icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href="/" /></HStack>
         <VStack gap={1}>
           <HStack gap={3} align="center" wrap="wrap"><Heading level={1}>{lease.unitName}</Heading><StatusBadge status={lease.status} /></HStack>
-          <Text color="secondary">{lease.propertyName} · {formatDate(lease.startDate)} → {lease.endDate ? formatDate(lease.endDate) : "open"}</Text>
+          <Text color="secondary">{lease.propertyName} · {formatDate(lease.startDate)} → {lease.endDate ? formatDate(lease.endDate) : c("open")}</Text>
         </VStack>
-        <Tabs tabs={tabs} value={tabs.some((t) => t.id === section) ? section : ""} onChange={(id) => navigate(to(id))} />
+        <Tabs tabs={tabs.map((x) => ({ ...x, label: t(`tabs.${x.key}`) }))} value={tabs.some((x) => x.id === section) ? section : ""} onChange={(id) => navigate(to(id))} />
       </VStack>
       <Outlet />
     </Ctx>

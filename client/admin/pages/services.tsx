@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
-import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
+import { formatDate, formatMoney, todayIso } from "@/client/lib/format";
+import { useEnum } from "@/client/lib/use-enum";
 import { useGet } from "@/client/lib/hooks";
 import type { IServiceListResponse, IServiceResponse } from "@/client/lib/types";
 import { Empty, ErrorBox, Modal, PageSpinner, Tag } from "@/client/ui";
@@ -19,6 +21,8 @@ import { PriceFields, usePriceForm } from "./price-form";
 import { ServiceFields, useServiceForm } from "./service-form";
 
 export function ServicesPage() {
+  const t = useTranslations("Services");
+  const en = useEnum();
   const { apiPath, canManage } = useProperty();
   const [creating, setCreating] = useState(false);
   const serviceForm = useServiceForm({ open: creating, onDone: () => setCreating(false) });
@@ -28,9 +32,9 @@ export function ServicesPage() {
 
   return (
     <Stack gap={4}>
-      {canManage && <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label="Add service" onClick={() => setCreating(true)} /></HStack>}
+      {canManage && <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label={t("add")} onClick={() => setCreating(true)} /></HStack>}
       {isPending ? <PageSpinner /> : error ? <ErrorBox error={error} retry={() => void refetch()} /> : data.items.length === 0 ? (
-        <Card padding={4}><Empty title="No services" hint="Things you bill besides rent." action={canManage && <Button icon={<Plus size={16} />} variant="primary" label="Add the first service" onClick={() => setCreating(true)} />} /></Card>
+        <Card padding={4}><Empty title={t("empty")} action={canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("add")} onClick={() => setCreating(true)} />} /></Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {data.items.map((s) => {
@@ -41,19 +45,19 @@ export function ServicesPage() {
                 <VStack gap={3}>
                   <HStack justify="between" align="start" gap={2}>
                     <VStack gap={0.5}><Heading level={2}>{s.name}</Heading>{s.description && <Text color="secondary" size="sm">{s.description}</Text>}</VStack>
-                    <Tag label={label(s.usageBase)} />
+                    <Tag label={en("usageBase", s.usageBase)} />
                   </HStack>
                   <VStack gap={1}>
-                    {current?.tiers.map((t, i, all) => (
+                    {current?.tiers.map((tier, i, all) => (
                       <HStack key={i} justify="between">
-                        <Text color="secondary" size="sm">{all.length === 1 ? "Rate" : t.upTo === null ? `Above ${all[i - 1]?.upTo}` : `Up to ${t.upTo}`}{s.unitOfMeasure ? ` ${s.unitOfMeasure}` : ""}</Text>
-                        <Text size="sm">{formatMoney(t.rate)}</Text>
+                        <Text color="secondary" size="sm">{all.length === 1 ? t("rate") : tier.upTo === null ? t("above", { n: all[i - 1]?.upTo ?? 0 }) : t("upTo", { n: tier.upTo })}{s.unitOfMeasure ? ` ${s.unitOfMeasure}` : ""}</Text>
+                        <Text size="sm">{formatMoney(tier.rate)}</Text>
                       </HStack>
                     ))}
                   </VStack>
                   <HStack justify="between" align="center" gap={2}>
-                    <Text size="sm" color="secondary">{s.prices.length} price {s.prices.length === 1 ? "version" : "versions"} · latest from {formatDate(latest?.effectiveDate)}</Text>
-                    {canManage && <Button icon={<Plus size={16} />} label="New price" size="sm" variant="secondary" onClick={() => setPricing(s)} />}
+                    <Text size="sm" color="secondary">{t("priceSummary", { count: s.prices.length, date: formatDate(latest?.effectiveDate) })}</Text>
+                    {canManage && <Button icon={<Plus size={16} />} label={t("newPrice")} size="sm" variant="secondary" onClick={() => setPricing(s)} />}
                   </HStack>
                 </VStack>
               </Card>
@@ -66,9 +70,9 @@ export function ServicesPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={"Add service"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            header={<DialogHeader title={t("add")} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><ServiceFields x={serviceForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={serviceForm.error} busy={serviceForm.busy} submitLabel={"Add service"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={serviceForm.error} busy={serviceForm.busy} submitLabel={t("add")} onCancel={() => setCreating(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -77,9 +81,9 @@ export function ServicesPage() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={`New price · ${pricing?.name ?? ""}`} onOpenChange={(o) => { if (!o) setPricing(null); }} />}
+            header={<DialogHeader title={t("newPriceFor", { name: pricing?.name ?? "" })} onOpenChange={(o) => { if (!o) setPricing(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><PriceFields x={priceForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={priceForm.error} busy={priceForm.busy} submitLabel={"Add price"} onCancel={() => setPricing(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={priceForm.error} busy={priceForm.busy} submitLabel={t("addPrice")} onCancel={() => setPricing(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>

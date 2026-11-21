@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ErrorBox } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
@@ -8,6 +9,7 @@ import { AgreementFormFields } from "./agreement-form-fields";
 import { useAgreementForm } from "./render";
 
 export function FillForm({ content, vars, values, onSave, onDone }: { content: unknown; vars: Record<string, string>; values: unknown; onSave: (v: Record<string, string>) => Promise<unknown>; onDone: () => void }) {
+  const c = useTranslations("Common");
   const form = useAgreementForm(content, values);
   const [error, setError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,8 +32,8 @@ export function FillForm({ content, vars, values, onSave, onDone }: { content: u
         {error && <ErrorBox error={error} />}
         <AgreementFormFields form={form} data={content} vars={vars} />
         <HStack gap={2} justify="end">
-          <Button label="Cancel" variant="secondary" onClick={onDone} />
-          <Button variant="primary" label="Save" type="submit" isLoading={busy} />
+          <Button label={c("cancel")} variant="secondary" onClick={onDone} />
+          <Button variant="primary" label={c("save")} type="submit" isLoading={busy} />
         </HStack>
       </VStack>
     </form>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
@@ -24,23 +25,29 @@ import { UnitFields, useUnitForm } from "./unit-form";
 
 export const DAY = 86_400_000;
 
-export type Occupancy = { label: string; tone: "success" | "warning" | "info" | "neutral"; lease?: ITenancySummaryResponse; note?: string };
+export type Occupancy = { kind: "terminating" | "endingSoon" | "occupied" | "upcoming" | "empty"; tone: "success" | "warning" | "info" | "neutral"; lease?: ITenancySummaryResponse; date?: string };
 
 /** Empty, active, ending (terminated or ends within 30 days) or upcoming: from the leases that touch the unit. */
 export function occupancyOf(leases: ITenancySummaryResponse[]): Occupancy {
   const active = leases.find((l) => l.status === "active");
   if (active) {
     const end = active.terminatedAt ?? active.endDate;
-    if (active.terminatedAt) return { label: "Terminating", tone: "warning", lease: active, note: `until ${formatDate(active.terminatedAt)}` };
-    if (end && new Date(end).getTime() - Date.now() <= 30 * DAY) return { label: "Ending soon", tone: "warning", lease: active, note: `ends ${formatDate(end)}` };
-    return { label: "Occupied", tone: "success", lease: active, note: end ? `until ${formatDate(end)}` : undefined };
+    if (active.terminatedAt) return { kind: "terminating", tone: "warning", lease: active, date: active.terminatedAt };
+    if (end && new Date(end).getTime() - Date.now() <= 30 * DAY) return { kind: "endingSoon", tone: "warning", lease: active, date: end };
+    return { kind: "occupied", tone: "success", lease: active, date: end ?? undefined };
   }
   const upcoming = leases.find((l) => l.status === "upcoming");
-  if (upcoming) return { label: "Upcoming lease", tone: "info", lease: upcoming, note: `from ${formatDate(upcoming.startDate)}` };
-  return { label: "Empty", tone: "neutral" };
+  if (upcoming) return { kind: "upcoming", tone: "info", lease: upcoming, date: upcoming.startDate };
+  return { kind: "empty", tone: "neutral" };
 }
 
 export function UnitsByFloor() {
+  const t = useTranslations("Units");
+  const noteOf = (o: Occupancy) => {
+    if (!o.date) return undefined;
+    const date = formatDate(o.date);
+    return o.kind === "endingSoon" ? t("endsOn", { date }) : o.kind === "upcoming" ? t("fromDate", { date }) : t("until", { date });
+  };
   const { apiPath, to, canManage } = useProperty();
   const navigate = useNavigate();
   const units = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 });
@@ -68,27 +75,27 @@ export function UnitsByFloor() {
 
   const actions = canManage && (
     <HStack gap={2}>
-      <Button label="Bulk add units" variant="secondary" onClick={() => setBulk(true)} />
-      <Button icon={<Plus size={16} />} label="Add unit" variant="primary" onClick={() => setAdding(true)} />
+      <Button label={t("bulkTitle")} variant="secondary" onClick={() => setBulk(true)} />
+      <Button icon={<Plus size={16} />} label={t("addUnit")} variant="primary" onClick={() => setAdding(true)} />
     </HStack>
   );
 
   return (
     <VStack gap={6}>
       {floors.length === 0 ? (
-        <Section title="Units" action={actions}><Text color="secondary">No units yet.</Text></Section>
+        <Section title={t("title")} action={actions}><Text color="secondary">{t("noUnits")}</Text></Section>
       ) : (
         <>
           {actions && <HStack justify="end">{actions}</HStack>}
           {floors.map(([floor, rows]) => (
             <VStack key={floor} gap={3}>
-              <Heading level={2}>{`Floor ${floor}`}</Heading>
+              <Heading level={2}>{t("floorN", { n: floor })}</Heading>
               <Grid columns={{ minWidth: 240 }} gap={3}>
                 {rows.map(({ unit, occ }) => {
                   const summary = (
                     <VStack gap={1.5}>
-                      <HStack justify="between" align="center" gap={2}><Heading level={3}>{unit.name}</Heading><Tag label={occ.label} tone={occ.tone} /></HStack>
-                      <Text size="sm" color="secondary">{occ.lease ? `${occ.lease.tenants.map((t) => t.displayName).join(", ") || "No tenants"}${occ.note ? ` · ${occ.note}` : ""}` : `${unit.area} m² · ${unit.rentNegotiable ? "Negotiable" : formatMoney(unit.rentPrice)}`}</Text>
+                      <HStack justify="between" align="center" gap={2}><Heading level={3}>{unit.name}</Heading><Tag label={t(`occ.${occ.kind}`)} tone={occ.tone} /></HStack>
+                      <Text size="sm" color="secondary">{occ.lease ? `${occ.lease.tenants.map((x) => x.displayName).join(", ") || t("noTenants")}${noteOf(occ) ? ` · ${noteOf(occ)}` : ""}` : `${unit.area} m² · ${unit.rentNegotiable ? t("negotiable") : formatMoney(unit.rentPrice)}`}</Text>
                     </VStack>
                   );
                   // an empty unit is not a link: it carries its own "Add lease" button (a button can't sit inside a clickable card)
@@ -97,7 +104,7 @@ export function UnitsByFloor() {
                       <Card key={unit.id} padding={3}>
                         <VStack gap={3}>
                           {summary}
-                          <Button icon={<Plus size={16} />} label="Add lease" size="sm" variant="secondary" onClick={() => setLeaseUnit(unit)} />
+                          <Button icon={<Plus size={16} />} label={t("addLease")} size="sm" variant="secondary" onClick={() => setLeaseUnit(unit)} />
                         </VStack>
                       </Card>
                     );
@@ -119,9 +126,9 @@ export function UnitsByFloor() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title="Add unit" onOpenChange={(o) => { if (!o) setAdding(false); }} />}
+            header={<DialogHeader title={t("addUnit")} onOpenChange={(o) => { if (!o) setAdding(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><UnitFields x={unitForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={unitForm.error} busy={unitForm.busy} submitLabel="Add unit" onCancel={() => setAdding(false)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={unitForm.error} busy={unitForm.busy} submitLabel={t("addUnit")} onCancel={() => setAdding(false)} /></LayoutFooter>}
           />
         </form>
       </Modal>
@@ -130,7 +137,7 @@ export function UnitsByFloor() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title="Bulk add units" onOpenChange={(o) => { if (!o) setBulk(false); }} />}
+            header={<DialogHeader title={t("bulkTitle")} onOpenChange={(o) => { if (!o) setBulk(false); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><BulkUnitsFields x={bulkForm} /></LayoutContent>}
             footer={<LayoutFooter padding={5}><FormFooter error={bulkForm.error} busy={bulkForm.busy} submitLabel={bulkForm.submitLabel} onCancel={() => setBulk(false)} /></LayoutFooter>}
           />
@@ -141,9 +148,9 @@ export function UnitsByFloor() {
           <Layout
             height="fill"
             padding={5}
-            header={<DialogHeader title={leaseUnit ? `New lease · ${leaseUnit.name}` : "New lease"} onOpenChange={(o) => { if (!o) setLeaseUnit(null); }} />}
+            header={<DialogHeader title={leaseUnit ? t("newLeaseFor", { name: leaseUnit.name }) : t("newLease")} onOpenChange={(o) => { if (!o) setLeaseUnit(null); }} />}
             content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><LeaseFields x={leaseForm} /></LayoutContent>}
-            footer={<LayoutFooter padding={5}><FormFooter error={leaseForm.error} busy={leaseForm.busy} submitLabel="Create draft lease" onCancel={() => setLeaseUnit(null)} /></LayoutFooter>}
+            footer={<LayoutFooter padding={5}><FormFooter error={leaseForm.error} busy={leaseForm.busy} submitLabel={t("createDraft")} onCancel={() => setLeaseUnit(null)} /></LayoutFooter>}
           />
         </form>
       </Modal>

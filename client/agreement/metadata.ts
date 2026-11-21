@@ -18,17 +18,19 @@ export function formFields(pages: TemplatePage[]): TextInputProps[] {
 }
 
 /** Problems that would make the form unusable: empty or duplicate field names. Checked before saving a template. */
-export function fieldProblems(pages: TemplatePage[]): string[] {
+export type FieldProblem = { kind: "noName"; label: string } | { kind: "duplicate"; name: string; count: number };
+
+export function fieldProblems(pages: TemplatePage[]): FieldProblem[] {
   const nodes = pages.flatMap((p) => [...p.content, ...Object.values(p.zones ?? {}).flat()]) as { type: string; props: { name?: string; label?: string } }[];
   const names = new Map<string, number>();
-  const problems: string[] = [];
+  const problems: FieldProblem[] = [];
   for (const n of nodes) {
     if (n.type !== "TextInput") continue;
     const name = n.props.name?.trim();
-    if (!name) problems.push(`A text input ("${n.props.label ?? ""}") has no field name.`);
+    if (!name) problems.push({ kind: "noName", label: n.props.label ?? "" });
     else names.set(name, (names.get(name) ?? 0) + 1);
   }
-  for (const [name, count] of names) if (count > 1) problems.push(`Field name "${name}" is used ${count} times; names must be unique.`);
+  for (const [name, count] of names) if (count > 1) problems.push({ kind: "duplicate", name, count });
   return problems;
 }
 

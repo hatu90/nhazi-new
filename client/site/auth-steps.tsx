@@ -27,7 +27,7 @@ export function Steps() {
         <RegisterStep phone={state.phone} initialName={state.displayName ?? ""} onDone={reload} />
       ) : (
         <VStack gap={4}>
-          {state.status === "error" && <FormError error={new Error(state.message)} />}
+          {state.status === "error" && <FormError error={state.error} />}
           <PhoneStep onDone={reload} />
         </VStack>
       )}

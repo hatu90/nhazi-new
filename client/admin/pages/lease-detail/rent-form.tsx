@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { VStack } from "@astryxdesign/core/Stack";
 import { useForm } from "react-hook-form";
-import { formatDate } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import { num } from "@/client/ui/form";
 import { FDate, FNumber, useOpenReset, useSubmit } from "@/client/ui/rhf";
@@ -19,10 +19,11 @@ export function useRentForm({ path, last, open, onDone }: { path: string; last?:
 }
 
 export function RentFields({ x: { form, last } }: { x: ReturnType<typeof useRentForm> }) {
+  const t = useTranslations("LeaseDetail");
   return (
     <VStack gap={4}>
-      <FDate control={form.control} name="effectiveDate" label="Effective from" hint={last ? `Must be after ${formatDate(last)}.` : undefined} min={last} required width="100%" />
-      <FNumber control={form.control} name="amount" label="Monthly rent" money required width="100%" />
+      <FDate control={form.control} name="effectiveDate" label={t("effectiveFrom")} min={last} required width="100%" />
+      <FNumber control={form.control} name="amount" label={t("monthlyRent")} money required width="100%" />
     </VStack>
   );
 }

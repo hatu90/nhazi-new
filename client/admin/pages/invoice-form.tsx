@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { formatMoney, todayIso } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
@@ -44,22 +45,24 @@ export function useInvoiceForm({ open, onDone }: { open: boolean; onDone: () => 
 }
 
 export function InvoiceFields({ x: { form, leases, items, total } }: { x: ReturnType<typeof useInvoiceForm> }) {
+  const t = useTranslations("Invoices");
+  const c = useTranslations("Common");
   return (
     <VStack gap={4}>
-      <FSelect control={form.control} name="leaseId" label="Lease" required search options={(leases.data?.items ?? []).filter((l) => l.status !== "draft").map((l) => ({ value: l.id, label: `${l.unitName} · ${l.tenants.map((t) => t.displayName).join(", ")}` }))} width="100%" />
-      <FText control={form.control} name="title" label="Title" placeholder="Repair — broken faucet" required width="100%" />
-      <FDate control={form.control} name="dueDate" label="Due date" required width="100%" />
+      <FSelect control={form.control} name="leaseId" label={t("lease")} required search options={(leases.data?.items ?? []).filter((l) => l.status !== "draft").map((l) => ({ value: l.id, label: `${l.unitName} · ${l.tenants.map((t) => t.displayName).join(", ")}` }))} width="100%" />
+      <FText control={form.control} name="title" label={t("title")} required width="100%" />
+      <FDate control={form.control} name="dueDate" label={t("dueDate")} required width="100%" />
       <VStack gap={3}>
         {items.fields.map((f, i) => (
           <VStack key={f.id} gap={2}>
-            <FText control={form.control} name={`items.${i}.title`} label={`Line ${i + 1}`} required width="100%" />
-            <FNumber control={form.control} name={`items.${i}.amount`} label="Amount" money required width="100%" />
-            {items.fields.length > 1 && <HStack><Button label="Remove line" variant="ghost" size="sm" onClick={() => items.remove(i)} /></HStack>}
+            <FText control={form.control} name={`items.${i}.title`} label={t("line", { n: i + 1 })} required width="100%" />
+            <FNumber control={form.control} name={`items.${i}.amount`} label={c("amount")} money required width="100%" />
+            {items.fields.length > 1 && <HStack><Button label={t("removeLine")} variant="ghost" size="sm" onClick={() => items.remove(i)} /></HStack>}
           </VStack>
         ))}
         <HStack justify="between" align="center">
-          <Button icon={<Plus size={16} />} label="Add line" size="sm" variant="secondary" onClick={() => items.append({ title: "", amount: "" })} />
-          <Text weight="semibold">Total {formatMoney(total)}</Text>
+          <Button icon={<Plus size={16} />} label={t("addLine")} size="sm" variant="secondary" onClick={() => items.append({ title: "", amount: "" })} />
+          <Text weight="semibold">{t("totalAmount", { amount: formatMoney(total) })}</Text>
         </HStack>
       </VStack>
     </VStack>

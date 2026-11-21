@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
@@ -32,13 +33,13 @@ const emptyRow = (): Row => ({ floor: "1", name: "", area: "", bedrooms: "", bat
 
 /** Column layout shared by the header and every row: floor first, then the unit itself. Scrolls sideways on phones. */
 const GRID = "grid min-w-[640px] grid-cols-[72px_minmax(150px,1.5fr)_96px_88px_88px_130px_40px] items-start gap-2";
-const columns = ["Floor", "Name", "Area (m²)", "Bedrooms", "Bathrooms", "Rent (x1000₫)"];
 
 /**
  * Bulk add units as a grid of inputs, one unit per row, the floor leftmost. New rows start as a copy of the row above
  * (name counted up: "Room 101" -> "Room 102"), so a floor of similar rooms is a few clicks. One all-or-nothing API call.
  */
 export function useBulkUnitsForm({ open, onDone }: { open: boolean; onDone: () => void }) {
+  const t = useTranslations("Units");
   const { apiPath } = useProperty();
   const qc = useQueryClient();
   const form = useForm<Values>({ defaultValues: { rows: [emptyRow()] } });
@@ -59,7 +60,7 @@ export function useBulkUnitsForm({ open, onDone }: { open: boolean; onDone: () =
   // "Add a floor": a whole floor's rows at once. Area, bedrooms, bathrooms and rent are copied from the last row.
   const [floorNo, setFloorNo] = useState("");
   const [floorCount, setFloorCount] = useState("4");
-  const [pattern, setPattern] = useState(`Room ${FLOOR_TOKEN}${INDEX_TOKEN}`);
+  const [pattern, setPattern] = useState(`${t("roomWord")} ${FLOOR_TOKEN}${INDEX_TOKEN}`);
   const watchedRows = useWatch({ control: form.control, name: "rows" });
   const lastFloor = Number(watchedRows.at(-1)?.floor);
   const suggestedFloor = Number.isFinite(lastFloor) ? lastFloor + 1 : 1;
@@ -91,57 +92,60 @@ export function useBulkUnitsForm({ open, onDone }: { open: boolean; onDone: () =
     },
   });
 
-  useOpenReset(open, () => { form.reset({ rows: [emptyRow()] }); run.reset(); setFloorNo(""); setFloorCount("4"); setPattern(`Room ${FLOOR_TOKEN}${INDEX_TOKEN}`); });
+  useOpenReset(open, () => { form.reset({ rows: [emptyRow()] }); run.reset(); setFloorNo(""); setFloorCount("4"); setPattern(`${t("roomWord")} ${FLOOR_TOKEN}${INDEX_TOKEN}`); });
   const submit = form.handleSubmit((v) => {
     const seen = new Map<string, number>();
     let duplicate = false;
     v.rows.forEach((r, i) => {
       const key = r.name.trim().toLowerCase();
       if (seen.has(key)) {
-        form.setError(`rows.${i}.name`, { message: `Same as row ${seen.get(key)! + 1}` });
+        form.setError(`rows.${i}.name`, { message: t("sameAsRow", { n: seen.get(key)! + 1 }) });
         duplicate = true;
       } else seen.set(key, i);
     });
     if (!duplicate) run.mutate(v);
   });
 
-  return { form, submit, error: run.error, busy: run.isPending, submitLabel: `Create ${count} unit${count === 1 ? "" : "s"}`, rows, count, addRows, addFloor, floorNo, setFloorNo, floorCount, setFloorCount, pattern, setPattern, suggestedFloor };
+  return { form, submit, error: run.error, busy: run.isPending, submitLabel: t("createUnits", { count }), rows, count, addRows, addFloor, floorNo, setFloorNo, floorCount, setFloorCount, pattern, setPattern, suggestedFloor };
 }
 
 export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, floorNo, setFloorNo, floorCount, setFloorCount, pattern, setPattern, suggestedFloor } }: { x: ReturnType<typeof useBulkUnitsForm> }) {
+  const t = useTranslations("Units");
+  const c = useTranslations("Common");
+  const columns = [t("floor"), c("name"), t("areaCol"), t("bedrooms"), t("bathrooms"), t("rentCol")];
+  const field = (name: string, n: number) => t("rowField", { field: name, n });
   return (
       <VStack gap={3}>
-        <Text size="sm" color="secondary">One unit per row. New rows copy the row above and count the name up, so you only change what differs.</Text>
         <div className="overflow-x-auto">
           <div className="flex flex-col gap-2">
             <div className={GRID} role="row">
-              {columns.map((c) => <Text key={c} size="sm" color="secondary" weight="semibold">{c}</Text>)}
+              {columns.map((col) => <Text key={col} size="sm" color="secondary" weight="semibold">{col}</Text>)}
               <span />
             </div>
             {rows.fields.map((f, i) => (
               <div key={f.id} className={GRID} role="row">
-                <FNumber control={form.control} name={`rows.${i}.floor`} label={`Row ${i + 1} floor`} hideLabel required width="100%" />
-                <FText control={form.control} name={`rows.${i}.name`} label={`Row ${i + 1} name`} hideLabel required placeholder="Room 101" width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.area`} label={`Row ${i + 1} area`} hideLabel unit="m²" required rules={{ validate: (v) => Number(v) > 0 || "Must be > 0" }} width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.bedrooms`} label={`Row ${i + 1} bedrooms`} hideLabel width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.bathrooms`} label={`Row ${i + 1} bathrooms`} hideLabel width="100%" />
-                <FNumber control={form.control} name={`rows.${i}.rent`} label={`Row ${i + 1} rent`} hideLabel money width="100%" />
-                <Button label={`Remove row ${i + 1}`} variant="ghost" size="sm" isIconOnly icon="✕" onClick={() => rows.remove(i)} isDisabled={count === 1} />
+                <FNumber control={form.control} name={`rows.${i}.floor`} label={field(t("floor"), i + 1)} hideLabel required width="100%" />
+                <FText control={form.control} name={`rows.${i}.name`} label={field(c("name"), i + 1)} hideLabel required width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.area`} label={field(t("area"), i + 1)} hideLabel unit="m²" required rules={{ validate: (v) => Number(v) > 0 || t("gtZero") }} width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.bedrooms`} label={field(t("bedrooms"), i + 1)} hideLabel width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.bathrooms`} label={field(t("bathrooms"), i + 1)} hideLabel width="100%" />
+                <FNumber control={form.control} name={`rows.${i}.rent`} label={field(t("rent"), i + 1)} hideLabel money width="100%" />
+                <Button label={t("removeRow", { n: i + 1 })} variant="ghost" size="sm" isIconOnly icon="✕" onClick={() => rows.remove(i)} isDisabled={count === 1} />
               </div>
             ))}
           </div>
         </div>
         <HStack gap={2} wrap="wrap">
-          <Button icon={<Plus size={16} />} label="Add row" size="sm" variant="secondary" onClick={() => addRows(1)} isDisabled={count >= MAX_ROWS} />
-          <Button icon={<Plus size={16} />} label="Add 5 rows" size="sm" variant="secondary" onClick={() => addRows(5)} isDisabled={count >= MAX_ROWS} />
+          <Button icon={<Plus size={16} />} label={t("addRow")} size="sm" variant="secondary" onClick={() => addRows(1)} isDisabled={count >= MAX_ROWS} />
+          <Button icon={<Plus size={16} />} label={t("addRows")} size="sm" variant="secondary" onClick={() => addRows(5)} isDisabled={count >= MAX_ROWS} />
         </HStack>
         <VStack gap={3}>
-          <Text weight="semibold">Add a floor</Text>
+          <Text weight="semibold">{t("addFloor")}</Text>
           <HStack gap={3} align="end" wrap="wrap">
-            <NumberField label="Floor" value={floorNo} onChange={setFloorNo} placeholder={String(suggestedFloor)} width={96} />
-            <NumberField label="Units on it" value={floorCount} onChange={setFloorCount} width={120} />
-            <TextField label="Name pattern" value={pattern} onChange={setPattern} width={260} />
-            <Button icon={<Plus size={16} />} label="Add floor" variant="secondary" onClick={addFloor} isDisabled={count >= MAX_ROWS} />
+            <NumberField label={t("floor")} value={floorNo} onChange={setFloorNo} placeholder={String(suggestedFloor)} width={96} />
+            <NumberField label={t("unitsOnIt")} value={floorCount} onChange={setFloorCount} width={120} />
+            <TextField label={t("namePattern")} value={pattern} onChange={setPattern} width={260} />
+            <Button icon={<Plus size={16} />} label={t("addFloor")} variant="secondary" onClick={addFloor} isDisabled={count >= MAX_ROWS} />
           </HStack>
         </VStack>
       </VStack>

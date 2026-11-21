@@ -1,33 +1,27 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 
-export const metadata: Metadata = { title: "About" };
+type Item = { title: string; body: string };
 
-const principles = [
-  { title: "Clear to everyone", body: "Owners and tenants look at the same lease and the same invoice. No surprises, no guessing what a number means." },
-  { title: "Every figure has a source", body: "Rent, meter readings and tiered utility prices are recorded, so any amount on an invoice can be traced back to the usage behind it." },
-  { title: "Built for local rentals", body: "Amounts are in Vietnamese đồng (₫), with cash and bank-transfer payments, shared services and metered utilities handled the way rentals really work." },
-  { title: "You stay in control", body: "Owners decide what is billed and when. Nhazi records invoices and reported payments — it never moves money on your behalf." },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Meta");
+  return { title: t("about") };
+}
 
-const audiences = [
-  { title: "For owners and managers", body: "Set up each property, its units, services and meters. Create leases and agreements, record readings, close billing periods and issue invoices. Invite your team and give each person the access they need." },
-  { title: "For tenants", body: "Get invited by phone number and see your own lease, invoices and due dates in a dashboard of your own. Report a payment, or send a repair request, in a few taps." },
-];
-
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await getTranslations("About");
+  const principles = t.raw("principles") as Item[];
+  const audiences = t.raw("audiences") as Item[];
   return (
     <div className="mx-auto w-full max-w-4xl px-5">
       <VStack gap={4} maxWidth={680} paddingBlock={10}>
-        <Text size="sm" color="secondary">About Nhazi</Text>
-        <Heading level={1} type="display-2">Renting should be simple for both sides of the key.</Heading>
-        <Text color="secondary" size="lg">
-          Nhazi is a platform for landlords and property managers who rent out apartments, houses and offices — and for the tenants who live in them. It replaces
-          scattered spreadsheets, chat threads and paper notes with one clear record.
-        </Text>
+        <Text size="sm" color="secondary">{t("eyebrow")}</Text>
+        <Heading level={1} type="display-2">{t("heading")}</Heading>
+        <Text color="secondary" size="lg">{t("lead")}</Text>
       </VStack>
 
       <div className="grid gap-4 pb-12 md:grid-cols-2">
@@ -42,7 +36,7 @@ export default function AboutPage() {
       </div>
 
       <VStack gap={6} paddingBlock={8}>
-        <Heading level={2} type="display-3">What we care about</Heading>
+        <Heading level={2} type="display-3">{t("principlesTitle")}</Heading>
         <div className="grid gap-8 sm:grid-cols-2">
           {principles.map((p) => (
             <VStack key={p.title} gap={1.5}>
@@ -55,10 +49,10 @@ export default function AboutPage() {
 
       <section className="my-12 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/15 via-sky-500/10 to-emerald-500/15 px-6 py-12 text-center">
         <VStack gap={4} align="center">
-          <Heading level={2} type="display-3">Try it with your first property.</Heading>
+          <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <HStack gap={3} wrap="wrap" justify="center">
-            <Button variant="primary" label="I have a property for rent" size="lg" href="/auth?next=/admin" />
-            <Button label="I'm a tenant" size="lg" variant="secondary" href="/auth?next=/dashboard" />
+            <Button variant="primary" label={(await getTranslations("Home"))("ctaLandlord")} size="lg" href="/auth?next=/admin" />
+            <Button label={(await getTranslations("Home"))("ctaTenant")} size="lg" variant="secondary" href="/auth?next=/dashboard" />
           </HStack>
         </VStack>
       </section>

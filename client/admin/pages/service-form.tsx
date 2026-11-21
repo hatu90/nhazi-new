@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useEnumOptions } from "@/client/lib/use-enum";
 import { todayIso } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import { text } from "@/client/ui/form";
@@ -20,12 +22,7 @@ interface ServiceValues {
   tiers: TierRow[];
 }
 
-const bases: { id: ServiceUsageBase; label: string; hint: string }[] = [
-  { id: "meter", label: "Metered", hint: "Meter readings; tiers allowed." },
-  { id: "lease", label: "Per lease", hint: "Flat per lease." },
-  { id: "device", label: "Per device", hint: "Flat per device." },
-  { id: "member", label: "Per person", hint: "Flat per person." },
-];
+const bases: ServiceUsageBase[] = ["meter", "lease", "device", "member"];
 
 const defaults = (): ServiceValues => ({ name: "", usageBase: "meter", unitOfMeasure: "", description: "", effectiveDate: todayIso(), tiers: [emptyTier()] });
 
@@ -47,14 +44,17 @@ export function useServiceForm({ open, onDone }: { open: boolean; onDone: () => 
 }
 
 export function ServiceFields({ x: { form, base, unit, multi } }: { x: ReturnType<typeof useServiceForm> }) {
+  const t = useTranslations("Services");
+  const c = useTranslations("Common");
+  const options = useEnumOptions();
   return (
     <VStack gap={4}>
-      <FText control={form.control} name="name" label="Name" placeholder="Electricity" required width="100%" />
-      <FSelect control={form.control} name="usageBase" label="Billed by" hint={bases.find((b) => b.id === base)?.hint} options={bases.map((b) => ({ value: b.id, label: b.label }))} onValueChange={() => form.setValue("tiers", [emptyTier()])} width="100%" />
-      {base === "meter" && <FText control={form.control} name="unitOfMeasure" label="Unit of measure" hint="e.g. kWh, m³" width="100%" />}
-      <FDate control={form.control} name="effectiveDate" label="Effective from" required width="100%" />
-      <TierFields control={form.control} name="tiers" multi={multi} unit={(base === "meter" && unit) || "unit"} />
-      <FArea control={form.control} name="description" label="Description" rows={2} width="100%" />
+      <FText control={form.control} name="name" label={c("name")} required width="100%" />
+      <FSelect control={form.control} name="usageBase" label={t("billedBy")} options={options("usageBase", bases)} onValueChange={() => form.setValue("tiers", [emptyTier()])} width="100%" />
+      {base === "meter" && <FText control={form.control} name="unitOfMeasure" label={t("unitOfMeasure")} width="100%" />}
+      <FDate control={form.control} name="effectiveDate" label={t("effectiveFrom")} required width="100%" />
+      <TierFields control={form.control} name="tiers" multi={multi} unit={(base === "meter" && unit) || t("unitFallback")} />
+      <FArea control={form.control} name="description" label={c("description")} rows={2} width="100%" />
     </VStack>
   );
 }

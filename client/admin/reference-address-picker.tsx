@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { api } from "@/client/lib/api";
 import type { IReferenceAddressListResponse } from "@/client/lib/types";
@@ -27,6 +28,7 @@ type Item = SearchableItem<{ isNew: boolean }>;
 
 /** Search the shared list of reference places and add one (or a brand-new one by name), each with its distance in meters. */
 export function ReferenceAddressPicker({ value, onChange }: { value: RefAddressDraft[]; onChange: (v: RefAddressDraft[]) => void }) {
+  const t = useTranslations("Property");
   // rebuilt when the added places change, so already-added ones are left out of the results
   const takenKey = value.map((v) => slug(v.name)).join("|");
 
@@ -53,26 +55,24 @@ export function ReferenceAddressPicker({ value, onChange }: { value: RefAddressD
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: "1 1 0%", minWidth: 0 }}>
               <Text weight="medium">{i + 1}. {v.name}</Text>
-              {!v.id && <Text size="sm" color="secondary">New place</Text>}
+              {!v.id && <Text size="sm" color="secondary">{t("newPlace")}</Text>}
             </div>
-            <IconButton label={`Remove ${v.name}`} variant="ghost" icon={<X />} onClick={() => onChange(value.filter((_, j) => j !== i))} />
+            <IconButton label={t("removePlace", { name: v.name })} variant="ghost" icon={<X />} onClick={() => onChange(value.filter((_, j) => j !== i))} />
           </div>
-          <NumberField label="Distance" unit="m" value={v.distance} onChange={(d) => patch(i, d)} width="100%" />
+          <NumberField label={t("distance")} unit="m" value={v.distance} onChange={(d) => patch(i, d)} width="100%" />
         </VStack>
         </Card>
       ))}
 
       <Typeahead<Item>
-        label="Add a nearby place"
-        description="Search an industrial zone, university, hospital… or add a new one."
-        placeholder="e.g. Khu công nghiệp Yên Phong"
+        label={t("addNearby")}
         searchSource={source}
         value={null}
         onChange={(item) => {
           if (!item) return;
           onChange([...value, item.auxiliaryData?.isNew ? { name: item.label, distance: "" } : { id: item.id, name: item.label, distance: "" }]);
         }}
-        renderItem={(item) => (item.auxiliaryData?.isNew ? <Text>Add “{item.label}”</Text> : <Text>{item.label}</Text>)}
+        renderItem={(item) => (item.auxiliaryData?.isNew ? <Text>{t("addNew", { name: item.label })}</Text> : <Text>{item.label}</Text>)}
         hasEntriesOnFocus
         width="100%"
       />

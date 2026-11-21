@@ -15,9 +15,9 @@ export function LeaseAgreement({ lease, path }: { lease: ITenancyDetailResponse;
   if (version.error) return <ErrorBox error={version.error} retry={() => void version.refetch()} />;
   return (
     <AgreementSection
-      title={`Agreement · ${a.templateName} v${a.version}`}
+      title={`${a.templateName} · v${a.version}`}
       content={version.data.data}
-      facts={{ propertyName: property.name, unitName: lease.unitName, tenantNames: lease.tenants.map((t) => t.displayName), startDate: lease.startDate, endDate: lease.endDate, rent: lease.currentRent, deposit: lease.depositAmount, billingDay: lease.billingCycleDay }}
+      facts={{ propertyName: property.name, unitName: lease.unitName, tenantNames: lease.tenants.map((x) => x.displayName), startDate: lease.startDate, endDate: lease.endDate, rent: lease.currentRent, deposit: lease.depositAmount, billingDay: lease.billingCycleDay }}
       values={a.values}
       onSaveValues={canManage ? (agreementValues) => saveValues.mutateAsync({ agreementValues }) : undefined}
     />
