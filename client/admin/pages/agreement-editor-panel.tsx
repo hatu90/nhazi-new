@@ -6,7 +6,7 @@ import { fieldProblems } from "@/client/agreement/metadata";
 import { ApiError } from "@/client/lib/api";
 import { useSend } from "@/client/lib/hooks";
 import type { ITemplateDetailResponse } from "@/client/lib/types";
-import { ErrorBox, Tag } from "@/client/ui";
+import { ErrorBox, Tag, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -20,6 +20,7 @@ export const MM_TO_PX = 96 / 25.4;
 export const A4_VIEWPORTS = [{ width: 210 * MM_TO_PX + 64 + 16, height: 297 * MM_TO_PX + 64, label: "A4 Portrait", icon: "Tablet" as const }];
 
 export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITemplateDetailResponse; path: string; canManage: boolean; back: string }) {
+  const confirm = useConfirm();
   const { apiPath } = useProperty();
   const save = useSend<{ baseVersion: number; data: { pages: TemplatePage[] } }>("POST", `${path}/versions`, [path, apiPath("/agreement-templates")]);
   const rename = useSend<{ name: string }>("PATCH", path, [path, apiPath("/agreement-templates")]);
@@ -53,9 +54,16 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
     setActive(pages.length);
   };
   const removePage = () => {
-    if (pages.length <= 1 || !confirm(`Remove page ${active + 1}?`)) return;
-    setPages((cur) => cur.filter((_, i) => i !== active));
-    setActive((i) => Math.max(0, i - 1));
+    if (pages.length <= 1) return;
+    confirm.ask({
+      title: `Remove page ${active + 1}?`,
+      description: "The page and its content are removed from this version.",
+      actionLabel: "Remove page",
+      onConfirm: () => {
+        setPages((cur) => cur.filter((_, i) => i !== active));
+        setActive((i) => Math.max(0, i - 1));
+      },
+    });
   };
 
   return (
@@ -105,6 +113,7 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
           }}
         />
       </div>
+      {confirm.element}
     </div>
   );
 }

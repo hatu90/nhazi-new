@@ -10,6 +10,7 @@ import {
   type IAdminCommentCommand,
   type IAdminRequestListQuery,
   type ICommentResponse,
+  type ICreateEnquiryCommand,
   type ICreateRequestCommand,
   type IRequestDetailResponse,
   type IRequestListResponse,
@@ -124,5 +125,20 @@ export class AddMyCommentUseCase extends TenantBase implements IUseCase<ITenantC
     const r = await this.own(c.actor, c.leaseId, c.requestId);
     if (isClosed(r.status)) throw CLOSED();
     return this.requests.addComment(c.requestId, c.actor.accountId, c.body);
+  }
+}
+
+// ── public ──────────────────────────────────────────────────────────────────────────
+/** A signed-in account asks the landlord about a property (or one of its units). Lands in the property's requests and notifications. */
+export class CreateEnquiryUseCase implements IUseCase<ICreateEnquiryCommand, { id: string }> {
+  constructor(private readonly requests: IRequestRepository) {}
+  async execute(c: ICreateEnquiryCommand) {
+    const target = await this.requests.findEnquiryTarget(c.propertyId, c.unitId);
+    if (!target) throw new NotFoundError(c.unitId ? "Unit" : "Property");
+    if (await this.requests.hasOpenEnquiry(c.actor.accountId, c.propertyId)) {
+      throw new ConflictError("You already have an open enquiry for this property", "ENQUIRY_EXISTS");
+    }
+    const id = await this.requests.createEnquiry(c, `Enquiry: ${target.unitName ?? target.propertyName}`);
+    return { id };
   }
 }

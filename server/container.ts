@@ -39,7 +39,7 @@ import { AddLeaseMemberUseCase, DeleteDraftTenancyUseCase, AddRentVersionUseCase
 import { PrismaTenancyRepository } from "./infrastructure/prisma/repositories/tenancy.repository";
 import { CancelInvoiceUseCase, CreateInvoiceUseCase, DeletePaymentUseCase, GetInvoiceUseCase, ListInvoicesUseCase, RecordPaymentUseCase, ReportPaymentUseCase, ReviewPaymentUseCase } from "./modules/invoice/invoice.usecases";
 import { CancelRefundUseCase, CreateRefundUseCase, GetRefundUseCase, ListRefundsUseCase, PayRefundUseCase } from "./modules/refund/refund.usecases";
-import { AddMyCommentUseCase, AddStaffCommentUseCase, CancelMyRequestUseCase, CreateMyRequestUseCase, GetMyRequestUseCase, GetRequestUseCase, ListMyRequestsUseCase, ListRequestsUseCase, UpdateRequestUseCase } from "./modules/request/request.usecases";
+import { AddMyCommentUseCase, AddStaffCommentUseCase, CancelMyRequestUseCase, CreateEnquiryUseCase, CreateMyRequestUseCase, GetMyRequestUseCase, GetRequestUseCase, ListMyRequestsUseCase, ListRequestsUseCase, UpdateRequestUseCase } from "./modules/request/request.usecases";
 import { GetMySubscriptionUseCase, ListPlansUseCase } from "./modules/plan/plan.usecases";
 import { GetBillingPeriodUseCase, ListBillingPeriodsUseCase, OpenBillingPeriodUseCase, UpdateUsageUseCase } from "./modules/billing/billing.usecases";
 import { PrismaStatsRepository } from "./infrastructure/prisma/repositories/stats.repository";
@@ -50,7 +50,7 @@ import { PrismaRequestRepository } from "./infrastructure/prisma/repositories/re
 import { PrismaPlanRepository } from "./infrastructure/prisma/repositories/plan.repository";
 import { PrismaBillingRepository } from "./infrastructure/prisma/repositories/billing.repository";
 import { DevAwareTokenVerifier, FirebaseTokenVerifier } from "./infrastructure/firebase/token-verifier";
-import { GetLeaseFileUrlUseCase, GetPropertyFileUrlUseCase, UploadLeaseFileUseCase, UploadPropertyImageUseCase } from "./modules/storage/storage.usecases";
+import { GetDraftFileUrlUseCase, UploadDraftImageUseCase, GetLeaseFileUrlUseCase, GetPropertyFileUrlUseCase, UploadLeaseFileUseCase, UploadPropertyImageUseCase } from "./modules/storage/storage.usecases";
 import { createFileStorage } from "./infrastructure/supabase/storage";
 import { getPrisma } from "./infrastructure/prisma/client";
 import { PrismaAccessRepository } from "./infrastructure/prisma/repositories/access.repository";
@@ -111,8 +111,10 @@ function build() {
     // property: admin
     listManagedProperties: new ListManagedPropertiesUseCase(properties),
     getManagedProperty: new GetManagedPropertyUseCase(properties, policy),
-    createProperty: new CreatePropertyUseCase(properties),
+    createProperty: new CreatePropertyUseCase(properties, storage),
     updateProperty: new UpdatePropertyUseCase(properties, policy),
+    uploadDraftImage: new UploadDraftImageUseCase(storage),
+    getDraftFileUrl: new GetDraftFileUrlUseCase(storage),
     uploadPropertyImage: new UploadPropertyImageUseCase(storage, policy),
     getPropertyFileUrl: new GetPropertyFileUrlUseCase(storage, policy),
     // units
@@ -202,6 +204,7 @@ function build() {
     listMyRequests: new ListMyRequestsUseCase(requests),
     getMyRequest: new GetMyRequestUseCase(requests),
     createMyRequest: new CreateMyRequestUseCase(requests),
+    createEnquiry: new CreateEnquiryUseCase(requests),
     cancelMyRequest: new CancelMyRequestUseCase(requests),
     addMyComment: new AddMyCommentUseCase(requests),
     // SaaS plans

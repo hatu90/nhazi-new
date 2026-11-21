@@ -86,3 +86,28 @@ export class GetPropertyFileUrlUseCase implements IUseCase<IGetPropertyFileUrlCo
     return { url: await this.storage.signedUrl(c.path, 300) };
   }
 }
+
+// ── draft images: uploaded while creating a property, before it has an id ───────────
+/** Account-scoped staging area; the create-property use case moves these files under the new property. */
+export const draftFilePrefix = (accountId: string) => `uploads/${accountId}/`;
+
+export class UploadDraftImageUseCase implements IUseCase<{ actor: IActor; name: string; contentType: string; bytes: ArrayBuffer }, IUploadedFileResponse> {
+  constructor(private readonly storage: IFileStorage) {}
+  async execute(c: { actor: IActor; name: string; contentType: string; bytes: ArrayBuffer }) {
+    const ext = IMAGE_TYPES[c.contentType];
+    if (!ext) throw new ValidationError("Only JPG, PNG or WebP images are allowed");
+    if (c.bytes.byteLength === 0) throw new ValidationError("The file is empty");
+    if (c.bytes.byteLength > MAX_UPLOAD_BYTES) throw new ValidationError("The image must be 5 MB or smaller");
+    const path = `${draftFilePrefix(c.actor.accountId)}${randomUUID()}.${ext}`;
+    await this.storage.put(path, c.bytes, c.contentType);
+    return { path, name: c.name.slice(0, 200) };
+  }
+}
+
+export class GetDraftFileUrlUseCase implements IUseCase<{ actor: IActor; path: string }, { url: string }> {
+  constructor(private readonly storage: IFileStorage) {}
+  async execute({ actor, path }: { actor: IActor; path: string }) {
+    if (!path.startsWith(draftFilePrefix(actor.accountId)) || path.includes("..")) throw new NotFoundError("File");
+    return { url: await this.storage.signedUrl(path, 300) };
+  }
+}

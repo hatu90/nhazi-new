@@ -9,7 +9,7 @@ import { useState } from "react";
 import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import type { ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, Section } from "@/client/ui";
+import { DataTable, DefList, Empty, ErrorBox, Modal, Section, useConfirm } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { HandoverFields, useHandoverForm } from "./handover-form";
 import { LeaseAgreement } from "./lease-agreement";
@@ -22,6 +22,7 @@ type Dialog = "rent" | "member" | "service" | "handover" | null;
 
 /** Terms, agreement, rent history, people, services and the handover list. */
 export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse; path: string }) {
+  const confirm = useConfirm();
   const { canManage } = useProperty();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [editingHandover, setEditingHandover] = useState<Handover | null>(null);
@@ -104,7 +105,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
               render: (h) => canManage && (
                 <HStack gap={1} justify="end">
                   <Button label="Edit" size="sm" variant="ghost" onClick={() => setEditingHandover(h)} />
-                  <Button label="Remove" size="sm" variant="ghost" clickAction={async () => { if (confirm(`Remove "${h.itemName}" from the handover?`)) await removeHandover.mutateAsync({ id: h.id }); }} />
+                  <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm.ask({ title: `Remove "${h.itemName}"?`, description: "It is removed from this lease's handover.", actionLabel: "Remove", onConfirm: () => removeHandover.mutateAsync({ id: h.id }) })} />
                 </HStack>
               ),
             },
@@ -167,6 +168,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
           />
         </form>
       </Modal>
+      {confirm.element}
     </VStack>
   );
 }

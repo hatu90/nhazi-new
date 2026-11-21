@@ -5,7 +5,7 @@ import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IItemListResponse, IItemResponse } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, TextField } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, TextField, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import { ItemFields, useItemForm } from "./item-form";
 
 /** The property's catalogue of things that can be handed over with a lease (bed, fridge, key…). */
 export function InventoryPage() {
+  const confirm = useConfirm();
   const { apiPath, canManage } = useProperty();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
@@ -42,7 +43,7 @@ export function InventoryPage() {
             render: (i) => canManage && (
               <HStack gap={1} justify="end">
                 <Button label="Rename" size="sm" variant="ghost" onClick={() => setEditing(i)} />
-                <Button label="Delete" size="sm" variant="ghost" clickAction={async () => { if (confirm(`Delete "${i.name}"?`)) await remove.mutateAsync({ id: i.id }); }} />
+                <Button label="Delete" size="sm" variant="ghost" onClick={() => confirm.ask({ title: `Delete "${i.name}"?`, description: "This item is removed from the property inventory.", actionLabel: "Delete", onConfirm: () => remove.mutateAsync({ id: i.id }) })} />
               </HStack>
             ),
           },
@@ -59,6 +60,7 @@ export function InventoryPage() {
           />
         </form>
       </Modal>
+      {confirm.element}
     </Stack>
   );
 }

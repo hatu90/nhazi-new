@@ -6,7 +6,7 @@ import { FormFooter } from "@/client/ui/rhf";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IMeterListResponse, IMeterResponse } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, Tag } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
@@ -17,6 +17,7 @@ import { MeterFields, useMeterForm } from "./meter-form";
 import { MeterReadingsDrawer } from "./meter-readings-drawer";
 
 export function MetersPage() {
+  const confirm = useConfirm();
   const { apiPath, canManage } = useProperty();
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
@@ -52,7 +53,7 @@ export function MetersPage() {
                   alignment="end"
                   items={[
                     { id: "edit", label: "Edit", onClick: () => setEditing(m) },
-                    { id: "remove", label: "Remove", onClick: () => { if (confirm(`Remove meter "${m.name}"?`)) remove.mutate({ id: m.id }); } },
+                    { id: "remove", label: "Remove", onClick: () => confirm.ask({ title: `Remove meter "${m.name}"?`, description: "The meter and its readings are removed.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
                   ]}
                   renderTrigger={(props) => <button type="button" {...props} aria-label="More actions" className="cursor-pointer rounded px-2 py-1 text-lg leading-none">⋯</button>}
                 />
@@ -95,6 +96,7 @@ export function MetersPage() {
         </form>
       </Modal>
       <MeterReadingsDrawer meter={viewing} onClose={() => setViewing(null)} />
+      {confirm.element}
     </Stack>
   );
 }

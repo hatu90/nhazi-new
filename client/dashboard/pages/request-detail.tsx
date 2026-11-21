@@ -11,11 +11,12 @@ import { useParams } from "react-router";
 import { formatDate, formatDateTime, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse } from "@/client/lib/types";
-import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, StatusBadge } from "@/client/ui";
+import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, StatusBadge, useConfirm } from "@/client/ui";
 import { ReplyFields, useReplyForm } from "@/client/ui/reply-form";
 import { useLease } from "../lease-layout";
 
 export function RequestDetailPage() {
+  const confirm = useConfirm();
   const { requestId = "" } = useParams();
   const { apiPath, to } = useLease();
   const path = apiPath(`/requests/${requestId}`);
@@ -35,10 +36,10 @@ export function RequestDetailPage() {
       <PageHeader
         title={r.title}
         subtitle={<HStack gap={2} align="center"><StatusBadge status={r.status} /><Text color="secondary">{label(r.type)}</Text></HStack>}
-        actions={!closed && <Button label="Cancel request" variant="secondary" isLoading={cancel.isPending} clickAction={async () => { if (confirm("Cancel this request?")) await cancel.mutateAsync(undefined); }} />}
+        actions={!closed && <Button label="Cancel request" variant="secondary" isLoading={cancel.isPending} onClick={() => confirm.ask({ title: "Cancel this request?", description: "The request will be closed.", actionLabel: "Cancel request", onConfirm: () => cancel.mutateAsync(undefined) })} />}
       />
       {cancel.error && <ErrorBox error={cancel.error} />}
-      <Section title="Details"><DefList items={[["Sent", formatDateTime(r.createdAt)], ["Priority", label(r.priority)], ["Handled by", r.assignedTo?.displayName ?? "Not assigned yet"], ["Move-out date", formatDate(r.requestedCloseDate)], ["Description", r.description ?? "—"]]} /></Section>
+      <Section title="Details"><DefList items={[["Sent", formatDateTime(r.createdAt)], ["Priority", label(r.priority)], ["Description", r.description ?? "—"]]} /></Section>
       <Section title="Conversation">
         <VStack gap={3}>
           {r.comments.length === 0 && <Text color="secondary">No replies yet.</Text>}
@@ -59,6 +60,7 @@ export function RequestDetailPage() {
           />
         </form>
       </Modal>
+      {confirm.element}
     </VStack>
   );
 }

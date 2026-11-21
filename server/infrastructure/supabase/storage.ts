@@ -20,6 +20,15 @@ export class SupabaseFileStorage implements IFileStorage {
     if (!res.ok) throw new Error(`Supabase upload failed: ${res.status} ${await res.text()}`);
   }
 
+  async move(from: string, to: string) {
+    const res = await fetch(`${this.url}/storage/v1/object/move`, {
+      method: "POST",
+      headers: { ...this.headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ bucketId: this.bucket, sourceKey: from, destinationKey: to }),
+    });
+    if (!res.ok) throw new Error(`Supabase move failed: ${res.status} ${await res.text()}`);
+  }
+
   async signedUrl(path: string, expiresInSeconds: number) {
     const res = await fetch(`${this.url}/storage/v1/object/sign/${this.bucket}/${this.objectPath(path)}`, {
       method: "POST",
@@ -38,6 +47,7 @@ export function createFileStorage(): IFileStorage {
   if (!url || !key) {
     return {
       put: async () => { throw new Error("File storage is not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)"); },
+      move: async () => { throw new Error("File storage is not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)"); },
       signedUrl: async () => { throw new Error("File storage is not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)"); },
     };
   }

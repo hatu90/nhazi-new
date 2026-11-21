@@ -3,6 +3,7 @@ import type {
   IAdminRequestListQuery,
   IClosePeriodDetails,
   ICommentResponse,
+  ICreateEnquiryCommand,
   ICreateRequestCommand,
   IRequestDetailResponse,
   IRequestResponse,
@@ -102,6 +103,27 @@ export class PrismaRequestRepository implements IRequestRepository {
         requestedCloseDate: c.requestedCloseDate ? new Date(c.requestedCloseDate) : undefined,
         details: c.details ? toJson(c.details) : undefined,
       },
+      select: { id: true },
+    });
+    return r.id;
+  }
+
+  async findEnquiryTarget(propertyId: string, unitId?: string) {
+    const p = await this.db.property.findFirst({ where: { id: propertyId, deletedAt: null }, select: { propertyName: true } });
+    if (!p) return null;
+    if (!unitId) return { propertyName: p.propertyName, unitName: null };
+    const u = await this.db.unit.findFirst({ where: { id: unitId, propertyId, deletedAt: null }, select: { unitName: true } });
+    return u ? { propertyName: p.propertyName, unitName: u.unitName } : null;
+  }
+
+  async hasOpenEnquiry(accountId: string, propertyId: string) {
+    const n = await this.db.request.count({ where: { requestedBy: accountId, propertyId, type: "enquiry", status: { in: ["open", "in_progress"] }, deletedAt: null } });
+    return n > 0;
+  }
+
+  async createEnquiry(c: ICreateEnquiryCommand, title: string) {
+    const r = await this.db.request.create({
+      data: { propertyId: c.propertyId, unitId: c.unitId, type: "enquiry", title, description: c.message, requestedBy: c.actor.accountId },
       select: { id: true },
     });
     return r.id;

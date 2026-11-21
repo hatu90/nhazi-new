@@ -2,6 +2,8 @@ import type { IActor } from "@/server/shared/actor";
 import { NotFoundError, ValidationError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
+import type { IFileStorage } from "../storage/storage.port";
+import { draftFilePrefix, propertyFilePrefix } from "../storage/storage.usecases";
 import type { IPropertyRepository } from "./property.repository";
 import type {
   IAdminPropertyListQuery,
@@ -11,6 +13,7 @@ import type {
   IUpdatePropertyCommand,
   IPropertyDetailResponse,
   IPropertySearchQuery,
+  IPublicPropertyDetail,
   IPropertySearchResponse,
 } from "./property.schema";
 
@@ -22,7 +25,7 @@ export class SearchPropertiesUseCase implements IUseCase<IPropertySearchQuery, I
   }
 }
 
-export class GetPublicPropertyUseCase implements IUseCase<{ propertyId: string }, IPropertyDetailResponse> {
+export class GetPublicPropertyUseCase implements IUseCase<{ propertyId: string }, IPublicPropertyDetail> {
   constructor(private readonly properties: IPropertyRepository) {}
   async execute({ propertyId }: { propertyId: string }) {
     const property = await this.properties.findPublicById(propertyId);
@@ -55,9 +58,31 @@ export class GetManagedPropertyUseCase implements IUseCase<{ actor: IActor; prop
 }
 
 export class CreatePropertyUseCase implements IUseCase<ICreatePropertyCommand, IAdminPropertyResponse> {
-  constructor(private readonly properties: IPropertyRepository) {}
+  constructor(
+    private readonly properties: IPropertyRepository,
+    private readonly storage: IFileStorage,
+  ) {}
   async execute(command: ICreatePropertyCommand) {
-    const property = await this.properties.create(command);
+    // images arrive as keys of the caller's own draft uploads; they are moved under the property once it has an id
+    const prefix = draftFilePrefix(command.actor.accountId);
+    const drafts = [...(command.headerImage ? [command.headerImage] : []), ...command.images];
+    if (drafts.some((k) => !k.startsWith(prefix) || k.includes(".."))) {
+      throw new ValidationError("Images must be uploaded first", { fieldErrors: { images: ["Images must be uploaded first"] } });
+    }
+    const created = await this.properties.create({ ...command, headerImage: undefined, images: [] });
+    if (drafts.length === 0) return { ...created, role: "owner" as const };
+    const moved = new Map<string, string>();
+    for (const key of new Set(drafts)) {
+      const to = `${propertyFilePrefix(created.id)}${key.slice(prefix.length)}`;
+      await this.storage.move(key, to);
+      moved.set(key, to);
+    }
+    const property = await this.properties.update({
+      actor: command.actor,
+      propertyId: created.id,
+      headerImage: command.headerImage ? moved.get(command.headerImage)! : undefined,
+      images: command.images.map((k) => moved.get(k)!),
+    });
     return { ...property, role: "owner" as const };
   }
 }

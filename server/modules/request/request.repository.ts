@@ -2,6 +2,7 @@ import type { IPaginated } from "@/server/shared/pagination";
 import type {
   IAdminRequestListQuery,
   ICommentResponse,
+  ICreateEnquiryCommand,
   ICreateRequestCommand,
   IRequestDetailResponse,
   IRequestResponse,
@@ -20,6 +21,10 @@ export interface IRequestRepository {
   /** The lease, if `accountId` is one of its tenants. */
   findTenantLease(accountId: string, leaseId: string): Promise<{ id: string; propertyId: string; unitId: string } | null>;
   create(command: ICreateRequestCommand, lease: { propertyId: string; unitId: string }): Promise<string>;
+  /** Names for the enquiry title; null when the property is gone or the unit is not one of its units. */
+  findEnquiryTarget(propertyId: string, unitId?: string): Promise<{ propertyName: string; unitName: string | null } | null>;
+  hasOpenEnquiry(accountId: string, propertyId: string): Promise<boolean>;
+  createEnquiry(command: ICreateEnquiryCommand, title: string): Promise<string>;
   update(command: IUpdateRequestCommand, closeAt: Date | null): Promise<void>;
   /** Tenant cancel. */
   setStatus(requestId: string, status: RequestStatus, closedAt: Date | null): Promise<void>;

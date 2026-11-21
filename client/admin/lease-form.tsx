@@ -29,7 +29,8 @@ interface Values {
 const defaults = (): Values => ({ unitId: "", startDate: todayIso(), endDate: "", rent: "", depositAmount: "", tenants: [{ name: "", yearOfBirth: "", phone: "" }], templateId: "" });
 
 /** Creates a draft lease; start it from its page. */
-export function useLeaseForm({ open, onDone }: { open: boolean; onDone: (leaseId: string) => void }) {
+/** `unitId` preselects the unit (adding a lease from an empty unit). */
+export function useLeaseForm({ open, unitId, onDone }: { open: boolean; unitId?: string; onDone: (leaseId: string) => void }) {
   const { apiPath } = useProperty();
   const units = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 }, { enabled: open });
   const templates = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { pageSize: 100 }, { enabled: open });
@@ -37,10 +38,15 @@ export function useLeaseForm({ open, onDone }: { open: boolean; onDone: (leaseId
   const form = useForm<Values>({ defaultValues: defaults() });
   // preselect the property's default template once the list arrives
   const defaultTemplate = templates.data?.items.find((t) => t.isDefault)?.id;
-  useOpenReset(open, () => { form.reset({ ...defaults(), templateId: defaultTemplate ?? "" }); create.reset(); });
+  useOpenReset(open, () => { form.reset({ ...defaults(), unitId: unitId ?? "", templateId: defaultTemplate ?? "" }); create.reset(); }, unitId);
   useEffect(() => {
     if (defaultTemplate && !form.getValues("templateId")) form.setValue("templateId", defaultTemplate);
   }, [defaultTemplate, form]);
+  // a preselected unit pre-fills the rent once the unit list arrives (picking a unit by hand does this in the field)
+  const preselectedRent = unitId ? units.data?.items.find((u) => u.id === unitId)?.rentPrice : undefined;
+  useEffect(() => {
+    if (preselectedRent && !form.getValues("rent")) form.setValue("rent", String(preselectedRent));
+  }, [preselectedRent, form]);
   const tenants = useFieldArray({ control: form.control, name: "tenants" });
 
   const submit = useSubmit(

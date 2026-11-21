@@ -20,6 +20,7 @@ export { Kpi } from "./kpi";
 export { DefList } from "./def-list";
 export { DataTable } from "./data-table";
 export { Modal } from "./modal";
+export { useConfirm } from "./confirm";
 export { Tabs } from "./tabs";
 export { StatusBadge } from "./status-badge";
 export { Tag } from "./tag";

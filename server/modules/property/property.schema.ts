@@ -3,7 +3,7 @@ import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import type { IUnitResponse } from "../unit/unit.schema";
 import { referenceAddressLinksSchema, type IPropertyReferenceAddressResponse } from "../reference-address/reference-address.schema";
-import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole } from "@/server/shared/schema";
+import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole, type ServiceUsageBase } from "@/server/shared/schema";
 
 // ── address JSON (snapshot of the external provinces/wards API) ─────────────────────
 export const provinceSchema = z.object({
@@ -119,6 +119,25 @@ export interface IPropertyDetailResponse extends IPropertySummaryResponse {
   images: string[];
   rules: string[];
   units: IUnitResponse[];
+}
+
+/** Public property page: detail + live availability, house items and services with their current price. */
+export interface IPublicPropertyDetail extends IPropertyDetailResponse {
+  /** units with no lease running today */
+  emptyUnitCount: number;
+  /** ids of those units */
+  emptyUnitIds: string[];
+  /** names of the items provided with a unit (inventory) */
+  inventoryItems: string[];
+  services: IPublicServiceResponse[];
+}
+export interface IPublicServiceResponse {
+  name: string;
+  usageBase: ServiceUsageBase;
+  unitOfMeasure: string | null;
+  description: string | null;
+  /** tiers of the price version in force today; empty when none is effective yet */
+  tiers: { upTo: number | null; rate: number }[];
 }
 
 /** Admin detail: public detail + management data. */

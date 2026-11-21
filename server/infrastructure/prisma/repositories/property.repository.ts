@@ -8,6 +8,7 @@ import {
   type IUpdatePropertyCommand,
   type IPropertyDetailResponse,
   type IPropertySearchQuery,
+  type IPublicPropertyDetail,
   type IPropertySummaryResponse,
 } from "@/server/modules/property/property.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
@@ -15,6 +16,7 @@ import { Prisma, type PrismaClient } from "../client";
 import { numOrNull } from "../mappers";
 import { referenceAddressSelect, resolveReferenceAddressLinks } from "./reference-address.repository";
 import { slugify } from "@/server/modules/reference-address/reference-address.schema";
+import { pricesSchema } from "@/server/modules/service/service.schema";
 import { toUnit } from "./unit.repository";
 
 const unitWhere = { deletedAt: null } as const;
@@ -85,14 +87,34 @@ const textSearch = (q: string): Prisma.PropertyWhereInput => ({
   ],
 });
 
+/** "Hà Nội" -> "ha:* & noi:*": accent-stripped prefix tokens for to_tsquery. Null when nothing searchable remains. */
+const toTsQuery = (q: string) => {
+  const tokens = q
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  return tokens.length ? tokens.map((t) => `${t}:*`).join(" & ") : null;
+};
+
 export class PrismaPropertyRepository implements IPropertyRepository {
   constructor(private readonly db: PrismaClient) {}
 
   async search(query: IPropertySearchQuery) {
     const { q, provinceCode, wardCode, category, minPrice, maxPrice, referenceAddress } = query;
+    let ids: string[] | undefined;
+    if (q) {
+      const tsq = toTsQuery(q);
+      const rows = tsq
+        ? await this.db.$queryRaw<{ id: string }[]>`SELECT id FROM properties WHERE deleted_at IS NULL AND search_vector @@ to_tsquery('simple', ${tsq})`
+        : [];
+      ids = rows.map((r) => r.id);
+    }
     const where: Prisma.PropertyWhereInput = {
       deletedAt: null,
-      ...(q && textSearch(q)),
+      ...(ids && { id: { in: ids } }),
       ...(category && { category }),
       ...(referenceAddress && { referenceAddresses: { some: { referenceAddress: { slug: referenceAddress } } } }),
       ...(provinceCode && { province: { path: ["code"], equals: provinceCode } }),
@@ -129,7 +151,41 @@ export class PrismaPropertyRepository implements IPropertyRepository {
 
   async findPublicById(propertyId: string) {
     const row = await this.db.property.findFirst({ where: { id: propertyId, deletedAt: null }, select: detailSelect });
-    return row ? toDetail(row) : null;
+    if (!row) return null;
+    const today = new Date(new Date().toISOString().slice(0, 10));
+    const [occupied, items, services] = await Promise.all([
+      this.db.lease.findMany({
+        where: {
+          propertyId,
+          deletedAt: null,
+          activatedAt: { not: null },
+          terminatedAt: null,
+          startDate: { lte: today },
+          OR: [{ endDate: null }, { endDate: { gte: today } }],
+        },
+        select: { unitId: true },
+        distinct: ["unitId"],
+      }),
+      this.db.inventoryItem.findMany({ where: { propertyId, deletedAt: null }, select: { inventoryName: true }, orderBy: { inventoryName: "asc" } }),
+      this.db.service.findMany({ where: { propertyId, deletedAt: null }, orderBy: [{ usageBase: "asc" }, { serviceName: "asc" }] }),
+    ]);
+    const occupiedIds = new Set(occupied.map((l) => l.unitId));
+    const emptyUnitIds = row.units.filter((u) => !occupiedIds.has(u.id)).map((u) => u.id);
+    const todayIso = today.toISOString().slice(0, 10);
+    return {
+      ...toDetail(row),
+      emptyUnitCount: emptyUnitIds.length,
+      emptyUnitIds,
+      inventoryItems: items.map((i) => i.inventoryName),
+      services: services.map((s) => ({
+        name: s.serviceName,
+        usageBase: s.usageBase,
+        unitOfMeasure: s.unitOfMeasure,
+        description: s.description,
+        // latest version already in force (versions are ascending by effectiveDate)
+        tiers: pricesSchema.parse(s.prices).filter((v) => v.effectiveDate <= todayIso).at(-1)?.tiers ?? [],
+      })),
+    } satisfies IPublicPropertyDetail;
   }
 
   async listManaged(accountId: string, query: IAdminPropertyListQuery) {

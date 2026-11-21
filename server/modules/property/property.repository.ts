@@ -7,13 +7,14 @@ import type {
   IUpdatePropertyCommand,
   IPropertyDetailResponse,
   IPropertySearchQuery,
+  IPublicPropertyDetail,
   IPropertySummaryResponse,
 } from "./property.schema";
 
 export interface IPropertyRepository {
   // public
   search(query: IPropertySearchQuery): Promise<IPaginated<IPropertySummaryResponse>>;
-  findPublicById(propertyId: string): Promise<IPropertyDetailResponse | null>;
+  findPublicById(propertyId: string): Promise<IPublicPropertyDetail | null>;
   // admin
   listManaged(accountId: string, query: IAdminPropertyListQuery): Promise<IPaginated<IAdminPropertySummaryResponse>>;
   findAdminById(propertyId: string): Promise<IAdminPropertyDetail | null>;

@@ -6,7 +6,7 @@ import { FormFooter } from "@/client/ui/rhf";
 import { formatDate, formatMoney, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IAdminInvoiceDetailResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge } from "@/client/ui";
+import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -16,6 +16,7 @@ import { useProperty } from "../property-layout";
 import { PaymentFields, usePaymentForm } from "./invoice-payment-form";
 
 export function InvoiceDetailPage() {
+  const confirm = useConfirm();
   const { invoiceId = "" } = useParams();
   const { apiPath, canManage, to } = useProperty();
   const path = apiPath(`/invoices/${invoiceId}`);
@@ -40,7 +41,7 @@ export function InvoiceDetailPage() {
         actions={canManage && open && (
           <>
             <Button variant="primary" label="Record payment" onClick={() => setPaying(true)} />
-            <Button label="Cancel invoice" variant="secondary" isLoading={cancel.isPending} clickAction={async () => { if (confirm("Cancel this invoice?")) await cancel.mutateAsync(undefined); }} />
+            <Button label="Cancel invoice" variant="secondary" isLoading={cancel.isPending} onClick={() => confirm.ask({ title: "Cancel this invoice?", description: "The invoice is marked cancelled and can no longer be paid.", actionLabel: "Cancel invoice", onConfirm: () => cancel.mutateAsync(undefined) })} />
           </>
         )}
       />
@@ -96,6 +97,7 @@ export function InvoiceDetailPage() {
           />
         </form>
       </Modal>
+      {confirm.element}
     </VStack>
   );
 }

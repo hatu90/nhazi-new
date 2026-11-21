@@ -7,10 +7,10 @@ import { useMe } from "@/client/auth/auth-provider";
 import { formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IInvitationResponse, IMemberResponse, IPaginated, PropertyRole } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, PageSpinner, SelectField, StatusBadge } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, PageSpinner, Section, SelectField, StatusBadge, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useProperty } from "../property-layout";
@@ -18,6 +18,7 @@ import { InviteFields, useInviteForm } from "./invite-form";
 import { roleOptions } from "./role-options";
 
 export function TeamPage() {
+  const confirm = useConfirm();
   const { apiPath, isOwner } = useProperty();
   const me = useMe();
   const members = useGet<IMemberResponse[]>(apiPath("/members"));
@@ -29,14 +30,8 @@ export function TeamPage() {
   const inviteForm = useInviteForm({ open: inviting, onDone: () => setInviting(false) });
 
   return (
-    <VStack gap={4}>
-      <HStack justify="between" align="center" gap={3} wrap="wrap">
-        <VStack gap={0.5}>
-          <Heading level={2}>Team</Heading>
-          <Text size="sm" color="secondary">People who can manage this property. A new member signs in with their phone number.</Text>
-        </VStack>
-        {isOwner && <Button variant="primary" label="Add team member" onClick={() => setInviting(true)} />}
-      </HStack>
+    <Section title="Team" action={isOwner && <Button variant="primary" label="Add team member" onClick={() => setInviting(true)} />}>
+      <Text size="sm" color="secondary">People who can manage this property. A new member signs in with their phone number.</Text>
       {members.isPending ? <PageSpinner /> : members.error ? <ErrorBox error={members.error} /> : (
         members.data.length === 0 ? <Empty title="No members" /> : (
             <DataTable<IMemberResponse & { id: string }>
@@ -51,7 +46,7 @@ export function TeamPage() {
                     ? <SelectField label={`Role of ${m.displayName}`} value={m.role} onChange={(v) => changeRole.mutate({ accountId: m.accountId, role: v as PropertyRole })} options={roleOptions} width={160} />
                     : label(m.role),
                 },
-                { key: "rm", header: "", align: "end", render: (m) => isOwner && m.accountId !== me.id && <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm(`Remove ${m.displayName} from this property?`) && remove.mutate(m.accountId)} /> },
+                { key: "rm", header: "", align: "end", render: (m) => isOwner && m.accountId !== me.id && <Button label="Remove" size="sm" variant="ghost" onClick={() => confirm.ask({ title: `Remove ${m.displayName}?`, description: "They lose access to this property.", actionLabel: "Remove", onConfirm: () => remove.mutateAsync(m.accountId) })} /> },
               ]}
             />
           )
@@ -87,6 +82,7 @@ export function TeamPage() {
           />
         </form>
       </Modal>
-    </VStack>
+      {confirm.element}
+    </Section>
   );
 }

@@ -39,6 +39,19 @@ export const createRequestPayloadSchema = z
     if (v.type !== "close_lease" && v.requestedCloseDate) ctx.addIssue({ code: "custom", path: ["requestedCloseDate"], message: "Only for close_lease" });
   });
 export type ICreateRequestPayload = z.infer<typeof createRequestPayloadSchema>;
+// ── public property page: an enquiry from any signed-in account ──────────────────────
+export const createEnquiryPayloadSchema = z.object({
+  message: z.string().trim().min(1).max(2000),
+  /** the unit the visitor is interested in */
+  unitId: idSchema.optional(),
+});
+export type ICreateEnquiryPayload = z.infer<typeof createEnquiryPayloadSchema>;
+export interface ICreateEnquiryCommand extends ICreateEnquiryPayload {
+  actor: IActor;
+  propertyId: string;
+}
+export const toCreateEnquiryCommand = (p: ICreateEnquiryPayload, actor: IActor, propertyId: string): ICreateEnquiryCommand => ({ ...p, actor, propertyId });
+
 /** Meter readings a tenant hands in when asking to close the billing period. */
 export interface IClosePeriodDetails {
   periodId: string;

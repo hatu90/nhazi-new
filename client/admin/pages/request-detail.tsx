@@ -38,7 +38,7 @@ export function RequestDetailPage() {
         actions={role !== "viewer" && !closed && <SelectField label="Set status" value={r.status} onChange={(v) => update.mutate({ status: v as RequestStatus })} options={statuses.map((s) => ({ value: s, label: label(s) }))} width={180} />} />
       {update.error && <ErrorBox error={update.error} />}
       <Section title="Details">
-        <DefList items={[["From", r.requestedBy.displayName], ["Created", formatDateTime(r.createdAt)], ["Assigned to", r.assignedTo?.displayName ?? "—"], ["Requested close date", formatDate(r.requestedCloseDate)], ["Description", r.description ?? "—"]]} />
+        <DefList items={[["From", r.requestedBy.displayName], ["Created", formatDateTime(r.createdAt)], ["Description", r.description ?? "—"]]} />
       </Section>
       <Section title="Conversation">
         <VStack gap={3}>

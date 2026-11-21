@@ -6,7 +6,7 @@ import { FormFooter } from "@/client/ui/rhf";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITemplateListResponse, ITemplateSummaryResponse } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, Tag } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, Tag, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Link } from "@astryxdesign/core/Link";
 import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
@@ -17,6 +17,7 @@ import { useProperty } from "../property-layout";
 import { NameFields, useNameForm } from "./agreement-name-form";
 
 export function AgreementsPage() {
+  const confirm = useConfirm();
   const { apiPath, canManage, to } = useProperty();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -49,7 +50,7 @@ export function AgreementsPage() {
                 alignment="end"
                 items={[
                   { id: "edit", label: "Edit", onClick: () => navigate(to(`agreements/${t.id}`)) },
-                  { id: "delete", label: "Delete", onClick: () => { if (confirm(`Delete "${t.name}"? Leases keep the version they were created with.`)) remove.mutate({ id: t.id }); } },
+                  { id: "delete", label: "Delete", onClick: () => confirm.ask({ title: `Delete "${t.name}"?`, description: "Leases keep the version they were created with.", actionLabel: "Delete", onConfirm: () => remove.mutateAsync({ id: t.id }) }) },
                 ]}
                 renderTrigger={(props) => <button type="button" {...props} aria-label="More actions" className="cursor-pointer rounded px-2 py-1 text-lg leading-none">⋯</button>}
               />
@@ -68,6 +69,7 @@ export function AgreementsPage() {
           />
         </form>
       </Modal>
+      {confirm.element}
     </Stack>
   );
 }

@@ -1,3 +1,5 @@
+import { AuthProvider } from "@/client/auth/auth-provider";
+import { AccountMenu } from "@/client/site/account-menu";
 import { Button } from "@astryxdesign/core/Button";
 import { Divider } from "@astryxdesign/core/Divider";
 import { HStack } from "@astryxdesign/core/Stack";
@@ -7,14 +9,14 @@ import { getTranslations } from "next-intl/server";
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const t = await getTranslations("Common");
   return (
-    <>
+    <AuthProvider>
       <header>
         <HStack align="center" justify="between" paddingInline={5} paddingBlock={3} gap={3}>
           <Button label="Nhazi" variant="ghost" href="/" />
           <HStack align="center" gap={1}>
             <Button label={t("about")} variant="ghost" href="/about" />
             <Button label={t("terms")} variant="ghost" href="/term" />
-            <Button variant="primary" label={t("signIn")} href="/auth" />
+            <AccountMenu />
           </HStack>
         </HStack>
         <Divider />
@@ -30,6 +32,6 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
           </HStack>
         </HStack>
       </footer>
-    </>
+    </AuthProvider>
   );
 }

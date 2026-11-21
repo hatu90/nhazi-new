@@ -11,7 +11,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITenancyDetailResponse } from "@/client/lib/types";
-import { ErrorBox, Modal, PageHeader, PageSpinner, StatusBadge, Tabs } from "@/client/ui";
+import { ErrorBox, Modal, PageHeader, PageSpinner, StatusBadge, Tabs, useConfirm } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { BillingPeriodsTab } from "./billing-periods-tab";
 import { EndFields, useEndForm } from "./end-form";
@@ -28,6 +28,7 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export function LeaseDetailPage() {
+  const confirm = useConfirm();
   const { leaseId = "" } = useParams();
   const { apiPath, canManage, to } = useProperty();
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export function LeaseDetailPage() {
         actions={canManage && (
           <>
             {l.status === "draft" && <Button variant="primary" label="Start lease" onClick={() => setDialog("start")} />}
-            {l.status === "draft" && <Button label="Delete draft" variant="secondary" isLoading={remove.isPending} clickAction={async () => { if (confirm("Delete this draft lease?")) { await remove.mutateAsync(undefined); navigate(to("leases")); } }} />}
+            {l.status === "draft" && <Button label="Delete draft" variant="secondary" isLoading={remove.isPending} onClick={() => confirm.ask({ title: "Delete this draft lease?", description: "The draft and its deposit invoice are removed. This cannot be undone.", actionLabel: "Delete draft", onConfirm: async () => { await remove.mutateAsync(undefined); navigate(to("leases")); } })} />}
             {live && <Button label="End lease" variant="secondary" onClick={() => setDialog("end")} />}
           </>
         )}
@@ -89,6 +90,7 @@ export function LeaseDetailPage() {
           />
         </form>
       </Modal>
+      {confirm.element}
     </VStack>
   );
 }

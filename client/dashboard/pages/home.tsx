@@ -27,7 +27,12 @@ export function HomePage() {
   const [creating, setCreating] = useState(false);
   const properties = useGet<IAdminPropertyListResponse>("/api/admin/properties", { page, pageSize: 6 }, { keepPrevious: true });
   const openProperty = (id: string) => window.location.assign(`/admin/properties/${id}`);
-  const propertyForm = usePropertyForm({ method: "POST", path: "/api/admin/properties", open: creating, onDone: (p) => { setCreating(false); openProperty(p.id); } });
+  const propertyForm = usePropertyForm({
+    method: "POST", path: "/api/admin/properties", open: creating, onDone: (p) => {
+      openProperty(p.id);
+      setCreating(false);
+    }
+  });
 
   return (
     <VStack gap={5}>

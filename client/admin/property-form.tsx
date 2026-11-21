@@ -42,13 +42,14 @@ export function usePropertyForm({ initial, method, path, open, onDone }: { initi
   });
   const form = useForm<Values>({ defaultValues: defaults() });
   const [headerImage, setHeaderImage] = useState<string | null>(initial?.headerImage ?? null);
-  const [images, setImages] = useState<string[]>(initial?.images ?? []);
+  const allImages = () => (initial?.headerImage && !initial.images.includes(initial.headerImage) ? [initial.headerImage, ...initial.images] : initial?.images ?? []);
+  const [images, setImages] = useState<string[]>(allImages);
   const initialRefs = (): RefAddressDraft[] => (initial?.referenceAddresses ?? []).map((r) => ({ id: r.id, name: r.name, distance: r.distance?.toString() ?? "" }));
   const [refs, setRefs] = useState<RefAddressDraft[]>(initialRefs);
   const [uploading, setUploading] = useState(false);
   const save = useSend<object, IAdminPropertyResponse>(method, path, ["/api/admin/properties", "/api/me"]);
   // `open` is undefined for an inline form on a page: it is never reset
-  useOpenReset(!!open, () => { form.reset(defaults()); setHeaderImage(initial?.headerImage ?? null); setImages(initial?.images ?? []); setRefs(initialRefs()); save.reset(); });
+  useOpenReset(!!open, () => { form.reset(defaults()); setHeaderImage(initial?.headerImage ?? null); setImages(allImages()); setRefs(initialRefs()); save.reset(); });
   const provinceCode = useWatch({ control: form.control, name: "provinceCode" });
 
   const provinces = useProvinces();
@@ -71,8 +72,8 @@ export function usePropertyForm({ initial, method, path, open, onDone }: { initi
       rules: v.rules.split("\n").map((r) => r.trim()).filter(Boolean),
       // existing places by id, new ones by name (the server finds-or-creates them by slug)
       referenceAddresses: refs.map((r) => ({ ...(r.id ? { id: r.id } : { name: r.name }), distance: num(r.distance) === undefined ? null : Math.round(num(r.distance)!) })),
-      // images are stored under the property, so they can only be attached once it exists
-      ...(initial ? { headerImage, images } : {}),
+      // a new property takes the keys of images staged under /api/admin/drafts (the server moves them under it)
+      ...(initial ? { headerImage: headerImage ?? images[0] ?? null, images } : { headerImage: headerImage ?? images[0], images }),
     }),
     onDone,
   );
@@ -104,11 +105,9 @@ export function PropertyFields({ x: { form, initial, path, headerImage, setHeade
         <FCheck control={form.control} name="rentNegotiable" label="Rent is negotiable" />
       </Section>
 
-      {initial && (
-        <Section title="Images">
-          <PropertyImages base={path} headerImage={headerImage} images={images} onHeaderImage={setHeaderImage} onImages={setImages} onBusy={setUploading} />
-        </Section>
-      )}
+      <Section title="Images">
+        <PropertyImages base={initial ? path : "/api/admin/drafts"} headerImage={headerImage} images={images} onHeaderImage={setHeaderImage} onImages={setImages} onBusy={setUploading} />
+      </Section>
 
       <Section title="House rules">
         <FArea control={form.control} name="rules" label="Rules" hint="One rule per line." width="100%" />
