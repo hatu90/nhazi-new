@@ -1,7 +1,6 @@
 "use client";
 
 import { useMe } from "@/client/auth/auth-provider";
-import { LocaleSwitcher } from "@/client/ui/locale-switcher";
 import { SideNavItem, SideNavSection } from "@astryxdesign/core/SideNav";
 import { useTranslations } from "next-intl";
 import { useAccountActions } from "./use-account-actions";
@@ -16,7 +15,6 @@ export function AccountSection() {
       <SideNavItem label={t("dashboard")} onClick={goDashboard} />
       {goSettings && <SideNavItem label={t("settings")} onClick={goSettings} />}
       <SideNavItem label={t("signOut")} onClick={logOut} />
-      <div className="px-3 py-2"><LocaleSwitcher /></div>
     </SideNavSection>
   );
 }

@@ -5,6 +5,7 @@ import { Content } from "./content";
 import { TextBlock } from "./text-block";
 import "./document.css";
 import { FieldFrame } from "./field-frame";
+import { leaseContractVi } from "./lease-contract-vi";
 import { AgreementDocument, Components, ContentProps, TemplatePage, TextInputProps, TextProps } from "./types";
 
 export const DEFAULT_PAGE_PROPS: ContentProps = { paddingTop: 12, paddingRight: 12, paddingBottom: 12, paddingLeft: 12 };
@@ -93,32 +94,5 @@ export function toPages(data: unknown): TemplatePage[] {
   return d ? [d as unknown as TemplatePage] : [emptyPage()];
 }
 
-const text = (id: string, props: Partial<TextProps>) => ({ type: "Text", props: { id, text: "", weight: "normal", align: "start", fontSize: 14, lineHeight: 1.5, ...props } });
-const field = (id: string, props: Partial<TextInputProps>) => ({ type: "TextInput", props: { id, name: "", label: "", unit: "", inputType: "text", labelPosition: "left", defaultValue: "", fontSize: 14, lineHeight: 1.5, placeholder: "", rows: 4, ...props } });
-const spacer = (id: string) => ({ type: "Spacer", props: { id, height: 12 } });
-
-/** What a new template starts with: a lease with built-in placeholders and two form fields. */
-export const starterDocument = (): AgreementDocument => ({
-  pages: [
-    {
-      content: [{ type: "Content", props: { id: "page-1", ...DEFAULT_PAGE_PROPS } }],
-      root: { props: {} },
-      zones: {
-        "page-1:content": [
-          text("t1", { text: "RESIDENTIAL LEASE AGREEMENT", weight: "bold", align: "center", fontSize: 20 }),
-          spacer("s1"),
-          text("t2", { text: "Made on {{today}} between the landlord of {{propertyName}} and {{tenantNames}} (the tenant)." }),
-          spacer("s2"),
-          text("t3", { text: "Article 1. Premises and term", weight: "semibold" }),
-          text("t4", { text: "The landlord leases unit {{unitName}} of {{propertyName}} to the tenant from {{startDate}} to {{endDate}}." }),
-          spacer("s3"),
-          text("t5", { text: "Article 2. Rent and deposit", weight: "semibold" }),
-          text("t6", { text: "Monthly rent is {{rent}}, billed on {{billingDay}}. The tenant pays a deposit of {{deposit}}, refundable at the end of the lease after deductions for damages and unpaid bills." }),
-          spacer("s4"),
-          field("f1", { name: "tenantIdNumber", label: "Tenant ID number:" }),
-          field("f2", { name: "notes", label: "Additional terms", inputType: "textarea", labelPosition: "top" }),
-        ],
-      },
-    } as TemplatePage,
-  ],
-});
+/** What a new template starts with: the Vietnamese residential lease form. */
+export const starterDocument = (): AgreementDocument => leaseContractVi();

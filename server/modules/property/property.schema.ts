@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import type { IUnitResponse } from "../unit/unit.schema";
+import { referenceAddressLinksSchema, type IPropertyReferenceAddressResponse } from "../reference-address/reference-address.schema";
 import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole } from "@/server/shared/schema";
 
 // ── address JSON (snapshot of the external provinces/wards API) ─────────────────────
@@ -25,6 +26,8 @@ export const propertySearchQuerySchema = paginationQuerySchema
     provinceCode: z.coerce.number().int().positive().optional(),
     wardCode: z.coerce.number().int().positive().optional(),
     category: propertyCategorySchema.optional(),
+    /** slug of a reference address: properties near it, nearest first */
+    referenceAddress: z.string().trim().min(1).max(200).optional(),
     minPrice: z.coerce.number().int().nonnegative().optional(),
     maxPrice: z.coerce.number().int().nonnegative().optional(),
   })
@@ -54,6 +57,7 @@ export const createPropertyPayloadSchema = z
     headerImage: storageKey.optional(),
     images: z.array(storageKey).max(50).default([]),
     rules: z.array(z.string().trim().min(1).max(500)).max(100).default([]),
+    referenceAddresses: referenceAddressLinksSchema.default([]),
   })
   .refine((v) => v.ward.provinceCode === v.province.code, { message: "Ward does not belong to the province", path: ["ward"] })
   .refine(priceRange, { message: "rentPriceFrom must be <= rentPriceTo", path: ["rentPriceTo"] });
@@ -82,6 +86,8 @@ export const updatePropertyPayloadSchema = z
     headerImage: storageKey.nullable(),
     images: z.array(storageKey).max(50),
     rules: z.array(z.string().trim().min(1).max(500)).max(100),
+    /** replaces the whole set */
+    referenceAddresses: referenceAddressLinksSchema,
   })
   .partial()
   .refine((v) => Object.values(v).some((x) => x !== undefined), "Nothing to update")
@@ -105,6 +111,7 @@ export interface IPropertySummaryResponse {
   rentNegotiable: boolean;
   headerImage: string | null;
   unitCount: number;
+  referenceAddresses: IPropertyReferenceAddressResponse[];
 }
 
 /** Public detail: what a prospective tenant may see. */

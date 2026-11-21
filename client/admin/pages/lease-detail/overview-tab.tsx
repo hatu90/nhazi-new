@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
@@ -8,11 +11,11 @@ import { useSend } from "@/client/lib/hooks";
 import type { ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { DataTable, DefList, Empty, ErrorBox, Modal, Section } from "@/client/ui";
 import { useProperty } from "../../property-layout";
-import { HandoverForm } from "./handover-form";
+import { HandoverFields, useHandoverForm } from "./handover-form";
 import { LeaseAgreement } from "./lease-agreement";
-import { MemberForm } from "./member-form";
-import { RentForm } from "./rent-form";
-import { SubscriptionForm } from "./subscription-form";
+import { MemberFields, useMemberForm } from "./member-form";
+import { RentFields, useRentForm } from "./rent-form";
+import { SubscriptionFields, useSubscriptionForm } from "./subscription-form";
 import { type Handover, type PersonRow, peopleOf } from "./types";
 
 type Dialog = "rent" | "member" | "service" | "handover" | null;
@@ -26,6 +29,11 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
   const endSub = useSend<{ id: string; endDate: string }>("PATCH", (b) => `${path}/subscriptions/${b.id}`, [path]);
   const done = () => setDialog(null);
   const people = peopleOf(l);
+  const subscribeForm = useSubscriptionForm({ path, unitId: l.unitId, people: people.filter((p) => !p.leftAt), open: dialog === "service", onDone: done });
+  const editHandover = useHandoverForm({ path, handover: editingHandover ?? undefined, taken: [], open: editingHandover !== null, onDone: () => setEditingHandover(null) });
+  const addHandover = useHandoverForm({ path, taken: l.handovers.map((h) => h.itemId), open: dialog === "handover", onDone: done });
+  const memberForm = useMemberForm({ path, open: dialog === "member", onDone: done });
+  const rentForm = useRentForm({ path, last: l.rentVersions.at(-1)?.effectiveDate, open: dialog === "rent", onDone: done });
 
   return (
     <VStack gap={5}>
@@ -104,11 +112,61 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
         />
       </Section>
 
-      <Modal open={dialog === "rent"} onClose={done} title="Add rent version">{dialog === "rent" && <RentForm path={path} last={l.rentVersions.at(-1)?.effectiveDate} onDone={done} />}</Modal>
-      <Modal open={dialog === "member"} onClose={done} title="Add person">{dialog === "member" && <MemberForm path={path} onDone={done} />}</Modal>
-      <Modal open={dialog === "handover"} onClose={done} title="Add handover item">{dialog === "handover" && <HandoverForm path={path} taken={l.handovers.map((h) => h.itemId)} onDone={done} />}</Modal>
-      <Modal open={editingHandover !== null} onClose={() => setEditingHandover(null)} title="Edit handover item">{editingHandover && <HandoverForm key={editingHandover.id} path={path} handover={editingHandover} taken={[]} onDone={() => setEditingHandover(null)} />}</Modal>
-      <Modal open={dialog === "service"} onClose={done} title="Add service">{dialog === "service" && <SubscriptionForm path={path} unitId={l.unitId} people={people.filter((p) => !p.leftAt)} onDone={done} />}</Modal>
+      <Modal open={dialog === "rent"} onClose={() => done()}>
+        <form noValidate onSubmit={rentForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add rent version"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><RentFields x={rentForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={rentForm.error} busy={rentForm.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={dialog === "member"} onClose={() => done()}>
+        <form noValidate onSubmit={memberForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add person"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><MemberFields x={memberForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={memberForm.error} busy={memberForm.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={dialog === "handover"} onClose={() => done()}>
+        <form noValidate onSubmit={addHandover.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add handover item"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><HandoverFields x={addHandover} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={addHandover.error} busy={addHandover.busy} submitLabel={"Add"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={editingHandover !== null} onClose={() => setEditingHandover(null)}>
+        <form noValidate onSubmit={editHandover.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Edit handover item"} onOpenChange={(o) => { if (!o) setEditingHandover(null); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><HandoverFields x={editHandover} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={editHandover.error} busy={editHandover.busy} submitLabel={"Save"} onCancel={() => setEditingHandover(null)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={dialog === "service"} onClose={() => done()}>
+        <form noValidate onSubmit={subscribeForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add service"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><SubscriptionFields x={subscribeForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={subscribeForm.error} busy={subscribeForm.busy} submitLabel={"Subscribe"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </VStack>
   );
 }

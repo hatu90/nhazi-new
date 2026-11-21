@@ -1,6 +1,7 @@
 import { usageCost } from "@/lib/billing/pricing";
 import type { IPropertyScope } from "@/server/shared/actor";
-import { ConflictError, NotFoundError } from "@/server/shared/errors";
+import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
+import { leaseFilePrefix } from "../storage/storage.usecases";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { ILeaseRepository } from "../lease/lease.repository";
@@ -72,6 +73,7 @@ export class ReportPaymentUseCase implements IUseCase<IReportPaymentCommand, IPa
   constructor(private readonly invoices: IInvoiceRepository, private readonly leases: ILeaseRepository) {}
   async execute(c: IReportPaymentCommand) {
     if (!(await this.leases.isTenant(c.actor.accountId, c.leaseId))) throw new NotFoundError("Lease");
+    if (c.evidence.some((e) => !e.startsWith(leaseFilePrefix(c.leaseId)))) throw new ValidationError("Invalid attachment");
     const p = await this.invoices.reportPayment(c);
     if (!p) throw new NotFoundError("Invoice");
     return p;

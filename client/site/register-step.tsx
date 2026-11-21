@@ -34,7 +34,7 @@ export function RegisterStep({ phone, initialName, onDone }: { phone: string | n
         </VStack>
         <FText control={form.control} name="name" label="Your name" required autoFocus width="100%" />
         <FormError error={error} />
-        <Button type="submit" label="Create account" isLoading={form.formState.isSubmitting} />
+        <Button variant="primary" type="submit" label="Create account" isLoading={form.formState.isSubmitting} />
       </VStack>
     </form>
   );

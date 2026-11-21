@@ -6,6 +6,7 @@ import { RequireAccount } from "@/client/spa/require-account";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { DashboardLayout } from "./dashboard-layout";
 import { LeaseLayout } from "./lease-layout";
+import { AgreementPage } from "./pages/agreement";
 import { HomePage } from "./pages/home";
 import { InvoiceDetailPage } from "./pages/invoice-detail";
 import { InvoicesPage } from "./pages/invoices";
@@ -27,6 +28,7 @@ export default function DashboardApp() {
                 <Route path="invoices/:invoiceId" element={<InvoiceDetailPage />} />
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:requestId" element={<RequestDetailPage />} />
+                <Route path="agreement" element={<AgreementPage />} />
               </Route>
               <Route path="*" element={<NotFound backTo="/" label="Back to my leases" />} />
             </Route>

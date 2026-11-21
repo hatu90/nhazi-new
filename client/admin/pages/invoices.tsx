@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { formatDate, formatMoney, label } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminInvoiceListResponse, IAdminInvoiceResponse } from "@/client/lib/types";
@@ -9,7 +12,7 @@ import { Link } from "@astryxdesign/core/Link";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { useProperty } from "../property-layout";
-import { InvoiceForm } from "./invoice-form";
+import { InvoiceFields, useInvoiceForm } from "./invoice-form";
 
 const statuses = ["pending", "partial", "paid", "cancelled"].map((s) => ({ value: s, label: s }));
 
@@ -18,13 +21,14 @@ export function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [creating, setCreating] = useState(false);
+  const invoiceForm = useInvoiceForm({ open: creating, onDone: () => setCreating(false) });
   const query = useGet<IAdminInvoiceListResponse>(apiPath("/invoices"), { page, pageSize: 20, status }, { keepPrevious: true });
 
   return (
     <Stack gap={4}>
       <HStack justify="between" align="end" wrap="wrap" gap={3}>
         <SelectField label="Status" value={status} onChange={(v) => { setStatus(v); setPage(1); }} options={[{ value: "", label: "All statuses" }, ...statuses]} width={200} />
-        {canManage && <Button label="New invoice" onClick={() => setCreating(true)} />}
+        {canManage && <Button variant="primary" label="New invoice" onClick={() => setCreating(true)} />}
       </HStack>
       <DataTable<IAdminInvoiceResponse>
         query={query}
@@ -40,7 +44,17 @@ export function InvoicesPage() {
           { key: "s", header: "Status", render: (i) => <StatusBadge status={i.status} /> },
         ]}
       />
-      <Modal open={creating} onClose={() => setCreating(false)} title="New invoice">{creating && <InvoiceForm onDone={() => setCreating(false)} />}</Modal>
+      <Modal open={creating} onClose={() => setCreating(false)}>
+        <form noValidate onSubmit={invoiceForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"New invoice"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><InvoiceFields x={invoiceForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={invoiceForm.error} busy={invoiceForm.busy} submitLabel={"Create invoice"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </Stack>
   );
 }

@@ -17,7 +17,8 @@ export const resolveLeaseStatus = (
   on: string,
 ): LeaseStatus => {
   if (lease.activatedAt === null) return "draft";
+  // a lease that was ended is ended from then on, even while its (earlier chosen) last day is today or later
+  if (lease.terminatedAt !== null) return "ended";
   if (lease.startDate > on) return "upcoming";
-  const end = lease.terminatedAt ?? lease.endDate;
-  return end !== null && end < on ? "ended" : "active";
+  return lease.endDate !== null && lease.endDate < on ? "ended" : "active";
 };

@@ -1,26 +1,34 @@
 "use client";
 
+import { VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useForm } from "react-hook-form";
 import { label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IItemListResponse, ItemCondition } from "@/client/lib/types";
 import { num, text } from "@/client/ui/form";
-import { FArea, FNumber, FSelect, FormBody, useSubmit } from "@/client/ui/rhf";
+import { FArea, FNumber, FSelect, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../../property-layout";
 import type { Handover } from "./types";
 
 const CONDITIONS: ItemCondition[] = ["good", "damaged", "missing"];
 const conditionOptions = CONDITIONS.map((c) => ({ value: c, label: label(c) }));
 
+interface Values {
+  itemId: string;
+  quantity: string;
+  condition: ItemCondition;
+  description: string;
+}
+
 /** Add an inventory item to the lease's handover list, or (with `handover`) update its quantity / condition / note. */
-export function HandoverForm({ path, handover, taken, onDone }: { path: string; handover?: Handover; taken: string[]; onDone: () => void }) {
+export function useHandoverForm({ path, handover, taken, open, onDone }: { path: string; handover?: Handover; taken: string[]; open: boolean; onDone: () => void }) {
   const { apiPath } = useProperty();
-  const items = useGet<IItemListResponse>(apiPath("/inventory-items"), { pageSize: 100 }, { enabled: !handover });
+  const items = useGet<IItemListResponse>(apiPath("/inventory-items"), { pageSize: 100 }, { enabled: open && !handover });
   const save = useSend<object>(handover ? "PATCH" : "POST", handover ? `${path}/handovers/${handover.id}` : `${path}/handovers`, [path]);
-  const form = useForm<{ itemId: string; quantity: string; condition: ItemCondition; description: string }>({
-    defaultValues: { itemId: handover?.itemId ?? "", quantity: String(handover?.quantity ?? 1), condition: handover?.condition ?? "good", description: handover?.description ?? "" },
-  });
+  const defaults = (): Values => ({ itemId: handover?.itemId ?? "", quantity: String(handover?.quantity ?? 1), condition: handover?.condition ?? "good", description: handover?.description ?? "" });
+  const form = useForm<Values>({ defaultValues: defaults() });
+  useOpenReset(open, () => { form.reset(defaults()); save.reset(); }, handover?.id);
   const available = (items.data?.items ?? []).filter((i) => !taken.includes(i.id));
   const empty = handover ? null : undefined;
   const submit = useSubmit(
@@ -29,8 +37,12 @@ export function HandoverForm({ path, handover, taken, onDone }: { path: string; 
     (v) => ({ ...(handover ? {} : { itemId: v.itemId }), quantity: num(v.quantity), condition: v.condition, description: text(v.description) ?? empty }),
     onDone,
   );
+  return { form, submit, error: save.error, busy: save.isPending, handover, items, available };
+}
+
+export function HandoverFields({ x: { form, handover, items, available } }: { x: ReturnType<typeof useHandoverForm> }) {
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel={handover ? "Save" : "Add"} onCancel={onDone}>
+    <VStack gap={4}>
       {handover ? (
         <Text weight="semibold">{handover.itemName}</Text>
       ) : (
@@ -39,6 +51,6 @@ export function HandoverForm({ path, handover, taken, onDone }: { path: string; 
       <FNumber control={form.control} name="quantity" label="Quantity" required width="100%" />
       <FSelect control={form.control} name="condition" label="Condition" required options={conditionOptions} width="100%" />
       <FArea control={form.control} name="description" label="Note" rows={2} width="100%" />
-    </FormBody>
+    </VStack>
   );
 }

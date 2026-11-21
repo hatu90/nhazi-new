@@ -3,13 +3,12 @@
 import { config, emptyPage, toPages } from "@/client/agreement/config";
 import type { TemplatePage } from "@/client/agreement/types";
 import { fieldProblems } from "@/client/agreement/metadata";
-import { BUILT_IN_VARS } from "@/client/agreement/vars";
 import { ApiError } from "@/client/lib/api";
 import { useSend } from "@/client/lib/hooks";
 import type { ITemplateDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Tag } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { Puck } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
@@ -23,6 +22,13 @@ export const A4_VIEWPORTS = [{ width: 210 * MM_TO_PX + 64 + 16, height: 297 * MM
 export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITemplateDetailResponse; path: string; canManage: boolean; back: string }) {
   const { apiPath } = useProperty();
   const save = useSend<{ baseVersion: number; data: { pages: TemplatePage[] } }>("POST", `${path}/versions`, [path, apiPath("/agreement-templates")]);
+  const rename = useSend<{ name: string }>("PATCH", path, [path, apiPath("/agreement-templates")]);
+  const [title, setTitle] = useState(tpl.name);
+  const commitTitle = () => {
+    const name = title.trim();
+    if (!name) return setTitle(tpl.name);
+    if (name !== tpl.name) rename.mutate({ name }, { onError: () => setTitle(tpl.name) });
+  };
   const [pages, setPages] = useState<TemplatePage[]>(() => toPages(tpl.currentData));
   const [active, setActive] = useState(0);
   const [problems, setProblems] = useState<string[]>([]);
@@ -53,20 +59,27 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
   };
 
   return (
-    <VStack gap={3}>
+    <div className="fixed inset-0 z-50 flex flex-col gap-2 bg-white p-3">
       <HStack gap={2} align="center" wrap="wrap">
         <Button label="Templates" variant="ghost" size="sm" href={back} />
-        <Text weight="semibold">{tpl.name}</Text>
+        <input
+          aria-label="Agreement name"
+          value={title}
+          maxLength={100}
+          readOnly={!canManage}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={commitTitle}
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { setTitle(tpl.name); e.currentTarget.blur(); } }}
+          className="min-w-64 rounded border border-transparent px-2 py-1 text-lg font-semibold hover:border-neutral-300 focus:border-neutral-400 focus:outline-none"
+        />
         <Tag label={`v${tpl.currentVersion}`} />
         {saved && <Text size="sm" color="secondary">Saved as a new version</Text>}
       </HStack>
-      <Text size="sm" color="secondary">
-        Text blocks can use {BUILT_IN_VARS.map((v) => `{{${v.key}}}`).join(" ")}. Text input blocks become form fields that are filled in on each lease.
-      </Text>
       {!canManage && <Text color="secondary">You can view this template but not change it.</Text>}
       {problems.length > 0 && <ErrorBox error={new Error(problems.join(" "))} />}
+      {rename.error && <ErrorBox error={rename.error} />}
       {save.error && <ErrorBox error={stale ? new Error("Someone saved a newer version. Reload the page to get it, then redo your changes.") : save.error} />}
-      <div className="h-[80vh] overflow-hidden rounded border border-neutral-300">
+      <div className="min-h-0 flex-1 overflow-hidden rounded border border-neutral-300">
         <Puck
           // remount per page: each page has its own editor state and history
           key={active}
@@ -75,6 +88,7 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
           onChange={onChange}
           onPublish={publish}
           permissions={{ publish: canManage }}
+          headerTitle={title}
           viewports={A4_VIEWPORTS}
           dictionary={{ "header-publish": "Save" }}
           overrides={{
@@ -91,6 +105,6 @@ export function AgreementEditorPanel({ tpl, path, canManage, back }: { tpl: ITem
           }}
         />
       </div>
-    </VStack>
+    </div>
   );
 }

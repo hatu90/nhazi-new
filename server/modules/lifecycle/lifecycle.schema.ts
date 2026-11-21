@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { IPriceVersion } from "@/lib/billing/pricing";
 import type { IPropertyScope } from "@/server/shared/actor";
-import { idSchema, isoDateSchema, vndSchema, type InvoiceKind } from "@/server/shared/schema";
+import { idSchema, isoDateSchema, itemConditionSchema, vndSchema, type InvoiceKind } from "@/server/shared/schema";
 import type { IBillingPeriodDetailResponse } from "../billing/billing.schema";
 import type { IAdminInvoiceDetailResponse, IUsageDetail } from "../invoice/invoice.schema";
 import { invoiceItemKindSchema } from "../invoice/invoice.schema";
@@ -94,12 +94,22 @@ export interface IClosePeriodCommand extends IClosePeriodPayload, IPropertyScope
 }
 export const toClosePeriodCommand = (p: IClosePeriodPayload, s: IPropertyScope, periodId: string): IClosePeriodCommand => ({ ...p, ...s, periodId });
 
+// ── POST /api/lease/:leaseId/billing/close  (tenant) ──────────────────────────────
+/** The tenant reads the meters and closes the running period; the next one (about a month) opens right after it. */
+export const closeMyPeriodPayloadSchema = z.object({ endDate: isoDateSchema.optional(), readings: readingsSchema });
+export type ICloseMyPeriodPayload = z.infer<typeof closeMyPeriodPayloadSchema>;
+
 // ── POST .../leases/:leaseId/close ─────────────────────────────────────────────────
 export const closeLeasePayloadSchema = z
   .object({
     terminatedAt: isoDateSchema,
     reason: z.string().trim().max(1000).optional(),
     readings: readingsSchema,
+    /** Check-out of the handed-over items: what came back, in which condition. Charges for damage go in `extraItems`. */
+    handovers: z
+      .array(z.object({ handoverId: idSchema, condition: itemConditionSchema, quantity: z.number().int().min(0).max(100_000), note: z.string().trim().max(1000).optional() }))
+      .max(200)
+      .default([]),
     ...invoiceFields,
     refund: z
       .object({
@@ -139,6 +149,13 @@ export interface IStartLeaseResponse {
   leaseId: string;
   period: IBillingPeriodDetailResponse;
   invoice: IAdminInvoiceDetailResponse;
+}
+/** What closing would invoice: nothing is written. */
+export interface IInvoicePreview {
+  title: string | null;
+  dueDate: string | null;
+  items: { kind: string; title: string; amount: number }[];
+  total: number;
 }
 export interface IClosePeriodResponse {
   period: IBillingPeriodDetailResponse;

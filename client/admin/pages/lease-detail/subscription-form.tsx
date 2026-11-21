@@ -7,7 +7,7 @@ import { formatMoney, label, todayIso } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IMeterListResponse, IServiceListResponse, IServiceResponse } from "@/client/lib/types";
 import { num } from "@/client/ui/form";
-import { FMulti, FNumber, FSelect, FormBody, useSubmit } from "@/client/ui/rhf";
+import { FMulti, FNumber, FSelect, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../../property-layout";
 import type { PersonRow } from "./types";
 
@@ -22,12 +22,20 @@ function priceLines(service: IServiceResponse): string[] {
   });
 }
 
-export function SubscriptionForm({ path, unitId, people, onDone }: { path: string; unitId: string; people: PersonRow[]; onDone: () => void }) {
+interface Values {
+  serviceId: string;
+  meterId: string;
+  quantity: string;
+  personIds: string[];
+}
+
+export function useSubscriptionForm({ path, unitId, people, open, onDone }: { path: string; unitId: string; people: PersonRow[]; open: boolean; onDone: () => void }) {
   const { apiPath } = useProperty();
-  const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 });
-  const meters = useGet<IMeterListResponse>(apiPath("/meters"), { unitId, inService: true, pageSize: 100 });
+  const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 }, { enabled: open });
+  const meters = useGet<IMeterListResponse>(apiPath("/meters"), { unitId, inService: true, pageSize: 100 }, { enabled: open });
   const save = useSend<object>("POST", `${path}/subscriptions`, [path]);
-  const form = useForm<{ serviceId: string; meterId: string; quantity: string; personIds: string[] }>({ defaultValues: { serviceId: "", meterId: "", quantity: "1", personIds: people.map((p) => p.id) } });
+  const form = useForm<Values>({ defaultValues: { serviceId: "", meterId: "", quantity: "1", personIds: people.map((p) => p.id) } });
+  useOpenReset(open, () => { form.reset({ serviceId: "", meterId: "", quantity: "1", personIds: people.map((p) => p.id) }); save.reset(); });
   const serviceId = useWatch({ control: form.control, name: "serviceId" });
   const service = services.data?.items.find((s) => s.id === serviceId);
   const unitMeters = (meters.data?.items ?? []).filter((m) => m.serviceId === serviceId);
@@ -44,8 +52,12 @@ export function SubscriptionForm({ path, unitId, people, onDone }: { path: strin
     },
     onDone,
   );
+  return { form, submit, error: save.error, busy: save.isPending, services, service, unitMeters, prices, people };
+}
+
+export function SubscriptionFields({ x: { form, services, service, unitMeters, prices, people } }: { x: ReturnType<typeof useSubscriptionForm> }) {
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Subscribe" onCancel={onDone}>
+    <VStack gap={4}>
       <FSelect control={form.control} name="serviceId" label="Service" required options={(services.data?.items ?? []).map((s) => ({ value: s.id, label: s.name }))} onValueChange={() => form.setValue("meterId", "")} width="100%" />
       {service?.usageBase === "meter" && <FSelect control={form.control} name="meterId" label="Meter" required options={unitMeters.map((m) => ({ value: m.id, label: m.name }))} hint={unitMeters.length === 0 ? "This unit has no meter for that service yet (Meters tab)." : undefined} width="100%" />}
       {service?.usageBase === "member" && <FMulti control={form.control} name="personIds" label="People" required options={people.map((p) => ({ value: p.id, label: p.name }))} hint={people.length === 0 ? "Add people to the lease first." : undefined} width="100%" />}
@@ -56,6 +68,6 @@ export function SubscriptionForm({ path, unitId, people, onDone }: { path: strin
           {prices.length === 0 ? <Text size="sm">No price set yet</Text> : prices.map((line) => <Text key={line} size="sm">{line}</Text>)}
         </VStack>
       )}
-    </FormBody>
+    </VStack>
   );
 }

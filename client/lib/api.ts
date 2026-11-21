@@ -43,14 +43,15 @@ export const withQuery = (path: string, query?: Query) => {
 
 export async function api<T = unknown>(path: string, { method = "GET", query, body, anonymous }: Options = {}): Promise<T> {
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (!anonymous) {
     const token = await tokenSource();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
   let res: Response;
   try {
-    res = await fetch(withQuery(path, query), { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(withQuery(path, query), { method, headers, body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body) });
   } catch {
     throw new ApiError(0, "NETWORK", "Cannot reach the server. Check your connection.");
   }

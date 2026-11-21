@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { formatDate, formatMoney, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IAdminInvoiceDetailResponse } from "@/client/lib/types";
@@ -10,7 +13,7 @@ import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useParams } from "react-router";
 import { useProperty } from "../property-layout";
-import { PaymentForm } from "./invoice-payment-form";
+import { PaymentFields, usePaymentForm } from "./invoice-payment-form";
 
 export function InvoiceDetailPage() {
   const { invoiceId = "" } = useParams();
@@ -19,6 +22,7 @@ export function InvoiceDetailPage() {
   const invoice = useGet<IAdminInvoiceDetailResponse>(path);
   const cancel = useSend<undefined>("POST", `${path}/cancel`, [apiPath("/invoices")]);
   const [paying, setPaying] = useState(false);
+  const paymentForm = usePaymentForm({ path, owed: invoice.data ? invoice.data.amount - invoice.data.paidAmount : 0, open: paying, onDone: () => setPaying(false) });
   const review = useSend<{ id: string; decision: "confirm" | "reject" }>("POST", (b) => `${path}/payments/${b.id}/${b.decision}`, [path, apiPath("/invoices"), apiPath("/stats")]);
 
   if (invoice.isPending) return <PageSpinner />;
@@ -35,7 +39,7 @@ export function InvoiceDetailPage() {
         subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{inv.unitName} · due {formatDate(inv.dueDate)}</Text></HStack>}
         actions={canManage && open && (
           <>
-            <Button label="Record payment" onClick={() => setPaying(true)} />
+            <Button variant="primary" label="Record payment" onClick={() => setPaying(true)} />
             <Button label="Cancel invoice" variant="secondary" isLoading={cancel.isPending} clickAction={async () => { if (confirm("Cancel this invoice?")) await cancel.mutateAsync(undefined); }} />
           </>
         )}
@@ -73,7 +77,7 @@ export function InvoiceDetailPage() {
               render: (p) => canManage && p.status === "pending" && (
                 <HStack gap={2} justify="end">
                   <Button label="Reject" size="sm" variant="secondary" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "reject" }); }} />
-                  <Button label="Confirm" size="sm" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
+                  <Button variant="primary" label="Confirm" size="sm" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
                 </HStack>
               ),
             },
@@ -81,7 +85,17 @@ export function InvoiceDetailPage() {
         />
         {review.error && <ErrorBox error={review.error} />}
       </Section>
-      <Modal open={paying} onClose={() => setPaying(false)} title="Record payment">{paying && <PaymentForm path={path} owed={owed} onDone={() => setPaying(false)} />}</Modal>
+      <Modal open={paying} onClose={() => setPaying(false)}>
+        <form noValidate onSubmit={paymentForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Record payment"} onOpenChange={(o) => { if (!o) setPaying(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><PaymentFields x={paymentForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={paymentForm.error} busy={paymentForm.busy} submitLabel={"Record payment"} onCancel={() => setPaying(false)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </VStack>
   );
 }

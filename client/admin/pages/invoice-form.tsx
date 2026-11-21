@@ -4,7 +4,7 @@ import { formatMoney, todayIso } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITenancyListResponse } from "@/client/lib/types";
 import { num } from "@/client/ui/form";
-import { FDate, FNumber, FSelect, FText, FormBody, useSubmit } from "@/client/ui/rhf";
+import { FDate, FNumber, FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -19,12 +19,15 @@ interface Values {
   items: { title: string; amount: string }[];
 }
 
-export function InvoiceForm({ onDone }: { onDone: () => void }) {
+const defaults = (): Values => ({ leaseId: "", title: "", dueDate: todayIso(), items: [{ title: "", amount: "" }] });
+
+export function useInvoiceForm({ open, onDone }: { open: boolean; onDone: () => void }) {
   const { apiPath, to } = useProperty();
   const navigate = useNavigate();
-  const leases = useGet<ITenancyListResponse>(apiPath("/leases"), { pageSize: 100 });
+  const leases = useGet<ITenancyListResponse>(apiPath("/leases"), { pageSize: 100 }, { enabled: open });
   const save = useSend<object, { id: string }>("POST", apiPath("/invoices"), [apiPath("/invoices")]);
-  const form = useForm<Values>({ defaultValues: { leaseId: "", title: "", dueDate: todayIso(), items: [{ title: "", amount: "" }] } });
+  const form = useForm<Values>({ defaultValues: defaults() });
+  useOpenReset(open, () => { form.reset(defaults()); save.reset(); });
   const items = useFieldArray({ control: form.control, name: "items" });
   const watched = useWatch({ control: form.control, name: "items" });
   const total = watched.reduce((sum, r) => sum + (num(r.amount) ?? 0), 0);
@@ -36,8 +39,12 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
     (inv) => { onDone(); navigate(to(`invoices/${inv.id}`)); },
   );
 
+  return { form, submit, error: save.error, busy: save.isPending, leases, items, total };
+}
+
+export function InvoiceFields({ x: { form, leases, items, total } }: { x: ReturnType<typeof useInvoiceForm> }) {
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Create invoice" onCancel={onDone}>
+    <VStack gap={4}>
       <FSelect control={form.control} name="leaseId" label="Lease" required search options={(leases.data?.items ?? []).filter((l) => l.status !== "draft").map((l) => ({ value: l.id, label: `${l.unitName} · ${l.tenants.map((t) => t.displayName).join(", ")}` }))} width="100%" />
       <FText control={form.control} name="title" label="Title" placeholder="Repair — broken faucet" required width="100%" />
       <FDate control={form.control} name="dueDate" label="Due date" required width="100%" />
@@ -54,6 +61,6 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
           <Text weight="semibold">Total {formatMoney(total)}</Text>
         </HStack>
       </VStack>
-    </FormBody>
+    </VStack>
   );
 }

@@ -21,6 +21,7 @@ import type {
   ICloseLeaseCommand,
   ICloseLeaseResponse,
   IClosePlan,
+  IInvoicePreview,
   IInvoicePlan,
   IPlanLine,
   IReadingInput,
@@ -154,8 +155,13 @@ export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseComma
     this.checkReadings(ctx, c.readings);
 
     // A meter without a reading on the start date opens from its latest earlier reading (no new record), unless one is typed.
-    const onDay = this.readingAt(c.readings, start);
-    const stored: IReadingAt = async (m, on) => (await onDay(m, on)) ?? (on === start ? await this.life.findLastReading(m, on) : null);
+    // A subscription that begins after the lease start asks for its reading on its own start date (`on`), so a typed
+    // opening reading applies to its meter whatever that date is.
+    const stored: IReadingAt = async (m, on) => {
+      const typed = c.readings.find((r) => r.meterId === m);
+      if (typed) return { value: typed.value, on: typed.readAt ? new Date(typed.readAt).toISOString().slice(0, 10) : undefined };
+      return (await this.life.findReading(m, on)) ?? (await this.life.findLastReading(m, on));
+    };
     const usages = await planUsages(ctx, start, end, stored);
     const lines: IPlanLine[] = [
       rentLine(monthly, start, end),
@@ -193,6 +199,40 @@ export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseComma
 export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCommand, IClosePeriodResponse> {
   async execute(c: IClosePeriodCommand): Promise<IClosePeriodResponse> {
     await this.manage(c);
+    return this.run(c);
+  }
+
+  /** The invoice a close would issue, without changing anything (the form shows it while the readings are typed). */
+  async preview(c: IClosePeriodCommand): Promise<IInvoicePreview> {
+    await this.manage(c);
+    return this.previewRun(c);
+  }
+  async previewRun(c: IClosePeriodCommand): Promise<IInvoicePreview> {
+    const plan = await this.plan(c);
+    const items = plan.invoice?.items ?? [];
+    return { title: plan.invoice?.title ?? null, dueDate: plan.invoice?.dueDate ?? null, items: items.map((i) => ({ kind: i.kind, title: i.title, amount: i.amount })), total: items.reduce((t, i) => t + i.amount, 0) };
+  }
+
+  /** The close itself, without the authorisation: the landlord and the tenant entry points have already checked who may do it. */
+  async run(c: IClosePeriodCommand): Promise<IClosePeriodResponse> {
+    const { active, base, close, next, invoice } = await this.plan(c);
+    if (!next) {
+      await this.life.applyRollover({ ...base, close, next: null, invoice: null });
+      return { period: await this.periodDetail(c.propertyId, active.id), next: null, invoice: null };
+    }
+    const r = await this.life.applyRollover({ ...base, close, next, invoice });
+    return {
+      period: await this.periodDetail(c.propertyId, active.id),
+      next: r.nextPeriodId ? await this.periodDetail(c.propertyId, r.nextPeriodId) : null,
+      invoice: r.invoiceId ? await this.invoiceDetail(c.propertyId, r.invoiceId) : null,
+    };
+  }
+
+  /** Validates and computes everything a close does (no writes). */
+  private async plan(command: IClosePeriodCommand) {
+    // Closing readings are taken now, whatever the period's last day: they are stored at this moment, not on the boundary date.
+    const now = new Date().toISOString();
+    const c = { ...command, readings: command.readings.map((r): IReadingInput => ({ ...r, readAt: (r as IReadingInput).readAt ?? now })) };
     const leaseId = await this.life.leaseOfPeriod(c.propertyId, c.periodId);
     if (!leaseId) throw new NotFoundError("Billing period");
     const ctx = await this.load(c.propertyId, leaseId);
@@ -207,11 +247,7 @@ export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCom
     const close: IClosePlan = { periodId: active.id, endDate, closings };
     const readings = this.writes(c.readings, closeOn);
     const base = { propertyId: c.propertyId, leaseId, actor: c.actor, readings };
-
-    if (!c.next) {
-      await this.life.applyRollover({ ...base, close, next: null, invoice: null });
-      return { period: await this.periodDetail(c.propertyId, active.id), next: null, invoice: null };
-    }
+    if (!c.next) return { ctx, active, base, close, next: null, invoice: null };
 
     const nextStart = closeOn;
     const nextEnd = c.next.endDate;
@@ -239,12 +275,7 @@ export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCom
       usages,
     };
     const invoice: IInvoicePlan = { kind: "transition", period: "new", title: c.title ?? `Invoice ${dmy(nextStart)}`, dueDate: c.dueDate ?? nextStart, items };
-    const r = await this.life.applyRollover({ ...base, close, next, invoice });
-    return {
-      period: await this.periodDetail(c.propertyId, active.id),
-      next: r.nextPeriodId ? await this.periodDetail(c.propertyId, r.nextPeriodId) : null,
-      invoice: r.invoiceId ? await this.invoiceDetail(c.propertyId, r.invoiceId) : null,
-    };
+    return { ctx, active, base, close, next, invoice };
   }
 }
 
@@ -261,6 +292,30 @@ export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCom
 export class CloseLeaseUseCase extends Base implements IUseCase<ICloseLeaseCommand, ICloseLeaseResponse> {
   async execute(c: ICloseLeaseCommand): Promise<ICloseLeaseResponse> {
     await this.manage(c);
+    const { t, refundPeriod, close, invoice, refund } = await this.plan(c);
+    const r = await this.life.applyClose({
+      propertyId: c.propertyId,
+      leaseId: c.leaseId,
+      actor: c.actor,
+      readings: this.writes(c.readings, addDays(t, 1)),
+      terminatedAt: t,
+      reason: c.reason,
+      close,
+      invoice,
+      refund,
+      handovers: c.handovers,
+    });
+    return {
+      leaseId: c.leaseId,
+      terminatedAt: t,
+      period: refundPeriod ? await this.periodDetail(c.propertyId, refundPeriod.id) : null,
+      invoice: r.invoiceId ? await this.invoiceDetail(c.propertyId, r.invoiceId) : null,
+      refund: r.refundId ? await this.refunds.findById(c.propertyId, r.refundId) : null,
+    };
+  }
+
+  /** Validates and computes everything a lease close does (no writes). */
+  private async plan(c: ICloseLeaseCommand) {
     const ctx = await this.load(c.propertyId, c.leaseId);
     if (ctx.lease.activatedAt === null) throw new ConflictError("The lease has not started: delete the draft instead", "LEASE_NOT_STARTED");
     if (ctx.lease.terminatedAt) throw new ConflictError("The lease is already closed", "LEASE_TERMINATED");
@@ -304,33 +359,37 @@ export class CloseLeaseUseCase extends Base implements IUseCase<ICloseLeaseComma
       throw invalid("extraItems", "Nothing to invoice: the last period is already closed");
     }
 
-    // refund: prefilled, capped
+    // Settlement: held = deposit + unused rent + unused non-meter services; owed = metered usage + extra charges.
+    //  - the tenant owes more than is held -> an invoice for the difference (the held money shows as a credit line), no refund
+    //  - we hold more than is owed -> a refund of the difference (taken from the deposit first, then rent, then services), no invoice
     let refund = null;
+    const owed = invoice ? invoice.items.reduce((sum, i) => sum + i.amount, 0) : 0;
     if (!c.refund.skip) {
       const billed = await this.life.billedLines(c.propertyId, c.leaseId, refundPeriod.id);
-      refund = planRefund(billed, { ...refundPeriod, terminatedAt: t }, refundOverrides, { method: c.refund.method, note: c.refund.note }).refund;
+      const opts = { method: c.refund.method, note: c.refund.note };
+      const held = planRefund(billed, { ...refundPeriod, terminatedAt: t }, {}, opts, false);
+      const lines = (held.refund?.items ?? []).map((i, n) => ({ key: held.itemKeys[n], amount: i.amount }));
+      const heldTotal = lines.reduce((sum, l) => sum + l.amount, 0);
+      if (owed > heldTotal) {
+        if (invoice && heldTotal > 0) invoice.items.push({ kind: "credit", title: "Taken from the deposit / unused rent / services", amount: -heldTotal, detail: null });
+      } else {
+        invoice = null;
+        let left = owed;
+        const rank = (k: string) => (k === "refund:deposit" ? 0 : k === "refund:rent" ? 1 : 2);
+        const net: Record<string, number> = {};
+        for (const l of [...lines].sort((a, b) => rank(a.key) - rank(b.key))) {
+          const take = Math.min(left, l.amount);
+          left -= take;
+          net[l.key] = l.amount - take;
+        }
+        refund = planRefund(billed, { ...refundPeriod, terminatedAt: t }, { ...net, ...refundOverrides }, opts, false).refund;
+      }
     } else if (Object.keys(refundOverrides).length) {
       throw invalid("overrides", "refund.skip is set but refund amounts were given");
     }
 
-    const r = await this.life.applyClose({
-      propertyId: c.propertyId,
-      leaseId: c.leaseId,
-      actor: c.actor,
-      readings: this.writes(c.readings, addDays(t, 1)),
-      terminatedAt: t,
-      reason: c.reason,
-      close,
-      invoice,
-      refund,
-    });
-    return {
-      leaseId: c.leaseId,
-      terminatedAt: t,
-      period: refundPeriod ? await this.periodDetail(c.propertyId, refundPeriod.id) : null,
-      invoice: r.invoiceId ? await this.invoiceDetail(c.propertyId, r.invoiceId) : null,
-      refund: r.refundId ? await this.refunds.findById(c.propertyId, r.refundId) : null,
-    };
+    return { t, refundPeriod, close, invoice, refund };
+
   }
 }
 

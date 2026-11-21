@@ -53,6 +53,8 @@ export interface IUsageRecord {
   subscriptionId: string;
   serviceName: string;
   usageBase: ServiceUsageBase;
+  /** The subscribed meter (meter usages only). */
+  meterId: string | null;
   /** meter: closing - opening (null until the period closes); others: the counted quantity */
   quantity: number | null;
   /** The price version frozen when the period opened. */

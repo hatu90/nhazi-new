@@ -24,8 +24,8 @@ export const createLeasePayloadSchema = z
     endDate: isoDateSchema.optional(),
     rent: money,
     depositAmount: money.default(0),
-    /** Accounts that can log in and see the lease. Unregistered phones get a placeholder account they claim on sign-up. */
-    tenants: z.array(z.object({ phoneNumber: phoneSchema, displayName: z.string().trim().min(1).max(100) })).min(1).max(10),
+    /** Each phone gets a lease invitation (and sees the lease once it accepts). The deposit invoice is issued with the draft. */
+    tenants: z.array(z.object({ phoneNumber: phoneSchema, displayName: z.string().trim().min(1).max(100) })).max(10).default([]),
     members: z
       .array(z.object({ name: z.string().trim().min(1).max(100), phoneNumber: phoneSchema.optional(), yearOfBirth }))
       .max(20)
@@ -191,7 +191,7 @@ export interface ITenancyDetailResponse extends ITenancySummaryResponse {
   agreement: { templateId: string; templateName: string; version: number; values: unknown } | null;
   documents: string[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
-  handovers: { id: string; itemId: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null }[];
+  handovers: { id: string; itemId: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null; returnedQuantity: number | null; returnedCondition: ItemCondition | null; returnNote: string | null }[];
   subscriptions: ISubscriptionResponse[];
 }
 export type ITenancyListResponse = IPaginated<ITenancySummaryResponse>;

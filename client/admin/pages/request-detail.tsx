@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -9,7 +12,7 @@ import { formatDateTime, formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse, RequestStatus } from "@/client/lib/types";
 import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, SelectField, StatusBadge } from "@/client/ui";
-import { ReplyForm } from "@/client/ui/reply-form";
+import { ReplyFields, useReplyForm } from "@/client/ui/reply-form";
 import { useProperty } from "../property-layout";
 
 const statuses: RequestStatus[] = ["open", "in_progress", "resolved", "rejected"];
@@ -21,6 +24,7 @@ export function RequestDetailPage() {
   const request = useGet<IRequestDetailResponse>(path);
   const update = useSend<{ status: RequestStatus }>("PATCH", path, [apiPath("/requests")]);
   const [replying, setReplying] = useState(false);
+  const reply = useReplyForm({ path, invalidate: [path], open: replying, onDone: () => setReplying(false) });
 
   if (request.isPending) return <PageSpinner />;
   if (request.error) return <ErrorBox error={request.error} retry={() => void request.refetch()} />;
@@ -42,10 +46,20 @@ export function RequestDetailPage() {
           {r.comments.map((c) => (
             <Raised key={c.id}><VStack gap={1}><HStack justify="between"><Text weight="semibold">{c.author.displayName}</Text><Text size="sm" color="secondary">{formatDateTime(c.createdAt)}</Text></HStack><Text>{c.body}</Text></VStack></Raised>
           ))}
-          {role !== "viewer" && <HStack><Button label="Reply" onClick={() => setReplying(true)} /></HStack>}
+          {role !== "viewer" && <HStack><Button variant="primary" label="Reply" onClick={() => setReplying(true)} /></HStack>}
         </VStack>
       </Section>
-      <Modal open={replying} onClose={() => setReplying(false)} title="Reply">{replying && <ReplyForm path={path} invalidate={[path]} onDone={() => setReplying(false)} />}</Modal>
+      <Modal open={replying} onClose={() => setReplying(false)}>
+        <form noValidate onSubmit={reply.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Reply"} onOpenChange={(o) => { if (!o) setReplying(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><ReplyFields x={reply} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={reply.error} busy={reply.busy} submitLabel={"Send reply"} onCancel={() => setReplying(false)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </VStack>
   );
 }

@@ -98,6 +98,8 @@ export class CreateTenancyUseCase extends Base implements IUseCase<ICreateLeaseC
       templateVersion = t.currentVersion; // the version in use at this moment is pinned to the lease
     }
     const leaseId = await this.leases.create(c, templateVersion);
+    // tenants are invited, not attached: they see the lease once they accept
+    for (const t of c.tenants) await inviteToLease(this.invitations, { actor: c.actor, propertyId: c.propertyId, leaseId }, t.phoneNumber);
     for (const m of c.members) await inviteToLease(this.invitations, { actor: c.actor, propertyId: c.propertyId, leaseId }, m.phoneNumber);
     return this.detail(c.propertyId, leaseId);
   }

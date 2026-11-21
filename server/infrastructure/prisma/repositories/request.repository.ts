@@ -1,6 +1,7 @@
 import type { IRequestRepository, IRequestScope } from "@/server/modules/request/request.repository";
 import type {
   IAdminRequestListQuery,
+  IClosePeriodDetails,
   ICommentResponse,
   ICreateRequestCommand,
   IRequestDetailResponse,
@@ -11,7 +12,7 @@ import type {
 } from "@/server/modules/request/request.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { Prisma, PrismaClient } from "../client";
-import { isoDateOrNull, isoDateTime } from "../mappers";
+import { isoDateOrNull, isoDateTime, toJson } from "../mappers";
 
 const person = { select: { id: true, displayName: true } } as const;
 const include = {
@@ -35,6 +36,7 @@ const toRequest = (r: Row): IRequestResponse => ({
   requestedBy: r.requestedByRef,
   assignedTo: r.assignedToRef,
   requestedCloseDate: isoDateOrNull(r.requestedCloseDate),
+  details: (r.details as IClosePeriodDetails | null) ?? null,
   closedAt: r.closedAt ? isoDateTime(r.closedAt) : null,
   createdAt: isoDateTime(r.createdAt),
 });
@@ -98,6 +100,7 @@ export class PrismaRequestRepository implements IRequestRepository {
         priority: c.priority,
         requestedBy: c.actor.accountId,
         requestedCloseDate: c.requestedCloseDate ? new Date(c.requestedCloseDate) : undefined,
+        details: c.details ? toJson(c.details) : undefined,
       },
       select: { id: true },
     });

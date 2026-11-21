@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { useMe } from "@/client/auth/auth-provider";
 import { formatDate, label } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
@@ -11,7 +14,7 @@ import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useProperty } from "../property-layout";
-import { InviteForm } from "./invite-form";
+import { InviteFields, useInviteForm } from "./invite-form";
 import { roleOptions } from "./role-options";
 
 export function TeamPage() {
@@ -23,6 +26,7 @@ export function TeamPage() {
   const remove = useSend<string>("DELETE", (id) => apiPath(`/members/${id}`), [apiPath("/members")]);
   const revoke = useSend<string>("POST", (id) => apiPath(`/invitations/${id}/revoke`), [apiPath("/invitations")]);
   const [inviting, setInviting] = useState(false);
+  const inviteForm = useInviteForm({ open: inviting, onDone: () => setInviting(false) });
 
   return (
     <VStack gap={4}>
@@ -31,7 +35,7 @@ export function TeamPage() {
           <Heading level={2}>Team</Heading>
           <Text size="sm" color="secondary">People who can manage this property. A new member signs in with their phone number.</Text>
         </VStack>
-        {isOwner && <Button label="Add team member" onClick={() => setInviting(true)} />}
+        {isOwner && <Button variant="primary" label="Add team member" onClick={() => setInviting(true)} />}
       </HStack>
       {members.isPending ? <PageSpinner /> : members.error ? <ErrorBox error={members.error} /> : (
         members.data.length === 0 ? <Empty title="No members" /> : (
@@ -72,7 +76,17 @@ export function TeamPage() {
           </VStack>
         )
       ) : <Text color="secondary">Only owners can invite people or change roles.</Text>}
-      <Modal open={inviting} onClose={() => setInviting(false)} title="Add team member">{inviting && <InviteForm onDone={() => setInviting(false)} />}</Modal>
+      <Modal open={inviting} onClose={() => setInviting(false)}>
+        <form noValidate onSubmit={inviteForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add team member"} onOpenChange={(o) => { if (!o) setInviting(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><InviteFields x={inviteForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={inviteForm.error} busy={inviteForm.busy} submitLabel={"Send invitation"} onCancel={() => setInviting(false)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </VStack>
   );
 }

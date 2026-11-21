@@ -5,7 +5,7 @@ import { useGet, useSend } from "@/client/lib/hooks";
 import type { IServiceListResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Section } from "@/client/ui";
 import { num } from "@/client/ui/form";
-import { FDate, FormBody, useSubmit } from "@/client/ui/rhf";
+import { FDate, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { planMoveIn } from "@/lib/billing/move-in";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -15,15 +15,17 @@ import { useProperty } from "../../property-layout";
 import { MeterOpening, StartValues } from "./meter-opening";
 
 /** Start a draft: confirm the first period, choose the opening meter readings, and see the move-in invoice before it is issued. The invoice is calculated here and sent as the amounts to issue. */
-export function StartForm({ path, lease, onDone }: { path: string; lease: ITenancyDetailResponse; onDone: () => void }) {
+export function useStartForm({ path, lease, open, onDone }: { path: string; lease: ITenancyDetailResponse | undefined; open: boolean; onDone: () => void }) {
   const { apiPath } = useProperty();
-  const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 });
+  const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 }, { enabled: open });
   const save = useSend<object>("POST", `${path}/start`, [path, apiPath("/leases"), apiPath("/invoices"), apiPath("/billing-periods")]);
-  const form = useForm<StartValues>({ defaultValues: { startDate: lease.startDate, periodEnd: lease.firstPeriodEnd ?? endOfMonthIso(lease.startDate), recordNew: {}, readings: {} } });
+  const defaults = (): StartValues => ({ startDate: lease?.startDate ?? "", periodEnd: lease ? (lease.firstPeriodEnd ?? endOfMonthIso(lease.startDate)) : "", recordNew: {}, readings: {} });
+  const form = useForm<StartValues>({ defaultValues: defaults() });
+  useOpenReset(open, () => { form.reset(defaults()); save.reset(); });
   const [startDate, periodEnd] = useWatch({ control: form.control, name: ["startDate", "periodEnd"] });
 
   const invoice = useMemo(() => {
-    if (!services.data) return null;
+    if (!services.data || !lease) return null;
     const prices = Object.fromEntries(services.data.items.map((s) => [s.id, s.prices]));
     return planMoveIn(lease, prices, startDate, periodEnd);
   }, [lease, services.data, startDate, periodEnd]);
@@ -41,12 +43,17 @@ export function StartForm({ path, lease, onDone }: { path: string; lease: ITenan
     onDone,
   );
 
-  const live = (s: { startDate: string; endDate: string | null }) => !s.endDate || s.endDate >= (startDate || lease.startDate);
-  const fixed = lease.subscriptions.filter((s) => s.usageBase !== "meter" && live(s));
-  const metered = lease.subscriptions.filter((s) => s.usageBase === "meter" && s.meterId && live(s));
+  const live = (s: { startDate: string; endDate: string | null }) => !s.endDate || s.endDate >= (startDate || lease?.startDate || "");
+  const fixed = (lease?.subscriptions ?? []).filter((s) => s.usageBase !== "meter" && live(s));
+  const metered = (lease?.subscriptions ?? []).filter((s) => s.usageBase === "meter" && s.meterId && live(s));
 
+  return { form, submit, error: save.error, busy: save.isPending || !invoice || !!invoice.error, lease, services, invoice, startDate, periodEnd, fixed, metered };
+}
+
+export function StartFields({ x: { form, lease, services, invoice, startDate, periodEnd, fixed, metered } }: { x: ReturnType<typeof useStartForm> }) {
+  if (!lease) return null;
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending || !invoice || !!invoice.error} submitLabel="Start lease" onCancel={onDone}>
+    <VStack gap={4}>
       <Text color="secondary">Starts the lease, opens its first billing period and issues the move-in invoice.</Text>
 
       <Section title="Billing period">
@@ -80,6 +87,6 @@ export function StartForm({ path, lease, onDone }: { path: string; lease: ITenan
           </VStack>
         )}
       </Section>
-    </FormBody>
+    </VStack>
   );
 }

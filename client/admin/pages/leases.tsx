@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { Link } from "@astryxdesign/core/Link";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
@@ -10,7 +13,7 @@ import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { ITenancyListResponse, ITenancySummaryResponse } from "@/client/lib/types";
 import { DataTable, Empty, Modal, SelectField, StatusBadge } from "@/client/ui";
-import { LeaseForm } from "../lease-form";
+import { LeaseFields, useLeaseForm } from "../lease-form";
 import { useProperty } from "../property-layout";
 
 const statuses = ["draft", "upcoming", "active", "ended"].map((s) => ({ value: s, label: s }));
@@ -21,8 +24,9 @@ export function LeasesPage() {
   const [status, setStatus] = useState("");
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
+  const leaseForm = useLeaseForm({ open: creating, onDone: (id) => { setCreating(false); navigate(to(`leases/${id}`)); } });
   const query = useGet<ITenancyListResponse>(apiPath("/leases"), { page, pageSize: 20, status }, { keepPrevious: true });
-  const newLease = canManage && <Button label="New lease" onClick={() => setCreating(true)} />;
+  const newLease = canManage && <Button variant="primary" label="New lease" onClick={() => setCreating(true)} />;
 
   return (
     <Stack gap={4}>
@@ -42,8 +46,16 @@ export function LeasesPage() {
           { key: "status", header: "Status", render: (l) => <StatusBadge status={l.status} /> },
         ]}
       />
-      <Modal open={creating} onClose={() => setCreating(false)} title="New lease">
-        {creating && <LeaseForm onCancel={() => setCreating(false)} onDone={(id) => { setCreating(false); navigate(to(`leases/${id}`)); }} />}
+      <Modal open={creating} onClose={() => setCreating(false)}>
+        <form noValidate onSubmit={leaseForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"New lease"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><LeaseFields x={leaseForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={leaseForm.error} busy={leaseForm.busy} submitLabel={"Create draft lease"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+          />
+        </form>
       </Modal>
     </Stack>
   );

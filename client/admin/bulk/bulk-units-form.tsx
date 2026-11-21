@@ -10,7 +10,7 @@ import { api } from "@/client/lib/api";
 import type { IUnitResponse } from "@/client/lib/types";
 import { num } from "@/client/ui/form";
 import { NumberField, TextField } from "@/client/ui";
-import { FNumber, FormBody, FText } from "@/client/ui/rhf";
+import { FNumber, FText, useOpenReset } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
 import { FLOOR_TOKEN, INDEX_TOKEN, nextName, unitNameFor } from "./helpers";
 
@@ -37,7 +37,7 @@ const columns = ["Floor", "Name", "Area (m²)", "Bedrooms", "Bathrooms", "Rent (
  * Bulk add units as a grid of inputs, one unit per row, the floor leftmost. New rows start as a copy of the row above
  * (name counted up: "Room 101" -> "Room 102"), so a floor of similar rooms is a few clicks. One all-or-nothing API call.
  */
-export function BulkUnitsForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+export function useBulkUnitsForm({ open, onDone }: { open: boolean; onDone: () => void }) {
   const { apiPath } = useProperty();
   const qc = useQueryClient();
   const form = useForm<Values>({ defaultValues: { rows: [emptyRow()] } });
@@ -90,6 +90,7 @@ export function BulkUnitsForm({ onDone, onCancel }: { onDone: () => void; onCanc
     },
   });
 
+  useOpenReset(open, () => { form.reset({ rows: [emptyRow()] }); run.reset(); setFloorNo(""); setFloorCount("4"); setPattern(`Room ${FLOOR_TOKEN}${INDEX_TOKEN}`); });
   const submit = form.handleSubmit((v) => {
     const seen = new Map<string, number>();
     let duplicate = false;
@@ -103,8 +104,11 @@ export function BulkUnitsForm({ onDone, onCancel }: { onDone: () => void; onCanc
     if (!duplicate) run.mutate(v);
   });
 
+  return { form, submit, error: run.error, busy: run.isPending, submitLabel: `Create ${count} unit${count === 1 ? "" : "s"}`, rows, count, addRows, addFloor, floorNo, setFloorNo, floorCount, setFloorCount, pattern, setPattern, suggestedFloor };
+}
+
+export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, floorNo, setFloorNo, floorCount, setFloorCount, pattern, setPattern, suggestedFloor } }: { x: ReturnType<typeof useBulkUnitsForm> }) {
   return (
-    <FormBody onSubmit={submit} error={run.error} busy={run.isPending} submitLabel={`Create ${count} unit${count === 1 ? "" : "s"}`} onCancel={onCancel}>
       <VStack gap={3}>
         <Text size="sm" color="secondary">One unit per row. New rows copy the row above and count the name up, so you only change what differs.</Text>
         <div className="overflow-x-auto">
@@ -140,6 +144,5 @@ export function BulkUnitsForm({ onDone, onCancel }: { onDone: () => void; onCanc
           </HStack>
         </VStack>
       </VStack>
-    </FormBody>
   );
 }

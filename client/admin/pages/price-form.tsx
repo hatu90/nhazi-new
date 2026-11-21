@@ -3,24 +3,36 @@
 import { formatDate } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import type { IServiceResponse } from "@/client/lib/types";
-import { FDate, FormBody, useSubmit } from "@/client/ui/rhf";
+import { FDate, useOpenReset, useSubmit } from "@/client/ui/rhf";
+import { VStack } from "@astryxdesign/core/Stack";
 import { useForm } from "react-hook-form";
 import { useProperty } from "../property-layout";
 import { TierFields, emptyTier, toTiers, type TierRow } from "../tier-editor";
 
-export function PriceForm({ service, onDone }: { service: IServiceResponse; onDone: () => void }) {
+interface Values {
+  effectiveDate: string;
+  tiers: TierRow[];
+}
+
+/** `service` = the service getting a new price (null while the modal is closed). */
+export function usePriceForm({ service, onDone }: { service: IServiceResponse | null; onDone: () => void }) {
   const { apiPath } = useProperty();
-  const save = useSend<object>("POST", apiPath(`/services/${service.id}/prices`), [apiPath("/services")]);
-  const last = service.prices[service.prices.length - 1];
-  const multi = service.usageBase === "meter" || service.usageBase === "member";
-  const form = useForm<{ effectiveDate: string; tiers: TierRow[] }>({
-    defaultValues: { effectiveDate: "", tiers: last ? last.tiers.map((t) => ({ upTo: t.upTo?.toString() ?? "", rate: t.rate.toString() })) : [emptyTier()] },
-  });
+  const save = useSend<object>("POST", apiPath(`/services/${service?.id}/prices`), [apiPath("/services")]);
+  const last = service?.prices[service.prices.length - 1];
+  const defaults = (): Values => ({ effectiveDate: "", tiers: last ? last.tiers.map((t) => ({ upTo: t.upTo?.toString() ?? "", rate: t.rate.toString() })) : [emptyTier()] });
+  const form = useForm<Values>({ defaultValues: defaults() });
+  useOpenReset(service !== null, () => { form.reset(defaults()); save.reset(); }, service?.id);
   const submit = useSubmit(form, save, (v) => ({ effectiveDate: v.effectiveDate, tiers: toTiers(v.tiers) }), onDone);
+  return { form, submit, error: save.error, busy: save.isPending, service, last };
+}
+
+export function PriceFields({ x: { form, service, last } }: { x: ReturnType<typeof usePriceForm> }) {
+  if (!service) return null;
+  const multi = service.usageBase === "meter" || service.usageBase === "member";
   return (
-    <FormBody onSubmit={submit} error={save.error} busy={save.isPending} submitLabel="Add price" onCancel={onDone}>
+    <VStack gap={4}>
       <FDate control={form.control} name="effectiveDate" label="Effective from" hint={last ? `After ${formatDate(last.effectiveDate)}` : undefined} min={last?.effectiveDate} required width="100%" />
       <TierFields control={form.control} name="tiers" multi={multi} unit={service.unitOfMeasure ?? "unit"} />
-    </FormBody>
+    </VStack>
   );
 }

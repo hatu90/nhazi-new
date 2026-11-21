@@ -32,6 +32,7 @@ const tabs = [
   { id: "", label: "Overview" },
   { id: "invoices", label: "Invoices" },
   { id: "requests", label: "Requests" },
+  { id: "agreement", label: "Agreement" },
 ];
 
 export function LeaseLayout() {

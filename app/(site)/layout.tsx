@@ -3,7 +3,6 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { getTranslations } from "next-intl/server";
-import { LocaleSwitcher } from "@/client/ui/locale-switcher";
 
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const t = await getTranslations("Common");
@@ -15,13 +14,12 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
           <HStack align="center" gap={1}>
             <Button label={t("about")} variant="ghost" href="/about" />
             <Button label={t("terms")} variant="ghost" href="/term" />
-            <LocaleSwitcher />
-            <Button label={t("signIn")} href="/auth" />
+            <Button variant="primary" label={t("signIn")} href="/auth" />
           </HStack>
         </HStack>
         <Divider />
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
       <footer>
         <Divider />
         <HStack justify="between" align="center" paddingInline={5} paddingBlock={4} wrap="wrap" gap={3}>

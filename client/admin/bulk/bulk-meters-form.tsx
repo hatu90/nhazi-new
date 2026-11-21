@@ -3,7 +3,7 @@
 import { api } from "@/client/lib/api";
 import { useGet } from "@/client/lib/hooks";
 import type { IMeterResponse, IServiceListResponse, IUnitListResponse } from "@/client/lib/types";
-import { FMulti, FormBody } from "@/client/ui/rhf";
+import { FMulti, useOpenReset } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,7 @@ const emptyMeter = (): MeterConfig => ({ serviceId: "", prefix: "", postfix: "",
  * Bulk meters: one meter configuration (service, name template) per meter, applied to every picked unit.
  * The API call is all-or-nothing.
  */
-export function BulkMetersForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+export function useBulkMetersForm({ open, onDone }: { open: boolean; onDone: () => void }) {
   const { apiPath } = useProperty();
   const qc = useQueryClient();
   const form = useForm<BulkMetersValues>({
@@ -29,8 +29,8 @@ export function BulkMetersForm({ onDone, onCancel }: { onDone: () => void; onCan
   const unitIds = useWatch({ control: form.control, name: "unitIds" });
   const meters = useWatch({ control: form.control, name: "meters" });
 
-  const existingUnits = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 });
-  const services = useGet<IServiceListResponse>(apiPath("/services"), { usageBase: "meter", pageSize: 100 });
+  const existingUnits = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 }, { enabled: open });
+  const services = useGet<IServiceListResponse>(apiPath("/services"), { usageBase: "meter", pageSize: 100 }, { enabled: open });
   const serviceOptions = (services.data?.items ?? []).map((s) => ({ value: s.id, label: s.name }));
 
   const roomNames = (existingUnits.data?.items ?? []).filter((u) => unitIds.includes(u.id)).map((u) => u.name);
@@ -50,14 +50,19 @@ export function BulkMetersForm({ onDone, onCancel }: { onDone: () => void; onCan
     },
   });
 
+  useOpenReset(open, () => { form.reset({ unitIds: [], meters: [emptyMeter()] }); run.reset(); });
   const submit = form.handleSubmit((v) => {
     const total = roomNames.length * v.meters.length;
     if (total > 200) return form.setError("unitIds", { message: `That would create ${total} meters; the limit is 200 at a time` });
     run.mutate(v);
   });
 
+  return { form, submit, error: run.error, busy: run.isPending, configs, meters, existingUnits, services, serviceOptions, roomNames };
+}
+
+export function BulkMetersFields({ x: { form, configs, meters, existingUnits, services, serviceOptions, roomNames } }: { x: ReturnType<typeof useBulkMetersForm> }) {
   return (
-    <FormBody onSubmit={submit} error={run.error} busy={run.isPending} submitLabel="Create meters" onCancel={onCancel}>
+    <VStack gap={4}>
       <FMulti control={form.control} name="unitIds" label="Units" required options={(existingUnits.data?.items ?? []).map((u) => ({ value: u.id, label: u.name }))} placeholder={existingUnits.isPending ? "Loading…" : "Select units…"} width="100%" />
 
       <VStack gap={5}>
@@ -66,6 +71,6 @@ export function BulkMetersForm({ onDone, onCancel }: { onDone: () => void; onCan
           ))}
           <HStack><Button label="Add another meter" size="sm" variant="secondary" onClick={() => configs.append(emptyMeter())} /></HStack>
       </VStack>
-    </FormBody>
+    </VStack>
   );
 }

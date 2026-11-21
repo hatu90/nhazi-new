@@ -6,10 +6,12 @@ export const metadata: Metadata = { title: "Sign in" };
 
 export default function AuthPage() {
   return (
-    <div className="mx-auto w-full max-w-md px-5 py-12">
-      <Suspense fallback={null}>
-        <AuthFlow />
-      </Suspense>
+    <div className="flex flex-1 items-center justify-center px-5 py-12">
+      <div className="w-full max-w-md">
+        <Suspense fallback={null}>
+          <AuthFlow />
+        </Suspense>
+      </div>
     </div>
   );
 }

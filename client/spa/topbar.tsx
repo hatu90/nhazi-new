@@ -1,6 +1,5 @@
 "use client";
 
-import { LocaleSwitcher } from "@/client/ui/locale-switcher";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { MobileNav } from "@astryxdesign/core/MobileNav";
 import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
@@ -29,7 +28,7 @@ export function SpaShell({
           heading={<TopNavHeading heading="Nhazi" headingHref="/dashboard" as={PlainAnchor} />}
           endContent={
             // With a drawer, the account lives inside it on mobile.
-            <span className={`items-center gap-3 ${sideNav ? "hidden md:inline-flex" : "inline-flex"}`}><LocaleSwitcher /><UserMenu /></span>
+            <span className={`items-center gap-3 ${sideNav ? "hidden md:inline-flex" : "inline-flex"}`}><UserMenu /></span>
           }
         />
       }

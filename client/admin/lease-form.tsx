@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { IconButton } from "@astryxdesign/core/IconButton";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
+import { X } from "lucide-react";
 import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { isValidPhone, normalizePhone, todayIso } from "@/client/lib/format";
@@ -10,7 +13,7 @@ import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITemplateListResponse, IUnitListResponse } from "@/client/lib/types";
 import { Section } from "@/client/ui";
 import { num } from "@/client/ui/form";
-import { FDate, FNumber, FormBody, FSelect, FText, useSubmit } from "@/client/ui/rhf";
+import { FDate, FNumber, FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "./property-layout";
 
 interface Values {
@@ -19,21 +22,22 @@ interface Values {
   endDate: string;
   rent: string;
   depositAmount: string;
-  tenants: { name: string; phone: string }[];
+  tenants: { name: string; yearOfBirth: string; phone: string }[];
   templateId: string;
 }
 
+const defaults = (): Values => ({ unitId: "", startDate: todayIso(), endDate: "", rent: "", depositAmount: "", tenants: [{ name: "", yearOfBirth: "", phone: "" }], templateId: "" });
+
 /** Creates a draft lease; start it from its page. */
-export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => void; onCancel: () => void }) {
+export function useLeaseForm({ open, onDone }: { open: boolean; onDone: (leaseId: string) => void }) {
   const { apiPath } = useProperty();
-  const units = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 });
-  const templates = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { pageSize: 100 });
+  const units = useGet<IUnitListResponse>(apiPath("/units"), { pageSize: 100 }, { enabled: open });
+  const templates = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { pageSize: 100 }, { enabled: open });
   const create = useSend<object, { id: string }>("POST", apiPath("/leases"), [apiPath("/leases")]);
-  const form = useForm<Values>({
-    defaultValues: { unitId: "", startDate: todayIso(), endDate: "", rent: "", depositAmount: "", tenants: [{ name: "", phone: "" }], templateId: "" },
-  });
+  const form = useForm<Values>({ defaultValues: defaults() });
   // preselect the property's default template once the list arrives
   const defaultTemplate = templates.data?.items.find((t) => t.isDefault)?.id;
+  useOpenReset(open, () => { form.reset({ ...defaults(), templateId: defaultTemplate ?? "" }); create.reset(); });
   useEffect(() => {
     if (defaultTemplate && !form.getValues("templateId")) form.setValue("templateId", defaultTemplate);
   }, [defaultTemplate, form]);
@@ -49,13 +53,18 @@ export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => v
       rent: num(v.rent),
       depositAmount: num(v.depositAmount) ?? 0,
       ...(v.templateId && { agreement: { templateId: v.templateId, values: {} } }),
-      tenants: v.tenants.map((t) => ({ phoneNumber: normalizePhone(t.phone), displayName: t.name.trim() })),
+      // tenants are the lease's people; those with a phone number are invited to see the lease
+      members: v.tenants.map((t) => ({ name: t.name.trim(), yearOfBirth: num(t.yearOfBirth), phoneNumber: t.phone.trim() ? normalizePhone(t.phone) : undefined })),
     }),
     (l) => onDone(l.id),
   );
 
+  return { form, submit, error: create.error, busy: create.isPending, units, templates, tenants };
+}
+
+export function LeaseFields({ x: { form, units, templates, tenants } }: { x: ReturnType<typeof useLeaseForm> }) {
   return (
-    <FormBody onSubmit={submit} error={create.error} busy={create.isPending} submitLabel="Create draft lease" onCancel={onCancel}>
+    <VStack gap={4}>
       <Section title="Unit & term">
         <FSelect
           control={form.control}
@@ -90,16 +99,30 @@ export function LeaseForm({ onDone, onCancel }: { onDone: (leaseId: string) => v
         />
       </Section>
 
-      <Section title="Tenants" action={<Button label="Add tenant" size="sm" variant="secondary" onClick={() => tenants.append({ name: "", phone: "" })} />}>
-        <Text size="sm" color="secondary">They sign in with this phone number to see the lease. Unregistered numbers are claimed when they sign up.</Text>
+      <Section title="Tenants" action={<Button label="Add tenant" size="sm" variant="secondary" onClick={() => tenants.append({ name: "", yearOfBirth: "", phone: "" })} />}>
+        <Text size="sm" color="secondary">Everyone living in the unit. Tenants with a phone number are invited to sign in and see the lease.</Text>
         {tenants.fields.map((f, i) => (
-          <VStack key={f.id} gap={2}>
-            <FText control={form.control} name={`tenants.${i}.name`} label={`Tenant ${i + 1} name`} required width="100%" />
-            <FText control={form.control} name={`tenants.${i}.phone`} label="Phone" type="tel" placeholder="0912 345 678" required rules={{ validate: (v) => isValidPhone(String(v)) || "Enter a valid phone number" }} width="100%" />
-            {tenants.fields.length > 1 && <HStack><Button label="Remove tenant" variant="ghost" size="sm" onClick={() => tenants.remove(i)} /></HStack>}
-          </VStack>
+          <Card key={f.id} padding={4}>
+            <VStack gap={3}>
+              <HStack justify="between" align="center" gap={2}>
+                <Text weight="semibold">Tenant {i + 1}</Text>
+                {tenants.fields.length > 1 && <IconButton label={`Remove tenant ${i + 1}`} variant="ghost" size="sm" icon={<X />} onClick={() => tenants.remove(i)} />}
+              </HStack>
+              <FText control={form.control} name={`tenants.${i}.name`} label="Name" required width="100%" />
+              <FNumber control={form.control} name={`tenants.${i}.yearOfBirth`} label="Year of birth" required width="100%" />
+              <FText
+                control={form.control}
+                name={`tenants.${i}.phone`}
+                label="Phone number"
+                type="tel"
+                placeholder="0912 345 678"
+                rules={{ validate: (v) => !String(v ?? "").trim() || isValidPhone(String(v)) || "Enter a valid phone number" }}
+                width="100%"
+              />
+            </VStack>
+          </Card>
         ))}
       </Section>
-    </FormBody>
+    </VStack>
   );
 }

@@ -13,6 +13,8 @@ import {
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import { Prisma, type PrismaClient } from "../client";
 import { numOrNull } from "../mappers";
+import { referenceAddressSelect, resolveReferenceAddressLinks } from "./reference-address.repository";
+import { slugify } from "@/server/modules/reference-address/reference-address.schema";
 import { toUnit } from "./unit.repository";
 
 const unitWhere = { deletedAt: null } as const;
@@ -28,6 +30,10 @@ const summarySelect = {
   rentPriceTo: true,
   rentNegotiable: true,
   headerImage: true,
+  referenceAddresses: {
+    select: { distance: true, referenceAddress: { select: referenceAddressSelect } },
+    orderBy: [{ distance: { sort: "asc", nulls: "last" } }, { referenceAddress: { name: "asc" } }],
+  },
   _count: { select: { units: { where: unitWhere } } },
 } satisfies Prisma.PropertySelect;
 
@@ -55,6 +61,7 @@ const toSummary = (r: SummaryRow): IPropertySummaryResponse => ({
   rentNegotiable: r.rentNegotiable,
   headerImage: r.headerImage,
   unitCount: r._count.units,
+  referenceAddresses: r.referenceAddresses.map((l) => ({ ...l.referenceAddress, distance: l.distance })),
 });
 
 const toDetail = (r: DetailRow): IPropertyDetailResponse => ({
@@ -73,6 +80,8 @@ const textSearch = (q: string): Prisma.PropertyWhereInput => ({
   OR: [
     { propertyName: { contains: q, mode: "insensitive" } },
     { street: { contains: q, mode: "insensitive" } },
+    { referenceAddresses: { some: { referenceAddress: { name: { contains: q, mode: "insensitive" } } } } },
+    ...(slugify(q) ? [{ referenceAddresses: { some: { referenceAddress: { slug: { contains: slugify(q) } } } } }] : []),
   ],
 });
 
@@ -80,17 +89,32 @@ export class PrismaPropertyRepository implements IPropertyRepository {
   constructor(private readonly db: PrismaClient) {}
 
   async search(query: IPropertySearchQuery) {
-    const { q, provinceCode, wardCode, category, minPrice, maxPrice } = query;
+    const { q, provinceCode, wardCode, category, minPrice, maxPrice, referenceAddress } = query;
     const where: Prisma.PropertyWhereInput = {
       deletedAt: null,
       ...(q && textSearch(q)),
       ...(category && { category }),
+      ...(referenceAddress && { referenceAddresses: { some: { referenceAddress: { slug: referenceAddress } } } }),
       ...(provinceCode && { province: { path: ["code"], equals: provinceCode } }),
       ...(wardCode && { ward: { path: ["code"], equals: wardCode } }),
       // price filter = overlap of [rentPriceFrom, rentPriceTo] with [minPrice, maxPrice]; unpriced properties never match
       ...(minPrice !== undefined && { rentPriceTo: { gte: minPrice } }),
       ...(maxPrice !== undefined && { rentPriceFrom: { lte: maxPrice } }),
     };
+    if (referenceAddress) {
+      // "near X": nearest first (unknown distance last), so page through the links of X rather than the properties
+      const linkWhere: Prisma.PropertyReferenceAddressWhereInput = { referenceAddress: { slug: referenceAddress }, property: where };
+      const [links, total] = await Promise.all([
+        this.db.propertyReferenceAddress.findMany({
+          where: linkWhere,
+          select: { property: { select: summarySelect } },
+          orderBy: [{ distance: { sort: "asc", nulls: "last" } }, { propertyId: "asc" }],
+          ...toSkipTake(query),
+        }),
+        this.db.propertyReferenceAddress.count({ where: linkWhere }),
+      ]);
+      return paginated(links.map((l) => toSummary(l.property)), total, query);
+    }
     const [rows, total] = await Promise.all([
       this.db.property.findMany({
         where,
@@ -131,7 +155,9 @@ export class PrismaPropertyRepository implements IPropertyRepository {
   }
 
   async create(c: ICreatePropertyCommand) {
-    const row = await this.db.property.create({
+    const row = await this.db.$transaction(async (tx) => {
+      const links = await resolveReferenceAddressLinks(tx, c.referenceAddresses);
+      return tx.property.create({
       data: {
         propertyName: c.name,
         category: c.category,
@@ -145,14 +171,18 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         images: c.images,
         rules: c.rules,
         accountProperties: { create: { accountId: c.actor.accountId, role: "owner" } },
+        referenceAddresses: { create: links },
       },
       select: detailSelect,
+      });
     });
     return toAdminDetail(row);
   }
 
   async update(c: IUpdatePropertyCommand) {
-    const row = await this.db.property.update({
+    const row = await this.db.$transaction(async (tx) => {
+      const links = c.referenceAddresses && (await resolveReferenceAddressLinks(tx, c.referenceAddresses));
+      return tx.property.update({
       where: { id: c.propertyId },
       data: {
         propertyName: c.name,
@@ -166,8 +196,10 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         headerImage: c.headerImage,
         images: c.images,
         rules: c.rules,
+        ...(links && { referenceAddresses: { deleteMany: {}, create: links } }),
       },
       select: detailSelect,
+      });
     });
     return toAdminDetail(row);
   }

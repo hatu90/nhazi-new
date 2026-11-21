@@ -96,7 +96,7 @@ const toDetail = (r: DetailRow): ITenancyDetailRecord => {
       joinedAt: isoDate(m.joinedAt),
       leftAt: isoDateOrNull(m.leftAt),
     })),
-    handovers: r.handovers.map((h) => ({ id: h.id, itemId: h.itemId, itemName: h.inventoryItem.inventoryName, quantity: h.quantity, condition: h.itemCondition, description: h.description })),
+    handovers: r.handovers.map((h) => ({ id: h.id, itemId: h.itemId, itemName: h.inventoryItem.inventoryName, quantity: h.quantity, condition: h.itemCondition, description: h.description, returnedQuantity: h.returnedQuantity, returnedCondition: h.returnedCondition, returnNote: h.returnNote })),
     subscriptions: r.serviceSubscriptions.map(toSubscription),
   };
 };
@@ -115,13 +115,13 @@ export class PrismaTenancyRepository implements ITenancyRepository {
 
   async list(propertyId: string, q: ITenancyListQuery, today: string) {
     const t = d(today);
-    const ended: Prisma.LeaseWhereInput = { OR: [{ terminatedAt: { lt: t } }, { terminatedAt: null, endDate: { lt: t } }] };
+    const ended: Prisma.LeaseWhereInput = { OR: [{ terminatedAt: { not: null } }, { terminatedAt: null, endDate: { lt: t } }] };
     const started: Prisma.LeaseWhereInput = { activatedAt: { not: null } };
     const status: Prisma.LeaseWhereInput =
       q.status === "draft"
         ? { activatedAt: null }
         : q.status === "upcoming"
-          ? { ...started, startDate: { gt: t } }
+          ? { ...started, startDate: { gt: t }, terminatedAt: null }
           : q.status === "ended"
             ? { ...started, ...ended }
             : q.status === "active"
@@ -189,8 +189,6 @@ export class PrismaTenancyRepository implements ITenancyRepository {
     return orConflict(
       () =>
         this.db.$transaction(async (tx) => {
-          const accountIds = new Set<string>();
-          for (const t of c.tenants) accountIds.add(await ensureAccount(tx, t.phoneNumber, t.displayName));
           const lease = await tx.lease.create({
             data: {
               propertyId: c.propertyId,
@@ -205,7 +203,6 @@ export class PrismaTenancyRepository implements ITenancyRepository {
                 agreementTemplateVersion: templateVersion,
                 agreementData: toJson(c.agreement.values),
               }),
-              accountLeases: { create: [...accountIds].map((accountId) => ({ accountId })) },
               leaseMembers: {
                 create: c.members.map((m) => ({ name: m.name, phoneNumber: m.phoneNumber, yearOfBirth: m.yearOfBirth, joinedAt: d(c.startDate) })),
               },

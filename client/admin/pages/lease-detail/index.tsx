@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -11,10 +14,10 @@ import type { ITenancyDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Modal, PageHeader, PageSpinner, StatusBadge, Tabs } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { BillingPeriodsTab } from "./billing-periods-tab";
-import { EndForm } from "./end-form";
+import { EndFields, useEndForm } from "./end-form";
 import { InvoicesTab } from "./invoices-tab";
 import { OverviewTab } from "./overview-tab";
-import { StartForm } from "./start-form";
+import { StartFields, useStartForm } from "./start-form";
 
 type Dialog = "start" | "end" | null;
 type TabId = "overview" | "periods" | "invoices";
@@ -35,6 +38,8 @@ export function LeaseDetailPage() {
   const [search, setSearch] = useSearchParams();
   const tab: TabId = TABS.find((t) => t.id === search.get("tab"))?.id ?? "overview";
   const done = () => setDialog(null);
+  const endForm = useEndForm({ path, leaseId, handovers: lease.data?.handovers ?? [], open: dialog === "end", onDone: done });
+  const startForm = useStartForm({ path, lease: lease.data, open: dialog === "start", onDone: done });
 
   if (lease.isPending) return <PageSpinner />;
   if (lease.error) return <ErrorBox error={lease.error} retry={() => void lease.refetch()} />;
@@ -49,7 +54,7 @@ export function LeaseDetailPage() {
         subtitle={<HStack gap={2} align="center"><StatusBadge status={l.status} /><Text color="secondary">{formatDate(l.startDate)} → {l.endDate ? formatDate(l.endDate) : "open"}</Text></HStack>}
         actions={canManage && (
           <>
-            {l.status === "draft" && <Button label="Start lease" onClick={() => setDialog("start")} />}
+            {l.status === "draft" && <Button variant="primary" label="Start lease" onClick={() => setDialog("start")} />}
             {l.status === "draft" && <Button label="Delete draft" variant="secondary" isLoading={remove.isPending} clickAction={async () => { if (confirm("Delete this draft lease?")) { await remove.mutateAsync(undefined); navigate(to("leases")); } }} />}
             {live && <Button label="End lease" variant="secondary" onClick={() => setDialog("end")} />}
           </>
@@ -62,8 +67,28 @@ export function LeaseDetailPage() {
       {tab === "periods" && <BillingPeriodsTab leaseId={leaseId} />}
       {tab === "invoices" && <InvoicesTab leaseId={leaseId} />}
 
-      <Modal open={dialog === "start"} onClose={done} title="Start lease">{dialog === "start" && <StartForm path={path} lease={l} onDone={done} />}</Modal>
-      <Modal open={dialog === "end"} onClose={done} title="End lease">{dialog === "end" && <EndForm path={path} onDone={done} />}</Modal>
+      <Modal open={dialog === "start"} onClose={() => done()}>
+        <form noValidate onSubmit={startForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Start lease"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><StartFields x={startForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={startForm.error} busy={startForm.busy} submitLabel={"Start lease"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={dialog === "end"} onClose={() => done()}>
+        <form noValidate onSubmit={endForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"End lease"} onOpenChange={(o) => { if (!o) done(); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><EndFields x={endForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={endForm.error} busy={endForm.busy} submitLabel={"End lease"} onCancel={() => done()} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </VStack>
   );
 }

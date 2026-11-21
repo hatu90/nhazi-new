@@ -55,8 +55,35 @@ export interface IInvoiceResponse {
 
 export interface IInvoiceDetailResponse extends IInvoiceResponse {
   items: { id: string; kind: string; title: string; amount: number }[];
-  payments: { id: string; amount: number; method: string; status: "pending" | "confirmed" | "rejected"; paidOn: string }[];
+  payments: { id: string; amount: number; method: string; status: "pending" | "confirmed" | "rejected"; paidOn: string; evidence: string[] }[];
 }
 
 export type ILeaseListResponse = IPaginated<ILeaseSummaryResponse>;
 export type IInvoiceListResponse = IPaginated<IInvoiceResponse>;
+
+// ── billing (tenant view) ───────────────────────────────────────────────────────────
+/** What was invoiced in a calendar month (by invoice due date), grouped for the stacked chart (credits are left out). */
+export interface IMonthBreakdown {
+  /** YYYY-MM */
+  month: string;
+  total: number;
+  segments: { key: string; label: string; amount: number }[];
+}
+export interface IMyBillingResponse {
+  /** The running period, with the meters the tenant has to read to close it; null when none is running. */
+  current: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    rentAmount: number;
+    services: { subscriptionId: string; serviceName: string; usageBase: string }[];
+    meters: { meterId: string; serviceName: string; openingValue: number }[];
+  } | null;
+  /** The recent months (up to five, oldest first). */
+  months: IMonthBreakdown[];
+}
+export interface ICloseMyPeriodResponse {
+  closedPeriodId: string;
+  nextPeriodId: string | null;
+  invoiceId: string | null;
+}

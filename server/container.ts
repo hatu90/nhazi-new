@@ -6,7 +6,7 @@ import {
   UpdateMeUseCase,
   VerifyTokenUseCase,
 } from "./modules/identity/identity.usecases";
-import { GetMyInvoiceUseCase, GetMyLeaseUseCase, ListMyLeaseInvoicesUseCase, ListMyLeasesUseCase } from "./modules/lease/lease.usecases";
+import { GetMyBillingUseCase, CloseMyPeriodUseCase, GetMyInvoiceUseCase, GetMyLeaseUseCase, ListMyLeaseInvoicesUseCase, ListMyLeasesUseCase } from "./modules/lease/lease.usecases";
 import {
   CreatePropertyUseCase,
   UpdatePropertyUseCase,
@@ -23,6 +23,8 @@ import { BulkCreateItemsUseCase, CreateHandoverUseCase, CreateItemUseCase, Delet
 import { AddTemplateVersionUseCase, CreateTemplateUseCase, DeleteTemplateUseCase, GetTemplateUseCase, GetTemplateVersionUseCase, ListTemplatesUseCase, UpdateTemplateUseCase } from "./modules/agreement/agreement.usecases";
 import { AddMemberUseCase, ChangeMemberRoleUseCase, ListMembersUseCase, RemoveMemberUseCase } from "./modules/member/member.usecases";
 import { InvitePropertyUseCase, InviteTenantUseCase, ListInvitationsUseCase, ListMyInvitationsUseCase, RespondInvitationUseCase, RevokeInvitationUseCase } from "./modules/invitation/invitation.usecases";
+import { ListMyNotificationsUseCase } from "./modules/notification/notification.usecases";
+import { PrismaNotificationRepository } from "./infrastructure/prisma/repositories/notification.repository";
 import { PrismaInvitationRepository } from "./infrastructure/prisma/repositories/invitation.repository";
 import { AddSubscriptionUseCase, CloseLeaseUseCase, ClosePeriodUseCase, StartLeaseUseCase } from "./modules/lifecycle/lifecycle.usecases";
 import { PrismaLifecycleRepository } from "./infrastructure/prisma/repositories/lifecycle.repository";
@@ -48,10 +50,14 @@ import { PrismaRequestRepository } from "./infrastructure/prisma/repositories/re
 import { PrismaPlanRepository } from "./infrastructure/prisma/repositories/plan.repository";
 import { PrismaBillingRepository } from "./infrastructure/prisma/repositories/billing.repository";
 import { DevAwareTokenVerifier, FirebaseTokenVerifier } from "./infrastructure/firebase/token-verifier";
+import { GetLeaseFileUrlUseCase, GetPropertyFileUrlUseCase, UploadLeaseFileUseCase, UploadPropertyImageUseCase } from "./modules/storage/storage.usecases";
+import { createFileStorage } from "./infrastructure/supabase/storage";
 import { getPrisma } from "./infrastructure/prisma/client";
 import { PrismaAccessRepository } from "./infrastructure/prisma/repositories/access.repository";
 import { PrismaAccountRepository } from "./infrastructure/prisma/repositories/account.repository";
 import { PrismaLeaseRepository } from "./infrastructure/prisma/repositories/lease.repository";
+import { CreateReferenceAddressUseCase, SearchReferenceAddressesUseCase } from "./modules/reference-address/reference-address.usecases";
+import { PrismaReferenceAddressRepository } from "./infrastructure/prisma/repositories/reference-address.repository";
 import { PrismaPropertyRepository } from "./infrastructure/prisma/repositories/property.repository";
 
 /**
@@ -60,10 +66,12 @@ import { PrismaPropertyRepository } from "./infrastructure/prisma/repositories/p
  */
 function build() {
   const db = getPrisma();
+  const storage = createFileStorage();
   const verifier = new DevAwareTokenVerifier(new FirebaseTokenVerifier());
 
   const accounts = new PrismaAccountRepository(db);
   const properties = new PrismaPropertyRepository(db);
+  const referenceAddresses = new PrismaReferenceAddressRepository(db);
   const leases = new PrismaLeaseRepository(db);
   
   const units = new PrismaUnitRepository(db);
@@ -74,6 +82,7 @@ function build() {
   const agreements = new PrismaAgreementRepository(db);
   const members = new PrismaMemberRepository(db);
   const invitations = new PrismaInvitationRepository(db);
+  const notifications = new PrismaNotificationRepository(db);
   const tenancies = new PrismaTenancyRepository(db);
   const invoices = new PrismaInvoiceRepository(db);
   const stats = new PrismaStatsRepository(db);
@@ -84,6 +93,7 @@ function build() {
   const access = new PrismaAccessRepository(db);
   const policy = new AccessPolicy(access);
   const lifecycle = new PrismaLifecycleRepository(db, billing);
+  const closePeriod = new ClosePeriodUseCase(lifecycle, billing, invoices, refunds, policy);
   const subscriptionRules = new CreateSubscriptionUseCase(tenancies, policy);
 
   return {
@@ -95,12 +105,16 @@ function build() {
     updateMe: new UpdateMeUseCase(accounts),
     // property: public
     searchProperties: new SearchPropertiesUseCase(properties),
+    searchReferenceAddresses: new SearchReferenceAddressesUseCase(referenceAddresses),
+    createReferenceAddress: new CreateReferenceAddressUseCase(referenceAddresses),
     getPublicProperty: new GetPublicPropertyUseCase(properties),
     // property: admin
     listManagedProperties: new ListManagedPropertiesUseCase(properties),
     getManagedProperty: new GetManagedPropertyUseCase(properties, policy),
     createProperty: new CreatePropertyUseCase(properties),
     updateProperty: new UpdatePropertyUseCase(properties, policy),
+    uploadPropertyImage: new UploadPropertyImageUseCase(storage, policy),
+    getPropertyFileUrl: new GetPropertyFileUrlUseCase(storage, policy),
     // units
     listUnits: new ListUnitsUseCase(units, policy),
     getUnit: new GetUnitUseCase(units, policy),
@@ -163,7 +177,7 @@ function build() {
     getBillingPeriod: new GetBillingPeriodUseCase(billing, policy),
     openBillingPeriod: new OpenBillingPeriodUseCase(billing, policy),
     startLease: new StartLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
-    closeBillingPeriod: new ClosePeriodUseCase(lifecycle, billing, invoices, refunds, policy),
+    closeBillingPeriod: closePeriod,
     closeLease: new CloseLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
     addSubscription: new AddSubscriptionUseCase(lifecycle, billing, invoices, refunds, policy, subscriptionRules, tenancies),
     updateUsage: new UpdateUsageUseCase(billing, policy),
@@ -198,6 +212,8 @@ function build() {
     addMember: new AddMemberUseCase(members, policy),
     changeMemberRole: new ChangeMemberRoleUseCase(members, policy),
     removeMember: new RemoveMemberUseCase(members, policy),
+    // notifications
+    listMyNotifications: new ListMyNotificationsUseCase(notifications),
     // invitations
     invitePropertyMember: new InvitePropertyUseCase(invitations, policy),
     inviteTenant: new InviteTenantUseCase(invitations, policy),
@@ -207,10 +223,14 @@ function build() {
     respondInvitation: new RespondInvitationUseCase(invitations),
     // lease: tenant
     listMyLeases: new ListMyLeasesUseCase(leases),
+    getMyBilling: new GetMyBillingUseCase(leases, lifecycle),
+    closeMyPeriod: new CloseMyPeriodUseCase(leases, lifecycle, closePeriod),
     getMyLease: new GetMyLeaseUseCase(leases),
     listMyLeaseInvoices: new ListMyLeaseInvoicesUseCase(leases),
     getMyInvoice: new GetMyInvoiceUseCase(leases),
     reportPayment: new ReportPaymentUseCase(invoices, leases),
+    uploadLeaseFile: new UploadLeaseFileUseCase(storage, leases),
+    getLeaseFileUrl: new GetLeaseFileUrlUseCase(storage, leases),
   };
 }
 

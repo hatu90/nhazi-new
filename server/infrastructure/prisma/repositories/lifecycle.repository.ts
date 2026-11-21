@@ -221,6 +221,13 @@ export class PrismaLifecycleRepository implements ILifecycleRepository {
           });
           if (ended.count === 0) throw new ConflictError("The lease is already closed", "LEASE_TERMINATED");
           await tx.serviceSubscription.updateMany({ where: { leaseId: plan.leaseId, deletedAt: null, startDate: { gt: t } }, data: { deletedAt: new Date() } });
+          for (const h of plan.handovers) {
+            const r = await tx.handover.updateMany({
+              where: { id: h.handoverId, leaseId: plan.leaseId, propertyId: plan.propertyId, deletedAt: null },
+              data: { returnedQuantity: h.quantity, returnedCondition: h.condition, returnNote: h.note ?? null, returnedAt: d(plan.terminatedAt) },
+            });
+            if (r.count === 0) throw new ConflictError(`Handover item ${h.handoverId} does not belong to this lease`, "HANDOVER_NOT_FOUND");
+          }
           await tx.serviceSubscription.updateMany({
             where: { leaseId: plan.leaseId, deletedAt: null, OR: [{ endDate: null }, { endDate: { gt: t } }] },
             data: { endDate: t },

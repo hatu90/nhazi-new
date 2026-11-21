@@ -1,9 +1,9 @@
 import type { IPaginated } from "@/server/shared/pagination";
-import type { IInvoiceDetailResponse, IInvoiceListQuery, IInvoiceResponse, ILeaseDetailResponse, ILeaseListQuery, ILeaseSummaryResponse, IRentVersion } from "./lease.schema";
+import type { IInvoiceDetailResponse, IInvoiceListQuery, IInvoiceResponse, ILeaseDetailResponse, ILeaseListQuery, ILeaseSummaryResponse, IMonthBreakdown, IRentVersion } from "./lease.schema";
 
 /** What storage knows. Derived fields (status, currentRent) are added by the usecases. */
-export type ILeaseSummaryRecord = Omit<ILeaseSummaryResponse, "status" | "currentRent"> & { rentVersions: IRentVersion[] };
-export type ILeaseDetailRecord = Omit<ILeaseDetailResponse, "status" | "currentRent">;
+export type ILeaseSummaryRecord = Omit<ILeaseSummaryResponse, "status" | "currentRent"> & { rentVersions: IRentVersion[]; activatedAt: string | null };
+export type ILeaseDetailRecord = Omit<ILeaseDetailResponse, "status" | "currentRent"> & { activatedAt: string | null };
 
 /** Every method is scoped to a tenant account: a lease that is not theirs simply is not found. */
 export interface ILeaseRepository {
@@ -11,5 +11,7 @@ export interface ILeaseRepository {
   findByTenant(accountId: string, leaseId: string): Promise<ILeaseDetailRecord | null>;
   isTenant(accountId: string, leaseId: string): Promise<boolean>;
   findInvoice(leaseId: string, invoiceId: string): Promise<IInvoiceDetailResponse | null>;
+  /** What the lease was invoiced in each of the `months` latest calendar months up to `now` (oldest first; empty leading months dropped, at least 3 kept). */
+  monthBreakdown(leaseId: string, months: number, now: string): Promise<IMonthBreakdown[]>;
   listInvoices(leaseId: string, query: IInvoiceListQuery): Promise<IPaginated<IInvoiceResponse>>;
 }

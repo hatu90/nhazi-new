@@ -218,6 +218,23 @@ Table properties {
     `((ward->>'code')::int)` [name: 'properties_ward_code_idx']
   }
 }
+Table reference_addresses {
+  id uuid [pk]
+  name text [not null, note: 'a well-known place people search by, e.g. "Khu cong nghiep Yen Phong"']
+  slug text [not null, unique, note: 'generated from name (lowercase, no diacritics, hyphens); creating the same slug again returns the existing row']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+Table property_reference_addresses {
+  property_id uuid [not null, ref: > properties.id]
+  reference_address_id uuid [not null, ref: > reference_addresses.id]
+  distance int [note: 'meters from the property to the reference address']
+  created_at timestamptz [not null]
+  indexes {
+    (property_id, reference_address_id) [pk]
+    reference_address_id
+  }
+}
 Table units {
   id uuid [pk]
   property_id uuid [not null, ref: > properties.id]

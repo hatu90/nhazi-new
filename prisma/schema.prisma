@@ -148,6 +148,7 @@ enum ItemCondition {
 enum RequestType {
   maintenance
   close_lease
+  close_period
   enquiry
 
   @@map("request_type")
@@ -280,57 +281,84 @@ model SubscriptionPeriod {
 }
 
 model Property {
-  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  propertyName       String              @map("property_name")
-  category           PropertyCategory    @map("category")
-  street             String              @map("street")
-  headerImage        String?             @map("header_image")
-  images             String[]            @default([]) @map("images")
-  rules              String[]            @default([]) @map("rules")
-  documents          Json                @default("[]") @map("documents")
-  province           Json                @map("province")
-  ward               Json                @map("ward")
-  rentPriceFrom      Decimal?            @map("rent_price_from") @db.Decimal(14, 0)
-  rentPriceTo        Decimal?            @map("rent_price_to") @db.Decimal(14, 0)
-  rentNegotiable     Boolean             @default(false) @map("rent_negotiable")
-  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz(6)
-  accountProperties  AccountProperty[]   @relation("AccountProperty_property")
-  units              Unit[]              @relation("Unit_property")
-  services           Service[]           @relation("Service_property")
-  meters             Meter[]             @relation("Meter_property")
-  agreementTemplates AgreementTemplate[] @relation("AgreementTemplate_property")
-  inventoryItems     InventoryItem[]     @relation("InventoryItem_property")
-  handovers          Handover[]          @relation("Handover_property")
-  leases             Lease[]             @relation("Lease_property")
-  invitations        Invitation[]        @relation("Invitation_property")
-  billingPeriods     BillingPeriod[]     @relation("BillingPeriod_property")
-  invoices           Invoice[]           @relation("Invoice_property")
-  refunds            Refund[]            @relation("Refund_property")
-  requests           Request[]           @relation("Request_property")
+  id                 String                     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyName       String                     @map("property_name")
+  category           PropertyCategory           @map("category")
+  street             String                     @map("street")
+  headerImage        String?                    @map("header_image")
+  images             String[]                   @default([]) @map("images")
+  rules              String[]                   @default([]) @map("rules")
+  documents          Json                       @default("[]") @map("documents")
+  province           Json                       @map("province")
+  ward               Json                       @map("ward")
+  rentPriceFrom      Decimal?                   @map("rent_price_from") @db.Decimal(14, 0)
+  rentPriceTo        Decimal?                   @map("rent_price_to") @db.Decimal(14, 0)
+  rentNegotiable     Boolean                    @default(false) @map("rent_negotiable")
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?                  @map("deleted_at") @db.Timestamptz(6)
+  accountProperties  AccountProperty[]          @relation("AccountProperty_property")
+  units              Unit[]                     @relation("Unit_property")
+  services           Service[]                  @relation("Service_property")
+  meters             Meter[]                    @relation("Meter_property")
+  agreementTemplates AgreementTemplate[]        @relation("AgreementTemplate_property")
+  inventoryItems     InventoryItem[]            @relation("InventoryItem_property")
+  handovers          Handover[]                 @relation("Handover_property")
+  leases             Lease[]                    @relation("Lease_property")
+  invitations        Invitation[]               @relation("Invitation_property")
+  billingPeriods     BillingPeriod[]            @relation("BillingPeriod_property")
+  invoices           Invoice[]                  @relation("Invoice_property")
+  refunds            Refund[]                   @relation("Refund_property")
+  requests           Request[]                  @relation("Request_property")
+  referenceAddresses PropertyReferenceAddress[] @relation("PropertyReferenceAddress_property")
 
   @@map("properties")
 }
 
+/// A well-known place people search by ("Khu cong nghiep Yen Phong"). Shared catalog; the slug is generated from the name.
+model ReferenceAddress {
+  id         String                     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  name       String                     @map("name")
+  slug       String                     @unique @map("slug")
+  createdAt  DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  properties PropertyReferenceAddress[] @relation("PropertyReferenceAddress_referenceAddress")
+
+  @@map("reference_addresses")
+}
+
+/// property n <-> m reference address, with the distance between them (meters).
+model PropertyReferenceAddress {
+  propertyId         String           @map("property_id") @db.Uuid
+  referenceAddressId String           @map("reference_address_id") @db.Uuid
+  distance           Int?             @map("distance")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  property           Property         @relation("PropertyReferenceAddress_property", fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  referenceAddress   ReferenceAddress @relation("PropertyReferenceAddress_referenceAddress", fields: [referenceAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([propertyId, referenceAddressId])
+  @@index([referenceAddressId])
+  @@map("property_reference_addresses")
+}
+
 model Unit {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  propertyId     String     @map("property_id") @db.Uuid
-  unitName       String     @map("unit_name")
-  area           Decimal    @map("area") @db.Decimal(8, 2)
-  floor          Int        @map("floor")
-  bathrooms      Int?       @map("bathrooms") @db.SmallInt
-  bedrooms       Int?       @map("bedrooms") @db.SmallInt
-  rentPrice      Decimal?   @map("rent_price") @db.Decimal(14, 0)
-  rentNegotiable Boolean    @default(false) @map("rent_negotiable")
-  description    String?    @map("description")
-  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(6)
-  property       Property   @relation("Unit_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  meters         Meter[]    @relation("Meter_unit")
-  leases         Lease[]    @relation("Lease_unit")
-  requests       Request[]  @relation("Request_unit")
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  unitName       String    @map("unit_name")
+  area           Decimal   @map("area") @db.Decimal(8, 2)
+  floor          Int       @map("floor")
+  bathrooms      Int?      @map("bathrooms") @db.SmallInt
+  bedrooms       Int?      @map("bedrooms") @db.SmallInt
+  rentPrice      Decimal?  @map("rent_price") @db.Decimal(14, 0)
+  rentNegotiable Boolean   @default(false) @map("rent_negotiable")
+  description    String?   @map("description")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  property       Property  @relation("Unit_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meters         Meter[]   @relation("Meter_unit")
+  leases         Lease[]   @relation("Lease_unit")
+  requests       Request[] @relation("Request_unit")
 
   @@unique([id, propertyId])
   @@index([propertyId])
@@ -407,14 +435,14 @@ model AgreementTemplate {
 }
 
 model InventoryItem {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  propertyId     String          @map("property_id") @db.Uuid
-  inventoryName  String          @map("inventory_name")
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt      DateTime?       @map("deleted_at") @db.Timestamptz(6)
-  property       Property        @relation("InventoryItem_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  handovers      Handover[]      @relation("Handover_inventoryItem")
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId    String     @map("property_id") @db.Uuid
+  inventoryName String     @map("inventory_name")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  property      Property   @relation("InventoryItem_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  handovers     Handover[] @relation("Handover_inventoryItem")
 
   @@unique([id, propertyId])
   @@index([propertyId])
@@ -422,19 +450,24 @@ model InventoryItem {
 }
 
 model Handover {
-  id            String        @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  propertyId    String        @map("property_id") @db.Uuid
-  leaseId       String        @map("lease_id") @db.Uuid
-  itemId        String        @map("item_id") @db.Uuid
-  quantity      Int           @map("quantity")
-  itemCondition ItemCondition @default(good) @map("item_condition")
-  description   String?       @map("description")
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime?     @map("deleted_at") @db.Timestamptz(6)
-  property      Property      @relation("Handover_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  inventoryItem InventoryItem @relation("Handover_inventoryItem", fields: [itemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
-  lease         Lease         @relation("Handover_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId        String         @map("property_id") @db.Uuid
+  leaseId           String         @map("lease_id") @db.Uuid
+  itemId            String         @map("item_id") @db.Uuid
+  quantity          Int            @map("quantity")
+  itemCondition     ItemCondition  @default(good) @map("item_condition")
+  description       String?        @map("description")
+  // check-out when the lease ends
+  returnedQuantity  Int?           @map("returned_quantity")
+  returnedCondition ItemCondition? @map("returned_condition")
+  returnNote        String?        @map("return_note")
+  returnedAt        DateTime?      @map("returned_at") @db.Date
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  property          Property       @relation("Handover_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  inventoryItem     InventoryItem  @relation("Handover_inventoryItem", fields: [itemId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
+  lease             Lease          @relation("Handover_lease", fields: [leaseId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
 
   // partial unique (lease_id, item_id) -> SQL migration
   @@index([propertyId])
@@ -750,6 +783,7 @@ model Request {
   requestedBy        String           @map("requested_by") @db.Uuid
   assignedTo         String?          @map("assigned_to") @db.Uuid
   requestedCloseDate DateTime?        @map("requested_close_date") @db.Date
+  details            Json?            @map("details")
   closedAt           DateTime?        @map("closed_at") @db.Timestamptz(6)
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)

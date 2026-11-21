@@ -39,6 +39,13 @@ export function MeterOpening({ form, meterId, name, startDate }: { form: UseForm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [last?.value, last?.on, recordNew, meterId, form]);
 
+  // No reading exists to open from, so what is typed must be sent as a new reading (the submit only sends ticked meters).
+  const loaded = !before.isPending && !(before.data?.items.length === 0 && after.isPending);
+  useEffect(() => {
+    if (loaded && !last) form.setValue(`recordNew.${meterId}`, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, !last, meterId, form]);
+
   if (before.isPending || latestQ.isPending || (before.data?.items.length === 0 && after.isPending)) return <Text size="sm" color="secondary">{name} · loading reading…</Text>;
   return (
     <VStack gap={1}>

@@ -44,7 +44,7 @@ export interface ITenancyRepository {
   countItems(propertyId: string, itemIds: string[]): Promise<number>;
   findTemplate(propertyId: string, templateId: string): Promise<{ id: string; currentVersion: number } | null>;
 
-  /** One transaction: tenants (accounts found/created by phone), members, handover items, the lease. Returns its id. */
+  /** One transaction: members, handover items, the lease. Returns its id. */
   create(command: ICreateLeaseCommand, templateVersion: number | null): Promise<string>;
   update(command: IUpdateLeaseCommand): Promise<void>;
   /** Draft leases only (nothing was ever billed). */

@@ -1,5 +1,8 @@
 "use client";
 
+import { DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { FormFooter } from "@/client/ui/rhf";
 import { formatDate, formatMoney, label, todayIso } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IServiceListResponse, IServiceResponse } from "@/client/lib/types";
@@ -11,20 +14,22 @@ import { HStack, Stack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useProperty } from "../property-layout";
-import { PriceForm } from "./price-form";
-import { ServiceForm } from "./service-form";
+import { PriceFields, usePriceForm } from "./price-form";
+import { ServiceFields, useServiceForm } from "./service-form";
 
 export function ServicesPage() {
   const { apiPath, canManage } = useProperty();
   const [creating, setCreating] = useState(false);
+  const serviceForm = useServiceForm({ open: creating, onDone: () => setCreating(false) });
   const [pricing, setPricing] = useState<IServiceResponse | null>(null);
+  const priceForm = usePriceForm({ service: pricing, onDone: () => setPricing(null) });
   const { data, error, isPending, refetch } = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 });
 
   return (
     <Stack gap={4}>
-      {canManage && <HStack justify="end"><Button label="Add service" onClick={() => setCreating(true)} /></HStack>}
+      {canManage && <HStack justify="end"><Button variant="primary" label="Add service" onClick={() => setCreating(true)} /></HStack>}
       {isPending ? <PageSpinner /> : error ? <ErrorBox error={error} retry={() => void refetch()} /> : data.items.length === 0 ? (
-        <Card padding={4}><Empty title="No services" hint="Things you bill besides rent." action={canManage && <Button label="Add the first service" onClick={() => setCreating(true)} />} /></Card>
+        <Card padding={4}><Empty title="No services" hint="Things you bill besides rent." action={canManage && <Button variant="primary" label="Add the first service" onClick={() => setCreating(true)} />} /></Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {data.items.map((s) => {
@@ -55,8 +60,28 @@ export function ServicesPage() {
           })}
         </div>
       )}
-      <Modal open={creating} onClose={() => setCreating(false)} title="Add service">{creating && <ServiceForm onDone={() => setCreating(false)} />}</Modal>
-      <Modal open={pricing !== null} onClose={() => setPricing(null)} title={`New price · ${pricing?.name ?? ""}`}>{pricing && <PriceForm service={pricing} onDone={() => setPricing(null)} />}</Modal>
+      <Modal open={creating} onClose={() => setCreating(false)}>
+        <form noValidate onSubmit={serviceForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={"Add service"} onOpenChange={(o) => { if (!o) setCreating(false); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><ServiceFields x={serviceForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={serviceForm.error} busy={serviceForm.busy} submitLabel={"Add service"} onCancel={() => setCreating(false)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
+      <Modal open={pricing !== null} onClose={() => setPricing(null)}>
+        <form noValidate onSubmit={priceForm.submit} className="flex min-h-0 flex-1 flex-col">
+          <Layout
+            height="fill"
+            padding={5}
+            header={<DialogHeader title={`New price · ${pricing?.name ?? ""}`} onOpenChange={(o) => { if (!o) setPricing(null); }} />}
+            content={<LayoutContent isScrollable style={{ paddingBlock: 16 }}><PriceFields x={priceForm} /></LayoutContent>}
+            footer={<LayoutFooter padding={5}><FormFooter error={priceForm.error} busy={priceForm.busy} submitLabel={"Add price"} onCancel={() => setPricing(null)} /></LayoutFooter>}
+          />
+        </form>
+      </Modal>
     </Stack>
   );
 }

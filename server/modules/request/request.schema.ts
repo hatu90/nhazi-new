@@ -3,7 +3,7 @@ import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { idSchema, isoDateSchema, nonEmptyPatch } from "@/server/shared/schema";
 
-export const requestTypeSchema = z.enum(["maintenance", "close_lease", "enquiry"]);
+export const requestTypeSchema = z.enum(["maintenance", "close_lease", "close_period", "enquiry"]);
 export const requestStatusSchema = z.enum(["open", "in_progress", "resolved", "rejected", "cancelled"]);
 export const requestPrioritySchema = z.enum(["low", "normal", "high", "urgent"]);
 export type RequestType = z.infer<typeof requestTypeSchema>;
@@ -27,7 +27,8 @@ export type ITenantRequestListQuery = z.infer<typeof tenantRequestListQuerySchem
 // ── tenant: create ──────────────────────────────────────────────────────────────────
 export const createRequestPayloadSchema = z
   .object({
-    type: requestTypeSchema,
+    // close_period has its own endpoint (it carries the meter readings)
+    type: requestTypeSchema.exclude(["close_period"]),
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().max(4000).optional(),
     priority: requestPrioritySchema.default("normal"),
@@ -38,9 +39,17 @@ export const createRequestPayloadSchema = z
     if (v.type !== "close_lease" && v.requestedCloseDate) ctx.addIssue({ code: "custom", path: ["requestedCloseDate"], message: "Only for close_lease" });
   });
 export type ICreateRequestPayload = z.infer<typeof createRequestPayloadSchema>;
-export interface ICreateRequestCommand extends ICreateRequestPayload {
+/** Meter readings a tenant hands in when asking to close the billing period. */
+export interface IClosePeriodDetails {
+  periodId: string;
+  endDate: string;
+  readings: { meterId: string; serviceName: string; openingValue: number; value: number }[];
+}
+export interface ICreateRequestCommand extends Omit<ICreateRequestPayload, "type"> {
+  type: RequestType;
   actor: IActor;
   leaseId: string;
+  details?: IClosePeriodDetails;
 }
 export const toCreateRequestCommand = (p: ICreateRequestPayload, actor: IActor, leaseId: string): ICreateRequestCommand => ({ ...p, actor, leaseId });
 
@@ -88,6 +97,8 @@ export interface IRequestResponse {
   requestedBy: IPersonRef;
   assignedTo: IPersonRef | null;
   requestedCloseDate: string | null;
+  /** close_period requests: the period, the last day and the readings. */
+  details: IClosePeriodDetails | null;
   closedAt: string | null;
   createdAt: string;
 }

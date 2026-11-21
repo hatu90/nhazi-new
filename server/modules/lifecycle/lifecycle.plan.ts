@@ -109,13 +109,16 @@ export function planRefund(
   period: { start: string; plannedEnd: string; terminatedAt: string; id: string },
   overrides: Record<string, number>,
   opts: { method?: "cash" | "bank_transfer"; note?: string },
-): { refund: INewRefundPlan | null; keys: string[] } {
+  /** false: size the lines from what was charged only (the value held), ignoring what was paid */
+  capByPaid = true,
+): { refund: INewRefundPlan | null; keys: string[]; itemKeys: string[] } {
   const room = new Map<string, number>(); // what each invoice can still give back
   for (const b of billed) room.set(b.invoiceId, Math.max(0, b.invoicePaid - b.invoiceRefunded));
 
   const order: Record<IBilledLine["role"], number> = { rent: 0, service: 1, deposit: 2 };
   const keys: string[] = [];
   const items: INewRefundPlan["items"] = [];
+  const itemKeys: string[] = [];
   for (const b of [...billed].sort((a, c) => order[a.role] - order[c.role])) {
     const key = b.role === "rent" ? "refund:rent" : b.role === "deposit" ? "refund:deposit" : `refund:service:${b.subscriptionId}`;
     keys.push(key);
@@ -123,7 +126,7 @@ export function planRefund(
     const { unused: unusedDays, total: totalDays } = b.role === "deposit" ? { unused: 0, total: 0 } : unusedOf(b, period, period.terminatedAt);
     const suggested = b.role === "deposit" ? b.amount : unusedDays > 0 ? prorate(b.amount, unusedDays, totalDays) : 0;
     const typed = overrides[key];
-    const invoiceRoom = room.get(b.invoiceId) ?? 0;
+    const invoiceRoom = capByPaid ? (room.get(b.invoiceId) ?? 0) : Number.POSITIVE_INFINITY;
     let amount: number;
     if (typed !== undefined) {
       if (typed > lineRoom) throw new ConflictError(`${key}: exceeds what is left on the invoice line (${lineRoom})`, "REFUND_EXCEEDS_CHARGE");
@@ -134,6 +137,7 @@ export function planRefund(
     }
     if (amount <= 0) continue;
     room.set(b.invoiceId, invoiceRoom - amount);
+    itemKeys.push(key);
     const partial = b.role !== "deposit";
     items.push({
       invoiceId: b.invoiceId,
@@ -148,5 +152,5 @@ export function planRefund(
   for (const k of Object.keys(overrides)) {
     if (k.startsWith("refund:") && !keys.includes(k)) throw new ValidationError("Unknown refund line", { fieldErrors: { overrides: [`Unknown line "${k}". Available: ${keys.join(", ") || "none"}`] } });
   }
-  return { refund: items.length ? { billingPeriodId: period.id, ...opts, items } : null, keys };
+  return { refund: items.length ? { billingPeriodId: period.id, ...opts, items } : null, keys, itemKeys };
 }

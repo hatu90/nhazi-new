@@ -1,12 +1,19 @@
 /**
- * react-hook-form bindings for the Astryx-backed fields. Every form in the app is one column, opened in a <Modal>:
+ * react-hook-form bindings for the Astryx-backed fields. A form dialog is owned by the page that opens it:
  *
- *   const form = useForm<Values>({ defaultValues });
- *   const save = useSend(...);
- *   const submit = useSubmit(form, save, (v) => ({ ...payload }), onDone);
- *   <FormBody onSubmit={submit} mutation={save} submitLabel="Save" onCancel={onDone}>
- *     <FText control={form.control} name="name" label="Name" required />
- *   </FormBody>
+ *   // <thing>-form.tsx
+ *   export function useThingForm({ open, onDone }) {
+ *     const form = useForm<Values>({ defaultValues });
+ *     const save = useSend(...);
+ *     useOpenReset(open, () => { form.reset(defaultValues); save.reset(); });
+ *     const submit = useSubmit(form, save, (v) => ({ ...payload }), onDone);
+ *     return { form, submit, error: save.error, busy: save.isPending };
+ *   }
+ *   export function ThingFields({ x }: { x: ReturnType<typeof useThingForm> }) {
+ *     return <VStack gap={4}><FText control={x.form.control} name="name" label="Name" required /></VStack>;
+ *   }
+ *
+ *   // page: <Modal><form onSubmit={x.submit}><Layout header content footer/></form></Modal>  (see `Modal`)
  *
  * Field values are strings (so "" can mean "not set"); `build` converts them to the API payload. Validation errors the
  * API returns (422 `fieldErrors`) are put on the matching field by `useSubmit`.
@@ -20,4 +27,5 @@ export { FMulti } from "./f-multi";
 export { FCheck } from "./f-check";
 export { applyServerErrors } from "./apply-server-errors";
 export { useSubmit } from "./use-submit";
-export { FormBody } from "./form-body";
+export { FormFooter } from "./form-footer";
+export { useOpenReset } from "./use-open-reset";

@@ -89,6 +89,7 @@ export interface ICloseLeasePlan extends IBase {
   close: IClosePlan | null;
   invoice: IInvoicePlan | null;
   refund: INewRefundPlan | null;
+  handovers: { handoverId: string; condition: "good" | "damaged" | "missing"; quantity: number; note?: string }[];
 }
 export interface ISubscriptionPlan extends IBase {
   subscription: {

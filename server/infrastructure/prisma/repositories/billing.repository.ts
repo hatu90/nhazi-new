@@ -57,6 +57,7 @@ export class PrismaBillingRepository implements IBillingRepository {
         subscriptionId: u.subscriptionId,
         serviceName: u.serviceSubscription.service.serviceName,
         usageBase: u.serviceSubscription.service.usageBase,
+        meterId: u.serviceSubscription.meterId,
         quantity: numOrNull(u.quantity),
         price: u.price as unknown as IPriceVersion,
         openingReading: ref(u.openingReading),

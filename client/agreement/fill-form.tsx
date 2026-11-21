@@ -31,7 +31,7 @@ export function FillForm({ content, vars, values, onSave, onDone }: { content: u
         <AgreementFormFields form={form} data={content} vars={vars} />
         <HStack gap={2} justify="end">
           <Button label="Cancel" variant="secondary" onClick={onDone} />
-          <Button label="Save" type="submit" isLoading={busy} />
+          <Button variant="primary" label="Save" type="submit" isLoading={busy} />
         </HStack>
       </VStack>
     </form>

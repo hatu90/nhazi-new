@@ -38,8 +38,7 @@ export function PhoneStep({ onDone }: { onDone: () => Promise<void> }) {
     <form noValidate onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(run)(); }}>
       <VStack gap={4}>
         <VStack gap={1}>
-          <Heading level={1}>Sign in or create an account</Heading>
-          <Text color="secondary">{sent ? `We sent a 6-digit code to ${normalizePhone(phone)}.` : "Use your phone number — we'll text you a code."}</Text>
+          <Heading level={1}>Sign in</Heading>
         </VStack>
         {sent ? (
           <FText control={form.control} name="code" label="Verification code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus required width="100%" />
@@ -47,10 +46,10 @@ export function PhoneStep({ onDone }: { onDone: () => Promise<void> }) {
           <FText control={form.control} name="phone" label="Phone number" type="tel" autoComplete="tel" placeholder="0912 345 678" autoFocus required rules={{ validate: (v) => isValidPhone(String(v)) || "Enter a valid phone number, e.g. 0912 345 678" }} width="100%" />
         )}
         <FormError error={error} />
-        <Button type="submit" label={sent ? "Verify" : "Send code"} isLoading={form.formState.isSubmitting} />
+        <Button variant="primary" type="submit" label={sent ? "Verify" : "Send code"} isLoading={form.formState.isSubmitting} />
         {sent && <Button label="Use a different number" variant="ghost" onClick={() => { setSent(false); form.setValue("code", ""); }} />}
-        <div ref={recaptcha} />
       </VStack>
+      <div ref={recaptcha} />
     </form>
   );
 }
