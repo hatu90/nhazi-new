@@ -85,7 +85,8 @@ export function plan(event: NotificationEvent, c: ITargetContext, x: IEventExtra
   const staff = (title: string, body: string, ids: string[], severity: NotificationSeverity = "info"): IPlanGroup => ({ ids, area: "admin", title, body, severity });
   const tenant = (title: string, body: string, ids: string[] = tenants, severity: NotificationSeverity = "info"): IPlanGroup => ({ ids, area: "dashboard", title, body, severity });
   const who = c.creatorName ?? "Ai đó";
-  const metadata = metadataOf(c);
+  // The sender travels in metadata (not the body) so the UI can show it on its own line.
+  const metadata = { ...metadataOf(c), ...(c.creatorName && (event === "request.created" || event === "request.status_changed" || event === "request_comment.created") && { senderName: c.creatorName }) };
   const out = (...groups: IPlanGroup[]): IPlan => ({ groups, metadata });
 
   switch (event) {
@@ -131,12 +132,12 @@ export function plan(event: NotificationEvent, c: ITargetContext, x: IEventExtra
 
     // ── requests ──
     case "request.created":
-      return out(staff(`Yêu cầu mới: ${c.label}`, `${who} · ${where(c)}`, c.fieldIds, "warning"));
+      return out(staff(c.label, where(c), c.fieldIds, "warning"));
     case "request.status_changed":
       // the requester hears every change; staff only hear that the requester withdrew it
       return out(
         requesterGroup(c, `Yêu cầu ${STATUS[x.status ?? ""] ?? "được cập nhật"}`, c.label),
-        ...(x.status === "cancelled" ? [staff(`Yêu cầu đã hủy: ${c.label}`, `${who} · ${where(c)}`, uniq([c.assigneeId]).length ? uniq([c.assigneeId]) : c.fieldIds)] : []),
+        ...(x.status === "cancelled" ? [staff(`Yêu cầu đã hủy: ${c.label}`, where(c), uniq([c.assigneeId]).length ? uniq([c.assigneeId]) : c.fieldIds)] : []),
       );
     case "request.assigned":
       return out(staff(`Bạn được giao yêu cầu: ${c.label}`, where(c), uniq([x.assigneeId ?? c.assigneeId])));
@@ -144,7 +145,7 @@ export function plan(event: NotificationEvent, c: ITargetContext, x: IEventExtra
       // a tenant-side author talks to the staff, a staff author talks to the requester
       const fromTenant = !!c.creatorId && (c.tenantIds.includes(c.creatorId) || c.creatorId === c.requesterId);
       return out(fromTenant
-        ? staff(`Bình luận mới: ${c.label}`, `${who} · ${where(c)}`, uniq([c.assigneeId]).length ? uniq([c.assigneeId]) : c.fieldIds)
+        ? staff(`Bình luận mới: ${c.label}`, where(c), uniq([c.assigneeId]).length ? uniq([c.assigneeId]) : c.fieldIds)
         : requesterGroup(c, `Phản hồi mới: ${c.label}`, `${who} đã phản hồi`));
     }
 

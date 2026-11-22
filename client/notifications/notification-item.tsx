@@ -28,16 +28,20 @@ export function NotificationItem({ n, actions }: { n: INotificationResponse; act
   const t = useTranslations("Dashboard");
   const locale = useLocale();
   const open = useOpenNotification();
+  // Newer request notifications carry the sender in metadata so it can sit on its own last line.
+  const sender = n.area === "admin" && typeof n.metadata.senderName === "string" ? n.metadata.senderName : null;
   return (
-    <HStack justify="between" align="center" gap={3} wrap="wrap">
-      <VStack gap={0.5}>
-        <HStack gap={2} align="center">
-          <Tag label={t(`notificationTarget.${n.targetType}`)} tone={TONE[n.severity]} />
-          {!n.readAt && <span aria-label={t("unread")} className="size-2 rounded-full bg-[#357d9d]" />}
+    <HStack justify="between" align="center" gap={4} wrap="wrap">
+      <VStack gap={1} style={{ flex: "1 1 240px", minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {!n.readAt && <span aria-label={t("unread")} className="size-2 shrink-0 rounded-full bg-[#357d9d]" />}
           <Text size="sm" color="secondary">{formatDateTime(n.createdAt, locale)}</Text>
-        </HStack>
-        <Text weight={n.readAt ? undefined : "semibold"}>{n.title}</Text>
-        <Text size="sm" color="secondary">{n.body}</Text>
+        </div>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text size="lg" weight={n.readAt ? "medium" : "semibold"}>{n.title}</Text>
+          <span style={{ flexShrink: 0 }}><Tag label={t(`notificationTarget.${n.targetType}`)} tone={TONE[n.severity]} /></span>
+        </div>
+        <Text size="sm" color="secondary">{sender ? `${n.body} · ${sender}` : n.body}</Text>
       </VStack>
       {actions ?? <Button label={t("view")} variant="secondary" onClick={() => open(n)} />}
     </HStack>
