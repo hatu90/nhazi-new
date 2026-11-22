@@ -1,5 +1,5 @@
 import type { IActor } from "@/server/shared/actor";
-import { NotFoundError, ValidationError } from "@/server/shared/errors";
+import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IFileStorage } from "../storage/storage.port";
@@ -104,5 +104,18 @@ export class UpdatePropertyUseCase implements IUseCase<IUpdatePropertyCommand, I
       throw new ValidationError("rentPriceFrom must be <= rentPriceTo", { fieldErrors: { rentPriceTo: ["rentPriceFrom must be <= rentPriceTo"] } });
     }
     return { ...(await this.properties.update(c)), role };
+  }
+}
+
+/** Soft delete: hides the property everywhere. Owner only; refused while any lease exists. */
+export class DeletePropertyUseCase implements IUseCase<{ actor: IActor; propertyId: string }, void> {
+  constructor(
+    private readonly properties: IPropertyRepository,
+    private readonly policy: AccessPolicy,
+  ) {}
+  async execute({ actor, propertyId }: { actor: IActor; propertyId: string }) {
+    await this.policy.assertPropertyRole(actor, propertyId, ROLES.ownerOnly);
+    if (await this.properties.hasLeases(propertyId)) throw new ConflictError("The property has leases and cannot be deleted", "PROPERTY_IN_USE");
+    if (!(await this.properties.softDelete(propertyId))) throw new NotFoundError("Property");
   }
 }

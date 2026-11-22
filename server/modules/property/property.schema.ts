@@ -3,6 +3,7 @@ import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import type { IUnitResponse } from "../unit/unit.schema";
 import { referenceAddressLinksSchema, type IPropertyReferenceAddressResponse } from "../reference-address/reference-address.schema";
+import type { VerificationStatus } from "../verification/verification.schema";
 import { propertyCategorySchema, vndSchema, type PropertyCategory, type PropertyRole, type ServiceUsageBase } from "@/server/shared/schema";
 
 // ── address JSON (snapshot of the external provinces/wards API) ─────────────────────
@@ -111,6 +112,9 @@ export interface IPropertySummaryResponse {
   rentNegotiable: boolean;
   headerImage: string | null;
   unitCount: number;
+  /** `verified` drops to `registered` once its term has lapsed */
+  verificationStatus: VerificationStatus;
+  verificationExpiresAt: string | null;
   referenceAddresses: IPropertyReferenceAddressResponse[];
 }
 

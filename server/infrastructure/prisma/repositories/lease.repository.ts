@@ -7,10 +7,11 @@ import {
   type IInvoiceResponse,
   type ILeaseListQuery,
   type IMonthBreakdown,
+  type ILeaseDocument,
 } from "@/server/modules/lease/lease.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import { Prisma, type PrismaClient } from "../client";
-import { isoDate, isoDateOrNull, isoDateTime, num } from "../mappers";
+import { isoDate, isoDateOrNull, isoDateTime, num, toDocuments, toJson } from "../mappers";
 
 const templateVersionsSchema = z.array(z.object({ version: z.number().int(), data: z.unknown() }));
 
@@ -113,7 +114,7 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       billingCycleDay: row.billingCycleDay,
       rentVersions,
       agreement,
-      documents: row.documents,
+      documents: toDocuments(row.documents),
       members: row.leaseMembers.map((m) => ({
         id: m.id,
         name: m.name,
@@ -153,6 +154,16 @@ export class PrismaLeaseRepository implements ILeaseRepository {
     let first = 0;
     while (first < result.length - 3 && result[first].total === 0) first++;
     return result.slice(first);
+  }
+
+  async addDocuments(leaseId: string, documents: ILeaseDocument[]) {
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.lease.findUniqueOrThrow({ where: { id: leaseId }, select: { documents: true } });
+      const current = toDocuments(row.documents);
+      const next = [...current, ...documents.filter((d) => !current.some((c) => c.path === d.path))];
+      await tx.lease.update({ where: { id: leaseId }, data: { documents: toJson(next) } });
+      return next;
+    });
   }
 
   async isTenant(accountId: string, leaseId: string) {

@@ -73,7 +73,7 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
   const available = p.units.filter((u) => empty.has(u.id));
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8">
+    <div className="mx-auto w-full max-w-5xl min-w-0 px-4 py-6 sm:px-5 sm:py-8">
       <VStack gap={5}>
         <Link href="/find-property" className="text-sm text-[var(--text-secondary,#71717a)] hover:underline">{t("backToSearch")}</Link>
 
@@ -84,6 +84,7 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
               <HStack gap={2} align="center" wrap="wrap">
                 <Heading level={1}>{p.name}</Heading>
                 <Tag label={e(`category.${p.category}`)} tone="info" />
+                {p.verificationStatus !== "none" && <Tag label={e(`verificationStatus.${p.verificationStatus}`)} tone={p.verificationStatus === "verified" ? "success" : "info"} />}
               </HStack>
               <Text color="secondary">{p.street}, {p.ward.name}, {p.province.name}</Text>
               {p.referenceAddresses.length > 0 && (

@@ -21,4 +21,7 @@ export interface IPropertyRepository {
   /** Creates the property and makes the actor its `owner`, atomically. */
   create(command: ICreatePropertyCommand): Promise<IAdminPropertyDetail>;
   update(command: IUpdatePropertyCommand): Promise<IAdminPropertyDetail>;
+  /** True when the property still has any (non-deleted) lease. */
+  hasLeases(propertyId: string): Promise<boolean>;
+  softDelete(propertyId: string): Promise<boolean>;
 }

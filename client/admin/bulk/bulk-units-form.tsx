@@ -142,9 +142,9 @@ export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, flo
         <VStack gap={3}>
           <Text weight="semibold">{t("addFloor")}</Text>
           <HStack gap={3} align="end" wrap="wrap">
-            <NumberField label={t("floor")} value={floorNo} onChange={setFloorNo} placeholder={String(suggestedFloor)} width={96} />
-            <NumberField label={t("unitsOnIt")} value={floorCount} onChange={setFloorCount} width={120} />
-            <TextField label={t("namePattern")} value={pattern} onChange={setPattern} width={260} />
+            <div className="w-24"><NumberField label={t("floor")} value={floorNo} onChange={setFloorNo} placeholder={String(suggestedFloor)} width="100%" /></div>
+            <div className="w-28"><NumberField label={t("unitsOnIt")} value={floorCount} onChange={setFloorCount} width="100%" /></div>
+            <div className="w-full min-w-0 sm:w-64"><TextField label={t("namePattern")} value={pattern} onChange={setPattern} width="100%" /></div>
             <Button icon={<Plus size={16} />} label={t("addFloor")} variant="secondary" onClick={addFloor} isDisabled={count >= MAX_ROWS} />
           </HStack>
         </VStack>

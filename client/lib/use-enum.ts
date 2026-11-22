@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-export type EnumGroup = "status" | "role" | "category" | "invoiceKind" | "itemKind" | "refundKind" | "paymentMethod" | "requestType" | "priority" | "usageBase" | "condition";
+export type EnumGroup = "status" | "role" | "category" | "invoiceKind" | "itemKind" | "refundKind" | "paymentMethod" | "requestType" | "priority" | "usageBase" | "condition" | "verificationStatus" | "criterionStatus";
 
 const humanize = (v: string) => v.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 

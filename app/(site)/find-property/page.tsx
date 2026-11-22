@@ -92,6 +92,11 @@ async function Results({
                 <div className="absolute left-3 top-3">
                   <Tag label={e(`category.${p.category}`)} tone="info" />
                 </div>
+                {p.verificationStatus !== "none" && (
+                  <div className="absolute right-3 top-3">
+                    <Tag label={e(`verificationStatus.${p.verificationStatus}`)} tone={p.verificationStatus === "verified" ? "success" : "info"} />
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-2 p-4">
                 <Heading level={3}>{p.name}</Heading>
@@ -146,7 +151,7 @@ export default async function FindPropertyPage({
 }: PageProps<"/find-property">) {
   const t = await getTranslations("Site");
   return (
-    <div className="mx-auto w-full max-w-4xl px-5 py-10">
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-5 sm:py-10">
       <VStack gap={5}>
         <VStack gap={1}>
           <Heading level={1}>{t("findTitle")}</Heading>

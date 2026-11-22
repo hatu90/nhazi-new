@@ -28,3 +28,9 @@ export async function orConflict<T>(run: () => Promise<T>, message: string, code
 
 /** Validated-by-zod values are plain JSON; this just satisfies Prisma's JSON input type at the boundary. */
 export const toJson = (v: unknown) => v as Prisma.InputJsonValue;
+
+/** `leases.documents` (JSON) → `{ path, name }[]`; tolerates malformed rows. */
+export const toDocuments = (v: unknown): { path: string; name: string }[] =>
+  Array.isArray(v)
+    ? v.flatMap((d) => (d && typeof d === "object" && typeof (d as { path?: unknown }).path === "string" ? [{ path: (d as { path: string }).path, name: typeof (d as { name?: unknown }).name === "string" ? (d as { name: string }).name : "" }] : []))
+    : [];

@@ -23,6 +23,7 @@ export function AgreementSection({
   values,
   onSaveValues,
   extra,
+  after,
 }: {
   title?: string;
   content: unknown;
@@ -30,6 +31,8 @@ export function AgreementSection({
   values: unknown;
   onSaveValues?: (values: Record<string, string>) => Promise<unknown>;
   extra?: ReactNode;
+  /** Rendered below the agreement (e.g. attached files). */
+  after?: ReactNode;
 }) {
   const t = useTranslations("Agreements");
   const [editing, setEditing] = useState(false);
@@ -58,6 +61,7 @@ export function AgreementSection({
             <AgreementResult data={content} values={filled} vars={vars} />
           </div>
         )}
+        {after}
       </VStack>
     </Section>
   );

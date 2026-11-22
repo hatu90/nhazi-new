@@ -28,7 +28,6 @@ export function TierFields<T extends FieldValues>({ control, name, multi, unit }
         const last = i === fields.length - 1;
         return (
           <VStack key={f.id} gap={1}>
-            {multi && last && <Text size="sm" color="secondary">{t("tierAbove", { n: i + 1 })}</Text>}
             <HStack gap={2} align="end">
               {multi && !last && <FNumber control={control} name={`${name}.${i}.upTo` as Path<T>} label={t("tierUpTo", { n: i + 1 })} unit={unit} required width="100%" />}
               <FNumber control={control} name={`${name}.${i}.rate` as Path<T>} label={multi ? t("rate") : t("price")} money hint={t("per", { unit })} required width="100%" />

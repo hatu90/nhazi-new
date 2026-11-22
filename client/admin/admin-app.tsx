@@ -22,6 +22,8 @@ import { ServicesPage } from "./pages/services";
 import { SettingsPage } from "./pages/settings";
 import { TeamPage } from "./pages/team";
 import { UnitsPage } from "./pages/units";
+import { VerificationPage } from "./pages/verification";
+import { VerificationStaffPage } from "./pages/verification-staff";
 import { PropertyLayout } from "./property-layout";
 import { ToDashboard } from "./to-dashboard";
 
@@ -50,8 +52,10 @@ export default function AdminApp() {
                 <Route path="agreements" element={<AgreementsPage />} />
                 <Route path="agreements/:templateId" element={<AgreementEditorPage />} />
                 <Route path="team" element={<TeamPage />} />
+                <Route path="verification" element={<VerificationPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
+              <Route path="verification" element={<VerificationStaffPage />} />
               <Route path="*" element={<NotFound backTo="/" label={t("backToDashboard")} />} />
             </Route>
           </Routes>

@@ -26,3 +26,4 @@ export { RowActions, type RowAction } from "./row-actions";
 export { StatusBadge } from "./status-badge";
 export { Tag } from "./tag";
 export { FormActions } from "./form-actions";
+export { VerificationBadge } from "./verification-badge";

@@ -4,6 +4,8 @@ import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { ROLES, type AccessPolicy } from "../access/access.policy";
 import type { IUseCase } from "@/server/shared/usecase";
 import type { ILeaseRepository } from "../lease/lease.repository";
+import type { ILeaseDocument } from "../lease/lease.schema";
+import type { ITenancyRepository } from "../tenancy/tenancy.repository";
 import type { IFileStorage } from "./storage.port";
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -47,6 +49,58 @@ export class GetLeaseFileUrlUseCase implements IUseCase<IGetLeaseFileUrlCommand,
   constructor(private readonly storage: IFileStorage, private readonly leases: ILeaseRepository) {}
   async execute(c: IGetLeaseFileUrlCommand) {
     if (!(await this.leases.isTenant(c.actor.accountId, c.leaseId))) throw new NotFoundError("Lease");
+    if (!c.path.startsWith(leaseFilePrefix(c.leaseId)) || c.path.includes("..")) throw new NotFoundError("File");
+    return { url: await this.storage.signedUrl(c.path, 300) };
+  }
+}
+
+export interface IAddLeaseDocumentsCommand {
+  actor: IActor;
+  leaseId: string;
+  documents: ILeaseDocument[];
+}
+/** Tenant: add files to the lease (ID photos, signed copies…). Only files stored under this lease are accepted; removing is for the landlord. */
+export class AddLeaseDocumentsUseCase implements IUseCase<IAddLeaseDocumentsCommand, { documents: ILeaseDocument[] }> {
+  constructor(private readonly leases: ILeaseRepository) {}
+  async execute(c: IAddLeaseDocumentsCommand) {
+    if (!(await this.leases.isTenant(c.actor.accountId, c.leaseId))) throw new NotFoundError("Lease");
+    const prefix = leaseFilePrefix(c.leaseId);
+    if (c.documents.some((d) => !d.path.startsWith(prefix) || d.path.includes(".."))) throw new ValidationError("Invalid document path");
+    return { documents: await this.leases.addDocuments(c.leaseId, c.documents) };
+  }
+}
+
+// Admin side of the same lease files (the lease must belong to the property).
+export interface IUploadAdminLeaseFileCommand extends IPropertyScope {
+  leaseId: string;
+  name: string;
+  contentType: string;
+  bytes: ArrayBuffer;
+}
+export class UploadAdminLeaseFileUseCase implements IUseCase<IUploadAdminLeaseFileCommand, IUploadedFileResponse> {
+  constructor(private readonly storage: IFileStorage, private readonly policy: AccessPolicy, private readonly tenancies: ITenancyRepository) {}
+  async execute(c: IUploadAdminLeaseFileCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    if (!(await this.tenancies.findCore(c.propertyId, c.leaseId))) throw new NotFoundError("Lease");
+    const ext = TYPES[c.contentType];
+    if (!ext) throw new ValidationError("Only JPG, PNG, WebP or PDF files are allowed");
+    if (c.bytes.byteLength === 0) throw new ValidationError("The file is empty");
+    if (c.bytes.byteLength > MAX_UPLOAD_BYTES) throw new ValidationError("The file must be 5 MB or smaller");
+    const path = `${leaseFilePrefix(c.leaseId)}${randomUUID()}.${ext}`;
+    await this.storage.put(path, c.bytes, c.contentType);
+    return { path, name: c.name.slice(0, 200) };
+  }
+}
+
+export interface IGetAdminLeaseFileUrlCommand extends IPropertyScope {
+  leaseId: string;
+  path: string;
+}
+export class GetAdminLeaseFileUrlUseCase implements IUseCase<IGetAdminLeaseFileUrlCommand, { url: string }> {
+  constructor(private readonly storage: IFileStorage, private readonly policy: AccessPolicy, private readonly tenancies: ITenancyRepository) {}
+  async execute(c: IGetAdminLeaseFileUrlCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.read);
+    if (!(await this.tenancies.findCore(c.propertyId, c.leaseId))) throw new NotFoundError("Lease");
     if (!c.path.startsWith(leaseFilePrefix(c.leaseId)) || c.path.includes("..")) throw new NotFoundError("File");
     return { url: await this.storage.signedUrl(c.path, 300) };
   }

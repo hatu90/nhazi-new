@@ -57,6 +57,7 @@ export type {
 } from "@/server/modules/request/request.schema";
 export type { IItemResponse, IItemListResponse, IHandoverResponse } from "@/server/modules/inventory/inventory.schema";
 export type { IServiceResponse, IServiceListResponse, IPriceVersion } from "@/server/modules/service/service.schema";
+export type { ILeaseDocument } from "@/server/modules/lease/lease.schema";
 export type { IMeterResponse, IMeterListResponse } from "@/server/modules/meter/meter.schema";
 export type { IReadingResponse, IReadingListResponse } from "@/server/modules/reading/reading.schema";
 export type { IMemberResponse } from "@/server/modules/member/member.schema";
@@ -68,3 +69,14 @@ export type { INotificationResponse, INotificationListResponse, NotificationTarg
 export type { IMyBillingResponse, IMonthBreakdown, ICloseMyPeriodResponse } from "@/server/modules/lease/lease.schema";
 
 export type { IInvoicePreview } from "@/server/modules/lifecycle/lifecycle.schema";
+export type {
+  VerificationStatus,
+  CriterionStatus,
+  ICriterionResponse,
+  IDeclarationResponse,
+  IPropertyCriterionResponse,
+  IPropertyVerificationResponse,
+  IReviewItemResponse,
+  IReviewListResponse,
+} from "@/server/modules/verification/verification.schema";
+export type { IDashboardResponse, IDuePeriod, IOverdueInvoice, IPendingPayment, IOpenRequest } from "@/server/modules/dashboard/dashboard.schema";

@@ -15,7 +15,7 @@ import type { ISubscriptionResponse, ITenancyDetailResponse } from "@/client/lib
 import { DataTable, DefList, Empty, ErrorBox, Modal, Section, useConfirm, RowActions } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { HandoverFields, useHandoverForm } from "./handover-form";
-import { LeaseAgreement } from "./lease-agreement";
+import { LeaseDocuments } from "./lease-agreement";
 import { MemberFields, useMemberForm } from "./member-form";
 import { RentFields, useRentForm } from "./rent-form";
 import { SubscriptionFields, useSubscriptionForm } from "./subscription-form";
@@ -56,7 +56,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
         ]} />
       </Section>
 
-      {l.agreement && <LeaseAgreement lease={l} path={path} />}
+      <LeaseDocuments lease={l} path={path} />
 
       <Section title={t("rentHistory")} action={canManage && l.status !== "ended" && <Button icon={<Plus size={16} />} label={t("addRentVersion")} size="sm" variant="secondary" onClick={() => setDialog("rent")} />}>
         <DataTable<{ id: string; effectiveDate: string; amount: number }>

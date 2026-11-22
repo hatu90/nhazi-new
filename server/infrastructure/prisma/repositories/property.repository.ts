@@ -17,6 +17,7 @@ import { numOrNull } from "../mappers";
 import { referenceAddressSelect, resolveReferenceAddressLinks } from "./reference-address.repository";
 import { slugify } from "@/server/modules/reference-address/reference-address.schema";
 import { pricesSchema } from "@/server/modules/service/service.schema";
+import { deriveStatus } from "@/server/modules/verification/verification.rules";
 import { toUnit } from "./unit.repository";
 
 const unitWhere = { deletedAt: null } as const;
@@ -32,6 +33,8 @@ const summarySelect = {
   rentPriceTo: true,
   rentNegotiable: true,
   headerImage: true,
+  verificationResults: { where: { endedAt: null }, select: { expiresAt: true }, take: 1 },
+  verifications: { where: { status: { in: ["declared", "confirmed"] }, criterion: { active: true } }, select: { id: true }, take: 1 },
   referenceAddresses: {
     select: { distance: true, referenceAddress: { select: referenceAddressSelect } },
     orderBy: [{ distance: { sort: "asc", nulls: "last" } }, { referenceAddress: { name: "asc" } }],
@@ -63,6 +66,8 @@ const toSummary = (r: SummaryRow): IPropertySummaryResponse => ({
   rentNegotiable: r.rentNegotiable,
   headerImage: r.headerImage,
   unitCount: r._count.units,
+  verificationStatus: deriveStatus(r.verificationResults[0]?.expiresAt ?? null, r.verifications.length > 0),
+  verificationExpiresAt: r.verificationResults[0] && r.verificationResults[0].expiresAt > new Date() ? r.verificationResults[0].expiresAt.toISOString() : null,
   referenceAddresses: r.referenceAddresses.map((l) => ({ ...l.referenceAddress, distance: l.distance })),
 });
 
@@ -203,6 +208,15 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       this.db.accountProperty.count({ where }),
     ]);
     return paginated(rows.map((m) => ({ ...toSummary(m.property), role: m.role })), total, query);
+  }
+
+  async hasLeases(propertyId: string) {
+    return (await this.db.lease.count({ where: { propertyId, deletedAt: null } })) > 0;
+  }
+
+  async softDelete(propertyId: string) {
+    const r = await this.db.property.updateMany({ where: { id: propertyId, deletedAt: null }, data: { deletedAt: new Date() } });
+    return r.count > 0;
   }
 
   async findAdminById(propertyId: string) {

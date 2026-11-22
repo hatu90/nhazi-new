@@ -10,6 +10,7 @@ import { GetMyBillingUseCase, CloseMyPeriodUseCase, GetMyInvoiceUseCase, GetMyLe
 import {
   CreatePropertyUseCase,
   UpdatePropertyUseCase,
+  DeletePropertyUseCase,
   GetManagedPropertyUseCase,
   GetPublicPropertyUseCase,
   ListManagedPropertiesUseCase,
@@ -46,13 +47,15 @@ import { GetMySubscriptionUseCase, ListPlansUseCase } from "./modules/plan/plan.
 import { GetBillingPeriodUseCase, ListBillingPeriodsUseCase, OpenBillingPeriodUseCase, UpdateUsageUseCase } from "./modules/billing/billing.usecases";
 import { PrismaStatsRepository } from "./infrastructure/prisma/repositories/stats.repository";
 import { GetPropertyStatsUseCase } from "./modules/stats/stats.usecases";
+import { PrismaDashboardRepository } from "./infrastructure/prisma/repositories/dashboard.repository";
+import { GetMyDashboardUseCase } from "./modules/dashboard/dashboard.usecases";
 import { PrismaInvoiceRepository } from "./infrastructure/prisma/repositories/invoice.repository";
 import { PrismaRefundRepository } from "./infrastructure/prisma/repositories/refund.repository";
 import { PrismaRequestRepository } from "./infrastructure/prisma/repositories/request.repository";
 import { PrismaPlanRepository } from "./infrastructure/prisma/repositories/plan.repository";
 import { PrismaBillingRepository } from "./infrastructure/prisma/repositories/billing.repository";
 import { DevAwareTokenVerifier, FirebaseTokenVerifier } from "./infrastructure/firebase/token-verifier";
-import { GetDraftFileUrlUseCase, UploadDraftImageUseCase, GetLeaseFileUrlUseCase, GetPropertyFileUrlUseCase, UploadLeaseFileUseCase, UploadPropertyImageUseCase } from "./modules/storage/storage.usecases";
+import { GetDraftFileUrlUseCase, UploadDraftImageUseCase, GetAdminLeaseFileUrlUseCase, GetLeaseFileUrlUseCase, GetPropertyFileUrlUseCase, AddLeaseDocumentsUseCase, UploadAdminLeaseFileUseCase, UploadLeaseFileUseCase, UploadPropertyImageUseCase } from "./modules/storage/storage.usecases";
 import { createFileStorage } from "./infrastructure/supabase/storage";
 import { getPrisma } from "./infrastructure/prisma/client";
 import { PrismaAccessRepository } from "./infrastructure/prisma/repositories/access.repository";
@@ -60,6 +63,8 @@ import { PrismaAccountRepository } from "./infrastructure/prisma/repositories/ac
 import { PrismaLeaseRepository } from "./infrastructure/prisma/repositories/lease.repository";
 import { CreateReferenceAddressUseCase, SearchReferenceAddressesUseCase } from "./modules/reference-address/reference-address.usecases";
 import { PrismaReferenceAddressRepository } from "./infrastructure/prisma/repositories/reference-address.repository";
+import { CreateCriterionUseCase, DeclareCriterionUseCase, DeleteCriterionUseCase, GetPropertyVerificationUseCase, ListCriteriaUseCase, ListReviewsUseCase, RefreshVerificationUseCase, ReviewDeclarationUseCase, UpdateCriterionUseCase, WithdrawCriterionUseCase } from "./modules/verification/verification.usecases";
+import { PrismaVerificationRepository } from "./infrastructure/prisma/repositories/verification.repository";
 import { PrismaPropertyRepository } from "./infrastructure/prisma/repositories/property.repository";
 
 /**
@@ -75,6 +80,7 @@ function build() {
   const properties = new PrismaPropertyRepository(db);
   const referenceAddresses = new PrismaReferenceAddressRepository(db);
   const leases = new PrismaLeaseRepository(db);
+  const verification = new PrismaVerificationRepository(db);
   
   const units = new PrismaUnitRepository(db);
   const services = new PrismaServiceRepository(db);
@@ -89,6 +95,7 @@ function build() {
   const tenancies = new PrismaTenancyRepository(db);
   const invoices = new PrismaInvoiceRepository(db);
   const stats = new PrismaStatsRepository(db);
+  const dashboard = new PrismaDashboardRepository(db);
   const refunds = new PrismaRefundRepository(db);
   const requests = new PrismaRequestRepository(db);
   const plans = new PrismaPlanRepository(db);
@@ -118,10 +125,22 @@ function build() {
     getManagedProperty: new GetManagedPropertyUseCase(properties, policy),
     createProperty: new CreatePropertyUseCase(properties, storage),
     updateProperty: new UpdatePropertyUseCase(properties, policy),
+    deleteProperty: new DeletePropertyUseCase(properties, policy),
     uploadDraftImage: new UploadDraftImageUseCase(storage),
     getDraftFileUrl: new GetDraftFileUrlUseCase(storage),
     uploadPropertyImage: new UploadPropertyImageUseCase(storage, policy),
     getPropertyFileUrl: new GetPropertyFileUrlUseCase(storage, policy),
+    // verification: owner side + platform staff
+    getPropertyVerification: new GetPropertyVerificationUseCase(verification, policy),
+    declareCriterion: new DeclareCriterionUseCase(verification, policy),
+    withdrawCriterion: new WithdrawCriterionUseCase(verification, policy),
+    listCriteria: new ListCriteriaUseCase(verification, policy),
+    createCriterion: new CreateCriterionUseCase(verification, policy),
+    updateCriterion: new UpdateCriterionUseCase(verification, policy),
+    deleteCriterion: new DeleteCriterionUseCase(verification, policy),
+    listVerificationReviews: new ListReviewsUseCase(verification, policy),
+    refreshVerification: new RefreshVerificationUseCase(verification),
+    reviewDeclaration: new ReviewDeclarationUseCase(verification, policy),
     // units
     listUnits: new ListUnitsUseCase(units, policy),
     getUnit: new GetUnitUseCase(units, policy),
@@ -189,6 +208,7 @@ function build() {
     addSubscription: new AddSubscriptionUseCase(lifecycle, billing, invoices, refunds, policy, subscriptionRules, tenancies, notifier),
     updateUsage: new UpdateUsageUseCase(billing, policy),
     getPropertyStats: new GetPropertyStatsUseCase(stats, policy),
+    getMyDashboard: new GetMyDashboardUseCase(dashboard),
     listInvoices: new ListInvoicesUseCase(invoices, policy),
     getInvoice: new GetInvoiceUseCase(invoices, policy),
     createInvoice: new CreateInvoiceUseCase(invoices, policy, notifier),
@@ -245,6 +265,9 @@ function build() {
     reportPayment: new ReportPaymentUseCase(invoices, leases, notifier),
     uploadLeaseFile: new UploadLeaseFileUseCase(storage, leases),
     getLeaseFileUrl: new GetLeaseFileUrlUseCase(storage, leases),
+    addLeaseDocuments: new AddLeaseDocumentsUseCase(leases),
+    uploadAdminLeaseFile: new UploadAdminLeaseFileUseCase(storage, policy, tenancies),
+    getAdminLeaseFileUrl: new GetAdminLeaseFileUrlUseCase(storage, policy, tenancies),
   };
 }
 

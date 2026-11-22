@@ -24,6 +24,25 @@ enum PropertyCategory {
   @@map("property_category")
 }
 
+/// Why a verified period ended.
+enum VerificationEndReason {
+  /// the term ran out
+  expired
+  /// a required criterion was withdrawn, rejected, re-declared, or the catalog changed
+  no_longer_met
+
+  @@map("verification_end_reason")
+}
+
+/// declared = owner says it is met; confirmed / rejected = platform staff decision.
+enum CriterionStatus {
+  declared
+  confirmed
+  rejected
+
+  @@map("criterion_status")
+}
+
 enum PropertyRole {
   owner
   admin
@@ -192,6 +211,8 @@ model Account {
   phoneNumber             String                @map("phone_number")
   displayName             String                @map("display_name")
   status                  AccountStatus         @default(active) @map("status")
+  /// platform staff: manage verification criteria and review properties' declarations
+  isPlatformAdmin         Boolean               @default(false) @map("is_platform_admin")
   createdAt               DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt               DateTime?             @map("deleted_at") @db.Timestamptz(6)
@@ -297,6 +318,8 @@ model Property {
   rentPriceFrom      Decimal?                   @map("rent_price_from") @db.Decimal(14, 0)
   rentPriceTo        Decimal?                   @map("rent_price_to") @db.Decimal(14, 0)
   rentNegotiable     Boolean                    @default(false) @map("rent_negotiable")
+  verifications      PropertyVerification[]     @relation("PropertyVerification_property")
+  verificationResults PropertyVerificationResult[] @relation("PropertyVerificationResult_property")
   /// maintained by triggers (migration 0012); GIN-indexed. Never written from the app.
   searchVector       Unsupported("tsvector")?   @map("search_vector")
   createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -318,6 +341,70 @@ model Property {
   referenceAddresses PropertyReferenceAddress[] @relation("PropertyReferenceAddress_property")
 
   @@map("properties")
+}
+
+/// Catalog of quality criteria (e.g. fire safety). Managed by platform staff; bilingual.
+model VerificationCriterion {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  name            String                 @map("name")
+  nameEn          String?                @map("name_en")
+  description     String?                @map("description")
+  descriptionEn   String?                @map("description_en")
+  /// required criteria must all be confirmed for a property to be `verified`
+  required        Boolean                @default(true) @map("required")
+  /// inactive criteria are hidden from owners and ignored when deriving the status
+  active          Boolean                @default(true) @map("active")
+  sortOrder       Int                    @default(0) @map("sort_order")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  verifications   PropertyVerification[] @relation("PropertyVerification_criterion")
+
+  @@map("verification_criteria")
+}
+
+/// One property's declaration (and staff decision) for one criterion.
+model PropertyVerification {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId  String                @map("property_id") @db.Uuid
+  criterionId String                @map("criterion_id") @db.Uuid
+  status      CriterionStatus       @default(declared) @map("status")
+  /// owner's note: registration number, how it is met, ...
+  note        String?               @map("note")
+  /// staff's reason when rejected
+  reviewNote  String?               @map("review_note")
+  declaredAt  DateTime              @default(now()) @map("declared_at") @db.Timestamptz(6)
+  reviewedAt  DateTime?             @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy  String?               @map("reviewed_by") @db.Uuid
+  /// term granted when confirmed: 1 or 2 years
+  validityYears Int?                @map("validity_years")
+  /// a confirmation stops counting at this moment (the property must declare again to renew)
+  expiresAt   DateTime?             @map("expires_at") @db.Timestamptz(6)
+  property    Property              @relation("PropertyVerification_property", fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  criterion   VerificationCriterion @relation("PropertyVerification_criterion", fields: [criterionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([propertyId, criterionId])
+  @@index([criterionId])
+  @@map("property_verifications")
+}
+
+/// One period during which a property was `verified`. Open (ended_at null) = the current result; at most one per property.
+/// "registered" is not recorded here: it is derived from property_verifications (declarations).
+model PropertyVerificationResult {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  propertyId  String                 @map("property_id") @db.Uuid
+  verifiedAt  DateTime               @default(now()) @map("verified_at") @db.Timestamptz(6)
+  /// the earliest expiry among the required confirmations
+  expiresAt   DateTime               @map("expires_at") @db.Timestamptz(6)
+  endedAt     DateTime?              @map("ended_at") @db.Timestamptz(6)
+  endReason   VerificationEndReason? @map("end_reason")
+  /// staff who gave the last confirmation that completed it
+  confirmedBy String?                @map("confirmed_by") @db.Uuid
+  /// the criteria it was earned with: [{ criterionId, name, nameEn, years, confirmedAt, expiresAt }] (survives later catalog edits)
+  criteria    Json                   @map("criteria")
+  property    Property               @relation("PropertyVerificationResult_property", fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([propertyId, verifiedAt(sort: Desc)])
+  @@map("property_verification_results")
 }
 
 /// A well-known place people search by ("Khu cong nghiep Yen Phong"). Shared catalog; the slug is generated from the name.
@@ -497,7 +584,8 @@ model Lease {
   agreementTemplateId      String?               @map("agreement_template_id") @db.Uuid
   agreementTemplateVersion Int?                  @map("agreement_template_version")
   agreementData            Json?                 @map("agreement_data")
-  documents                String[]              @default([]) @map("documents")
+  /// [{ path, name }]: files attached to the lease (storage key + caption)
+  documents                Json                  @default("[]") @map("documents")
   createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt                DateTime?             @map("deleted_at") @db.Timestamptz(6)

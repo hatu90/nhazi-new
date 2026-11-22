@@ -57,9 +57,9 @@ export default async function HomePage() {
   const features = t.raw("features") as Item[];
   const steps = t.raw("steps") as Item[];
   return (
-    <div className="mx-auto w-full max-w-6xl px-5">
+    <div className="mx-auto w-full max-w-6xl px-4 sm:px-5">
       {/* Hero */}
-      <section className="relative grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
+      <section className="relative grid items-center gap-8 py-10 md:grid-cols-2 md:gap-12 md:py-24">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-96 bg-gradient-to-br from-[#357d9d]/15 via-transparent to-emerald-500/10 blur-2xl" />
         <VStack gap={6}>
           <VStack gap={3}>
@@ -78,8 +78,8 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-12">
-        <VStack gap={2} maxWidth={560} className="mb-10">
+      <section className="py-8 sm:py-12">
+        <VStack gap={2} maxWidth={560} className="mb-6 sm:mb-10">
           <Heading level={2} type="display-3">{t("featuresTitle")}</Heading>
           <Text color="secondary">{t("featuresSubtitle")}</Text>
         </VStack>
@@ -104,8 +104,8 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="py-12">
-        <Heading level={2} type="display-3" className="mb-10">{t("stepsTitle")}</Heading>
+      <section className="py-8 sm:py-12">
+        <Heading level={2} type="display-3" className="mb-6 sm:mb-10">{t("stepsTitle")}</Heading>
         <div className="grid gap-8 md:grid-cols-3">
           {steps.map((s, i) => (
             <VStack key={s.title} gap={2}>
@@ -118,7 +118,7 @@ export default async function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-6 py-14 text-center">
+      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-4 py-10 text-center sm:px-6 sm:py-14">
         <VStack gap={4} align="center">
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <Text color="secondary">{t("ctaSubtitle")}</Text>

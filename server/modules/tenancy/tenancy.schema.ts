@@ -2,12 +2,13 @@ import { z } from "zod";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { paginationQuerySchema, type IPaginated } from "@/server/shared/pagination";
 import { idSchema, isoDateSchema, nonEmptyPatch, phoneSchema, vndSchema, type ItemCondition, type ServiceUsageBase } from "@/server/shared/schema";
-import type { IRentVersion, LeaseStatus } from "../lease/lease.schema";
+import type { ILeaseDocument, IRentVersion, LeaseStatus } from "../lease/lease.schema";
 import { createHandoverPayloadSchema } from "../inventory/inventory.schema";
 
 const thisYear = new Date().getFullYear();
 const yearOfBirth = z.number().int().min(1900).max(thisYear);
 const money = vndSchema;
+export const leaseDocumentSchema = z.object({ path: z.string().trim().min(1).max(500), name: z.string().trim().max(200).default("") });
 
 // ── list ────────────────────────────────────────────────────────────────────────────
 export const tenancyListQuerySchema = paginationQuerySchema.extend({
@@ -31,7 +32,7 @@ export const createLeasePayloadSchema = z
       .max(20)
       .default([]),
     agreement: z.object({ templateId: idSchema, values: z.record(z.string(), z.unknown()).default({}) }).optional(),
-    documents: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
+    documents: z.array(leaseDocumentSchema).max(50).default([]),
     /** Inventory items handed over with the lease. More can be added later via /handovers. */
     handovers: z.array(createHandoverPayloadSchema).max(200).default([]),
   })
@@ -50,7 +51,7 @@ export const updateLeasePayloadSchema = z
     depositAmount: money,
     /** Draft only. */
     firstPeriodEnd: isoDateSchema,
-    documents: z.array(z.string().trim().min(1).max(500)).max(50),
+    documents: z.array(leaseDocumentSchema).max(50),
     agreementValues: z.record(z.string(), z.unknown()),
   })
   .partial()
@@ -170,6 +171,10 @@ export interface ITenancySummaryResponse {
   currentRent: number | null;
   depositAmount: number;
   tenants: ITenantResponse[];
+  /** phone numbers invited to the lease who have not accepted yet */
+  pendingInvites: string[];
+  /** people currently living in the unit */
+  members: { id: string; name: string; phoneNumber: string | null }[];
 }
 export interface ISubscriptionResponse {
   id: string;
@@ -189,7 +194,7 @@ export interface ITenancyDetailResponse extends ITenancySummaryResponse {
   terminationReason: string | null;
   rentVersions: IRentVersion[];
   agreement: { templateId: string; templateName: string; version: number; values: unknown } | null;
-  documents: string[];
+  documents: ILeaseDocument[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
   handovers: { id: string; itemId: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null; returnedQuantity: number | null; returnedCondition: ItemCondition | null; returnNote: string | null }[];
   subscriptions: ISubscriptionResponse[];

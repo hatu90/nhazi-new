@@ -78,6 +78,7 @@ export class PrismaAccountRepository implements IAccountRepository {
       where: { id: accountId, deletedAt: null },
       select: {
         ...accountSelect,
+        isPlatformAdmin: true,
         accountProperties: {
           where: { property: { deletedAt: null } },
           select: { role: true, property: { select: { id: true, propertyName: true } } },
@@ -91,6 +92,7 @@ export class PrismaAccountRepository implements IAccountRepository {
       ...toAccount(row),
       properties: row.accountProperties.map((m) => ({ propertyId: m.property.id, propertyName: m.property.propertyName, role: m.role })),
       leaseCount: row._count.accountLeases,
+      isPlatformAdmin: row.isPlatformAdmin,
     };
   }
 

@@ -17,7 +17,7 @@ export default async function AboutPage() {
   const principles = t.raw("principles") as Item[];
   const audiences = t.raw("audiences") as Item[];
   return (
-    <div className="mx-auto w-full max-w-4xl px-5">
+    <div className="mx-auto w-full max-w-4xl px-4 sm:px-5">
       <VStack gap={4} maxWidth={680} paddingBlock={10}>
         <Text size="sm" color="secondary">{t("eyebrow")}</Text>
         <Heading level={1} type="display-2">{t("heading")}</Heading>

@@ -1,19 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Pencil, Plus } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { formatMoney } from "@/client/lib/format";
-import { useGet } from "@/client/lib/hooks";
+import { useGet, useSend } from "@/client/lib/hooks";
 import type { IUnitListResponse, IUnitResponse } from "@/client/lib/types";
-import { DataTable, Empty, Modal, TextField, RowActions } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, Modal, TextField, RowActions, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { BulkUnitsFields, useBulkUnitsForm } from "../bulk/bulk-units-form";
 import { useProperty } from "../property-layout";
+import { UnitDetailsDrawer } from "./unit-details-drawer";
 import { UnitFields, useUnitForm } from "./unit-form";
 
 export function UnitsPage() {
@@ -23,9 +24,13 @@ export function UnitsPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<IUnitResponse | "new" | null>(null);
+  const [viewing, setViewing] = useState<IUnitResponse | null>(null);
   const [bulk, setBulk] = useState(false);
   const unitForm = useUnitForm({ unit: editing === null || editing === "new" ? undefined : editing, open: editing !== null, onDone: () => setEditing(null) });
   const bulkForm = useBulkUnitsForm({ open: bulk, onDone: () => setBulk(false) });
+  const confirm = useConfirm();
+  const [deleteError, setDeleteError] = useState<unknown>(null);
+  const remove = useSend<string>("DELETE", (id) => apiPath(`/units/${id}`), [apiPath("/units")]);
   const query = useGet<IUnitListResponse>(apiPath("/units"), { page, pageSize: 20, q }, { keepPrevious: true });
 
   return (
@@ -34,6 +39,7 @@ export function UnitsPage() {
         <div className="w-full sm:w-72"><TextField label={c("search")} type="search" value={q} onChange={(v) => { setQ(v); setPage(1); }} width="100%" /></div>
         {canManage && <HStack gap={2}><Button icon={<Plus size={16} />} label={t("bulkAdd")} variant="secondary" onClick={() => setBulk(true)} /><Button label={t("addUnit")} variant="primary" onClick={() => setEditing("new")} /></HStack>}
       </HStack>
+      {deleteError != null && <ErrorBox error={deleteError} />}
       <DataTable<IUnitResponse>
         query={query}
         paging={setPage}
@@ -44,7 +50,15 @@ export function UnitsPage() {
           { key: "area", header: t("area"), render: (u) => `${u.area} m²` },
           { key: "rooms", header: t("bedsBaths"), render: (u) => `${u.bedrooms ?? "—"} / ${u.bathrooms ?? "—"}` },
           { key: "rent", header: t("rent"), render: (u) => (u.rentNegotiable ? t("negotiable") : formatMoney(u.rentPrice)) },
-          { key: "edit", header: "", align: "end", render: (u) => canManage && <RowActions actions={[{ id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(u) }]} /> },
+          { key: "edit", header: "", align: "end", render: (u) => <HStack gap={1} justify="end" align="center"><Button size="sm" variant="secondary" icon={<Eye size={16} />} label={t("viewUnit")} onClick={() => setViewing(u)} /><RowActions actions={[
+            canManage && { id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(u) },
+            canManage && { id: "delete", label: c("delete"), icon: Trash2, destructive: true, onClick: () => confirm.ask({
+              title: t("deleteTitle", { name: u.name }),
+              description: t("deleteBody"),
+              actionLabel: c("delete"),
+              onConfirm: async () => { setDeleteError(null); try { await remove.mutateAsync(u.id); } catch (e) { setDeleteError(e); } },
+            }) },
+          ]} /></HStack> },
         ]}
       />
       <Modal open={bulk} onClose={() => setBulk(false)}>
@@ -69,6 +83,8 @@ export function UnitsPage() {
           />
         </form>
       </Modal>
+      <UnitDetailsDrawer unit={viewing} onClose={() => setViewing(null)} />
+      {confirm.element}
     </Stack>
   );
 }

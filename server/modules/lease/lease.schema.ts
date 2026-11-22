@@ -32,12 +32,18 @@ export interface ILeaseSummaryResponse {
   depositAmount: number;
 }
 
+/** A file attached to a lease: its storage key and a caption (e.g. "ID card, front"). */
+export interface ILeaseDocument {
+  path: string;
+  name: string;
+}
+
 export interface ILeaseDetailResponse extends ILeaseSummaryResponse {
   billingCycleDay: number;
   rentVersions: IRentVersion[];
   /** `content` = the template version in use (Puck JSON); `values` = filled data (names, address, signature URL). */
   agreement: { templateId: string; templateName: string; version: number; content: unknown; values: unknown } | null;
-  documents: string[];
+  documents: ILeaseDocument[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
 }
 

@@ -14,7 +14,7 @@ export function NotificationBell() {
   useEffect(() => { void syncPush().catch(() => {}); }, []);
   const unread = data?.unread ?? 0;
   return (
-    <PlainAnchor href="/dashboard/notifications" aria-label={t("notifications", { count: unread })} className="relative inline-flex size-9 items-center justify-center rounded-full hover:bg-black/5">
+    <PlainAnchor href="/dashboard/notifications" aria-label={t("notifications", { count: unread })} className="relative inline-flex size-11 items-center justify-center rounded-full hover:bg-black/5 sm:size-9">
       <Bell size={20} />
       {unread > 0 && (
         <span className="absolute right-0 top-0 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span>

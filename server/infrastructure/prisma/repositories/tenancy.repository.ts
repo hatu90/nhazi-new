@@ -20,7 +20,7 @@ import { paginated, toSkipTake } from "@/server/shared/pagination";
 import type { IRentVersion } from "@/server/modules/lease/lease.schema";
 import type { Prisma, PrismaClient } from "../client";
 import { createInvoiceTx } from "../writers";
-import { isoDate, isoDateOrNull, num, orConflict, toJson } from "../mappers";
+import { isoDate, isoDateOrNull, num, orConflict, toDocuments, toJson } from "../mappers";
 
 type Tx = Prisma.TransactionClient;
 const d = (v: string) => new Date(v);
@@ -29,6 +29,8 @@ const dn = (v: string | null | undefined) => (v == null ? v : new Date(v));
 const summaryInclude = {
   unit: { select: { unitName: true } },
   accountLeases: { include: { account: { select: { id: true, displayName: true, phoneNumber: true } } } },
+  leaseMembers: { where: { leftAt: null }, orderBy: { joinedAt: "asc" } },
+  invitations: { where: { kind: "lease", status: "pending" }, select: { phoneNumber: true } },
 } satisfies Prisma.LeaseInclude;
 const detailInclude = {
   ...summaryInclude,
@@ -59,6 +61,8 @@ const toSummary = (r: SummaryRow): ITenancySummaryRecord => ({
   depositAmount: num(r.depositAmount),
   rentVersions: rentVersionsSchema.parse(r.prices),
   tenants: r.accountLeases.map(toTenant),
+  members: r.leaseMembers.map((m) => ({ id: m.id, name: m.name, phoneNumber: m.phoneNumber })),
+  pendingInvites: r.invitations.map((i) => i.phoneNumber),
 });
 
 const toSubscription = (s: SubRow): ISubscriptionResponse => ({
@@ -87,7 +91,7 @@ const toDetail = (r: DetailRow): ITenancyDetailRecord => {
       r.agreementTemplateId && r.agreementTemplateVersion !== null && r.agreementTemplate
         ? { templateId: r.agreementTemplateId, templateName: r.agreementTemplate.templateName, version: r.agreementTemplateVersion, values: r.agreementData }
         : null,
-    documents: r.documents,
+    documents: toDocuments(r.documents),
     members: r.leaseMembers.map((m) => ({
       id: m.id,
       name: m.name,
@@ -197,7 +201,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               endDate: dn(c.endDate),
               prices: toJson([{ effectiveDate: c.startDate, amount: c.rent }]),
               depositAmount: c.depositAmount,
-              documents: c.documents,
+              documents: toJson(c.documents),
               ...(c.agreement && templateVersion !== null && {
                 agreementTemplateId: c.agreement.templateId,
                 agreementTemplateVersion: templateVersion,
@@ -242,7 +246,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         billingCycleDay: c.billingCycleDay,
         depositAmount: c.depositAmount,
         firstPeriodEnd: dn(c.firstPeriodEnd),
-        documents: c.documents,
+        ...(c.documents && { documents: toJson(c.documents) }),
         ...(c.agreementValues && { agreementData: toJson(c.agreementValues) }),
       },
     });

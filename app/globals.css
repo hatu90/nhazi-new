@@ -16,3 +16,20 @@
 *::-webkit-scrollbar {
   display: none;
 }
+
+/* Responsive safety net: never scroll the page sideways, stop iOS inflating text on rotate, and let long
+   names (properties, units, emails) wrap instead of pushing the layout wider than the screen. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  overflow-x: clip;
+  min-height: 100dvh;
+}
+h1, h2, h3, h4 {
+  overflow-wrap: anywhere;
+}
+img, video {
+  max-width: 100%;
+}

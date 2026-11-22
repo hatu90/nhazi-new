@@ -10,6 +10,11 @@ import type { IAccessRepository } from "./access.repository";
 export class AccessPolicy {
   constructor(private readonly access: IAccessRepository) {}
 
+  /** Platform staff only. Anyone else gets 403. */
+  async assertPlatformAdmin(actor: IActor): Promise<void> {
+    if (!(await this.access.isPlatformAdmin(actor.accountId))) throw new ForbiddenError();
+  }
+
   async assertPropertyRole(actor: IActor, propertyId: string, allowed: readonly PropertyRole[]): Promise<PropertyRole> {
     const role = await this.access.findPropertyRole(actor.accountId, propertyId);
     if (!role) throw new NotFoundError("Property");

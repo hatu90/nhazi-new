@@ -7,10 +7,11 @@ import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
-import { useGet } from "@/client/lib/hooks";
+import { useNavigate } from "react-router";
+import { useGet, useSend } from "@/client/lib/hooks";
 import { formatMoney } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
-import { DefList, Modal, Section } from "@/client/ui";
+import { DefList, ErrorBox, Modal, Section, useConfirm } from "@/client/ui";
 import { FormFooter } from "../../ui/rhf";
 import { PropertyFields, usePropertyForm } from "../property-form";
 import { useProperty } from "../property-layout";
@@ -35,7 +36,11 @@ export function SettingsPage() {
   const t = useTranslations("Settings");
   const c = useTranslations("Common");
   const en = useEnum();
-  const { property, canManage, apiPath } = useProperty();
+  const { property, canManage, isOwner, apiPath } = useProperty();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
+  const [deleteError, setDeleteError] = useState<unknown>(null);
+  const remove = useSend("DELETE", apiPath(), ["/api/admin/properties"]);
   const [editing, setEditing] = useState(false);
   const images = property.headerImage && !property.images.includes(property.headerImage) ? [property.headerImage, ...property.images] : property.images;
   const propertyForm = usePropertyForm({ initial: property, method: "PATCH", path: apiPath(), open: editing, onDone: () => setEditing(false) });
@@ -73,6 +78,24 @@ export function SettingsPage() {
         {property.rules.length === 0 ? <Text>—</Text> : <ul className="list-disc space-y-1 pl-5">{property.rules.map((r, i) => <li key={i}><Text>{r}</Text></li>)}</ul>}
       </Section>
       <TeamPage />
+      {isOwner && (
+        <Section title={t("dangerZone")}>
+          <VStack gap={3} align="start">
+            <Text color="secondary">{t("deleteBody")}</Text>
+            {deleteError != null && <ErrorBox error={deleteError} />}
+            <Button variant="secondary" label={t("deleteProperty")} onClick={() => confirm.ask({
+              title: t("deleteTitle", { name: property.name }),
+              description: t("deleteBody"),
+              actionLabel: c("delete"),
+              onConfirm: async () => {
+                setDeleteError(null);
+                try { await remove.mutateAsync(undefined); navigate("/"); } catch (e) { setDeleteError(e); }
+              },
+            })} />
+          </VStack>
+        </Section>
+      )}
+      {confirm.element}
       <Modal open={editing} onClose={() => setEditing(false)}>
         <form noValidate onSubmit={propertyForm.submit} className="flex min-h-0 flex-1 flex-col">
           <Layout

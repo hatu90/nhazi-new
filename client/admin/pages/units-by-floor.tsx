@@ -95,7 +95,7 @@ export function UnitsByFloor() {
                   const summary = (
                     <VStack gap={1.5}>
                       <HStack justify="between" align="center" gap={2}><Heading level={3}>{unit.name}</Heading><Tag label={t(`occ.${occ.kind}`)} tone={occ.tone} /></HStack>
-                      <Text size="sm" color="secondary">{occ.lease ? `${occ.lease.tenants.map((x) => x.displayName).join(", ") || t("noTenants")}${noteOf(occ) ? ` · ${noteOf(occ)}` : ""}` : `${unit.area} m² · ${unit.rentNegotiable ? t("negotiable") : formatMoney(unit.rentPrice)}`}</Text>
+                      <Text size="sm" color="secondary">{occ.lease ? `${[...occ.lease.tenants.map((x) => x.displayName), ...occ.lease.members.filter((m) => !occ.lease!.tenants.some((x) => x.phoneNumber === m.phoneNumber)).map((m) => m.name)].join(", ") || t("noTenants")}${noteOf(occ) ? ` · ${noteOf(occ)}` : ""}` : `${unit.area} m² · ${unit.rentNegotiable ? t("negotiable") : formatMoney(unit.rentPrice)}`}</Text>
                     </VStack>
                   );
                   // an empty unit is not a link: it carries its own "Add lease" button (a button can't sit inside a clickable card)
