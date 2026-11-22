@@ -50,5 +50,8 @@
     "prisma": "^7.10.1",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
+  },
+  "overrides": {
+    "jwks-rsa": "3.2.2"
   }
 }
