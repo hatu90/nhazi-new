@@ -11,7 +11,7 @@ import type { IDashboardResponse } from "@/client/lib/types";
 import { NotificationsCard } from "@/client/dashboard/notifications-card";
 import { PropertyFields, usePropertyForm } from "@/client/admin/property-form";
 import { FormFooter } from "@/client/ui/rhf";
-import { ErrorBox, Modal, PageHeader, PageSpinner } from "@/client/ui";
+import { DashboardSkeleton, ErrorBox, Modal, PageHeader } from "@/client/ui";
 import { ManagementSection } from "./home-management";
 import { TenantSection } from "./home-tenant";
 
@@ -32,7 +32,7 @@ export function HomePage() {
     <VStack gap={5}>
       <PageHeader title={t("title")} subtitle={t("hello", { name: me.displayName })} />
       <NotificationsCard />
-      {dashboard.isPending ? <PageSpinner /> : dashboard.error ? <ErrorBox error={dashboard.error} retry={() => void dashboard.refetch()} /> : (
+      {dashboard.isPending ? <DashboardSkeleton /> : dashboard.error ? <ErrorBox error={dashboard.error} retry={() => void dashboard.refetch()} /> : (
         <>
           <ManagementSection data={dashboard.data.management} onCreate={() => setCreating(true)} />
           <TenantSection data={dashboard.data.tenant} />

@@ -8,7 +8,8 @@ import { Text } from "@astryxdesign/core/Text";
 import type { ReactNode } from "react";
 import { ErrorBox } from "./error-box";
 import { MobileRow } from "./mobile-row";
-import { PageSpinner } from "./page-spinner";
+
+import { TableSkeleton } from "./skeletons";
 import { useInSection } from "./section-context";
 import { useIsMobile } from "./use-is-mobile";
 
@@ -29,7 +30,7 @@ export function DataTable<T extends { id: string }>({
   // Inside a Section the surrounding card is already the surface: no second bordered card.
   const variant = nested ? "transparent" : "default";
   const { isPending, error, data } = query;
-  if (isPending) return <Card variant={variant}><PageSpinner /></Card>;
+  if (isPending) return <Card variant={variant}><TableSkeleton /></Card>;
   if (error) return <ErrorBox error={error} retry={() => void query.refetch()} />;
   if (!data || data.items.length === 0) return <Card padding={4} variant={variant}>{empty}</Card>;
   const pager = paging && data.total > data.pageSize && (

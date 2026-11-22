@@ -9,7 +9,7 @@ import { formatDate, formatMoney, todayIso } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IServiceListResponse, IServiceResponse } from "@/client/lib/types";
-import { Empty, ErrorBox, Modal, PageSpinner, RowActions, Tag, useConfirm } from "@/client/ui";
+import { Empty, ErrorBox, ListSkeleton, Modal, RowActions, Tag, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Heading } from "@astryxdesign/core/Heading";
@@ -35,7 +35,7 @@ export function ServicesPage() {
   return (
     <Stack gap={4}>
       {canManage && <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label={t("add")} onClick={() => setCreating(true)} /></HStack>}
-      {isPending ? <PageSpinner /> : error ? <ErrorBox error={error} retry={() => void refetch()} /> : data.items.length === 0 ? (
+      {isPending ? <ListSkeleton /> : error ? <ErrorBox error={error} retry={() => void refetch()} /> : data.items.length === 0 ? (
         <Card padding={4}><Empty title={t("empty")} action={canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("add")} onClick={() => setCreating(true)} />} /></Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

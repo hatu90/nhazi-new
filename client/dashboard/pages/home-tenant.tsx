@@ -11,7 +11,7 @@ import { useNavigate } from "react-router";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IDashboardResponse, ILeaseListResponse } from "@/client/lib/types";
-import { Empty, ErrorBox, Kpi, PageSpinner, Section, StatusBadge } from "@/client/ui";
+import { CardGridSkeleton, Empty, ErrorBox, Kpi, Section, StatusBadge } from "@/client/ui";
 import { ListCard, Row } from "./home-parts";
 
 /** Leases the account rents: the numbers that need attention, then the leases themselves. */
@@ -46,7 +46,7 @@ export function TenantSection({ data }: { data: IDashboardResponse["tenant"] }) 
 
         <VStack gap={3}>
           <Heading level={3}><span id="dashboard-leases">{t("leases")}</span></Heading>
-          {leases.isPending ? <PageSpinner /> : leases.error ? <ErrorBox error={leases.error} retry={() => void leases.refetch()} /> : leases.data.items.length === 0 ? (
+          {leases.isPending ? <CardGridSkeleton /> : leases.error ? <ErrorBox error={leases.error} retry={() => void leases.refetch()} /> : leases.data.items.length === 0 ? (
             <Empty title={t("noLeases")} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">

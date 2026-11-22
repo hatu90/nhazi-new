@@ -11,7 +11,7 @@ import { useGet, useSend } from "@/client/lib/hooks";
 import type { INotificationListResponse } from "@/client/lib/types";
 import { NotificationRow, usePendingInvitationIds } from "@/client/notifications/invitation-actions";
 import { disablePush, enablePush, pushState, type PushState } from "@/client/notifications/push";
-import { Empty, ErrorBox, PageHeader, PageSpinner } from "@/client/ui";
+import { Empty, ErrorBox, ListSkeleton, PageHeader } from "@/client/ui";
 
 /** Every notification (newest first), mark all read, and the switch for push notifications on this device. */
 export function NotificationsPage() {
@@ -33,7 +33,7 @@ export function NotificationsPage() {
         </>}
       />
       <PushToggle />
-      {list.isPending ? <PageSpinner /> : list.error ? <ErrorBox error={list.error} retry={() => void list.refetch()} /> : list.data.items.length === 0 ? (
+      {list.isPending ? <ListSkeleton /> : list.error ? <ErrorBox error={list.error} retry={() => void list.refetch()} /> : list.data.items.length === 0 ? (
         <Empty title={t("caughtUp")} />
       ) : (
         <VStack gap={3}>

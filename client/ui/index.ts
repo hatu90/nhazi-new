@@ -11,6 +11,7 @@ export { SelectField } from "./select-field";
 export { MultiField } from "./multi-field";
 export { CheckField } from "./check-field";
 export { PageSpinner } from "./page-spinner";
+export { PageSkeleton, ListSkeleton, CardGridSkeleton, DashboardSkeleton, KpiSkeletons, TableSkeleton } from "./skeletons";
 export { ErrorBox } from "./error-box";
 export { Empty } from "./empty";
 export { PageHeader } from "./page-header";

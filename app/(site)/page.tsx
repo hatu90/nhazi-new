@@ -2,7 +2,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
-import { HeroSearch } from "@/client/site/hero-search";
+import { HeroIntro } from "@/client/site/hero-intro";
 import { getTranslations } from "next-intl/server";
 import { Building2, FileText, Gauge, Smartphone, Wrench, Receipt, Check } from "lucide-react";
 
@@ -61,24 +61,14 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative grid items-center gap-8 py-10 md:grid-cols-2 md:gap-12 md:py-24">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-96 bg-gradient-to-br from-[#357d9d]/15 via-transparent to-emerald-500/10 blur-2xl" />
-        <VStack gap={6}>
-          <VStack gap={3}>
-            <span className="w-fit rounded-full bg-[#357d9d]/10 px-3 py-1 text-sm font-medium text-[#2a6a86] dark:text-[#8ecbe6]">{t("badge")}</span>
-            <Heading level={1} type="display-2">{t("title")}</Heading>
-            <Text color="secondary" size="lg">{t("subtitle")}</Text>
-          </VStack>
-          <HeroSearch />
-          <HStack gap={3} wrap="wrap">
-            <Button variant="primary" label={t("ctaLandlord")} size="lg" href="/auth?next=/admin" />
-          </HStack>
-        </VStack>
+        <HeroIntro />
         <div className="flex justify-center md:justify-end">
           <InvoiceMock />
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-8 sm:py-12">
+      <section className="py-4">
         <VStack gap={2} maxWidth={560} className="mb-6 sm:mb-10">
           <Heading level={2} type="display-3">{t("featuresTitle")}</Heading>
           <Text color="secondary">{t("featuresSubtitle")}</Text>

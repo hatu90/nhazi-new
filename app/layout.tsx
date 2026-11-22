@@ -1,19 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import "./globals.css";
 import { IntlProvider } from "@/client/ui/intl-provider";
 import { ThemeRoot } from "@/client/ui/theme-root";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Figtree (the Astryx default) has no Vietnamese subset, so stacked diacritics fell back to a system font.
+// Be Vietnam Pro is drawn for Vietnamese; the theme's font tokens point at this variable.
+const bodyFont = Be_Vietnam_Pro({
+  variable: "--font-body",
+  subsets: ["latin", "latin-ext", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,7 +24,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${bodyFont.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <Suspense>
           <IntlProvider>

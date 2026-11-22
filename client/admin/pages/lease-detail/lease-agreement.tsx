@@ -6,7 +6,7 @@ import { AgreementSection } from "@/client/agreement/section";
 import { LeaseFiles } from "@/client/documents/lease-files";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ILeaseDocument, ITemplateVersionResponse, ITenancyDetailResponse } from "@/client/lib/types";
-import { ErrorBox, PageSpinner, Section } from "@/client/ui";
+import { ErrorBox, PageSkeleton, Section } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 
 /** The lease's documents: the agreement (when it has one) and the files attached to it (ID photos, signed copies…). */
@@ -25,7 +25,7 @@ function LeaseAgreement({ lease, path, files }: { lease: ITenancyDetailResponse;
   const a = lease.agreement!;
   const version = useGet<ITemplateVersionResponse>(apiPath(`/agreement-templates/${a.templateId}/versions/${a.version}`));
   const saveValues = useSend<{ agreementValues: Record<string, string> }>("PATCH", path, [path]);
-  if (version.isPending) return <PageSpinner />;
+  if (version.isPending) return <PageSkeleton />;
   if (version.error) return <ErrorBox error={version.error} retry={() => void version.refetch()} />;
   return (
     <AgreementSection

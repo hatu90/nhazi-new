@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { formatMoney } from "@/client/lib/format";
 import { PropertySearchForm } from "@/client/site/property-search-form";
-import { Empty, PageSpinner, Tag } from "@/client/ui";
+import { CardGridSkeleton, Empty, Tag } from "@/client/ui";
 import { getContainer } from "@/server/container";
 import { propertySearchQuerySchema } from "@/server/modules/property/property.schema";
 import { Button } from "@astryxdesign/core/Button";
@@ -162,7 +162,7 @@ export default async function FindPropertyPage({
             <PropertySearchForm />
           </Suspense>
         </Card>
-        <Suspense fallback={<PageSpinner />}>
+        <Suspense fallback={<CardGridSkeleton count={6} />}>
           <Results searchParams={searchParams} />
         </Suspense>
       </VStack>

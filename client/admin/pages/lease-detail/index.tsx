@@ -12,7 +12,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { formatDate } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { ITenancyDetailResponse } from "@/client/lib/types";
-import { ErrorBox, Modal, PageHeader, PageSpinner, StatusBadge, Tabs, useConfirm } from "@/client/ui";
+import { ErrorBox, Modal, PageHeader, PageSkeleton, StatusBadge, Tabs, useConfirm } from "@/client/ui";
 import { useProperty } from "../../property-layout";
 import { BillingPeriodsTab } from "./billing-periods-tab";
 import { EndFields, useEndForm } from "./end-form";
@@ -47,7 +47,7 @@ export function LeaseDetailPage() {
   const endForm = useEndForm({ path, leaseId, handovers: lease.data?.handovers ?? [], open: dialog === "end", onDone: done });
   const startForm = useStartForm({ path, lease: lease.data, open: dialog === "start", onDone: done });
 
-  if (lease.isPending) return <PageSpinner />;
+  if (lease.isPending) return <PageSkeleton />;
   if (lease.error) return <ErrorBox error={lease.error} retry={() => void lease.refetch()} />;
   const l = lease.data;
   const live = l.status === "active" || l.status === "upcoming";

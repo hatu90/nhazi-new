@@ -8,7 +8,7 @@ import { formatDate, formatDateTime } from "@/client/lib/format";
 import { useLocale } from "next-intl";
 import { useGet } from "@/client/lib/hooks";
 import type { IMeterResponse, IReadingListResponse, IReadingResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, PageSpinner, Section } from "@/client/ui";
+import { DataTable, DefList, Empty, ErrorBox, Modal, PageSkeleton, Section } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
@@ -28,7 +28,7 @@ export function MeterPage() {
   const meter = useGet<IMeterResponse>(apiPath(`/meters/${meterId}`));
   const readings = useGet<IReadingListResponse>(apiPath(`/meters/${meterId}/readings`), { page, pageSize: 20 }, { keepPrevious: true });
 
-  if (meter.isPending) return <PageSpinner />;
+  if (meter.isPending) return <PageSkeleton />;
   if (meter.error) return <ErrorBox error={meter.error} retry={() => void meter.refetch()} />;
   const m = meter.data;
 

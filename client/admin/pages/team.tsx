@@ -10,7 +10,7 @@ import { formatDate } from "@/client/lib/format";
 import { useEnum, useEnumOptions } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IInvitationResponse, IMemberResponse, IPaginated, PropertyRole } from "@/client/lib/types";
-import { DataTable, Empty, ErrorBox, Modal, PageSpinner, Section, SelectField, StatusBadge, useConfirm, RowActions } from "@/client/ui";
+import { DataTable, Empty, ErrorBox, ListSkeleton, Modal, RowActions, Section, SelectField, StatusBadge, useConfirm } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { VStack } from "@astryxdesign/core/Stack";
@@ -39,7 +39,7 @@ export function TeamPage() {
 
   return (
     <Section title={t("title")} action={isOwner && <Button icon={<Plus size={16} />} variant="primary" label={t("add")} onClick={() => setInviting(true)} />}>
-      {members.isPending ? <PageSpinner /> : members.error ? <ErrorBox error={members.error} /> : (
+      {members.isPending ? <ListSkeleton /> : members.error ? <ErrorBox error={members.error} /> : (
         members.data.length === 0 ? <Empty title={t("empty")} /> : (
             <DataTable<IMemberResponse & { id: string }>
               query={{ isPending: false, error: null, refetch: () => {}, data: { items: members.data.map((m) => ({ ...m, id: m.accountId })), page: 1, pageSize: 1000, total: members.data.length } }}

@@ -10,6 +10,9 @@ export const nhaziTheme = defineTheme({
   name: 'nhazi',
   extends: neutralTheme,
   tokens: {
+    // Vietnamese-capable font (loaded in app/layout.tsx); Figtree lacks the Vietnamese subset
+    '--font-family-body': 'var(--font-body), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
+    '--font-family-heading': 'var(--font-body), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
     // Brand accent (white-on-#357d9d is 4.6:1; dark mode flips to a light tint with dark text)
     '--color-accent': ['#357d9d', '#6bb8d8'],
     '--color-accent-muted': ['#dcedf4', '#1c3b4a'],

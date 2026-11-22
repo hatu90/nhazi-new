@@ -32,7 +32,7 @@ export default function AdminApp() {
   return (
     <BrowserRouter basename="/admin">
       <SpaProviders>
-        <RequireAccount>
+        <RequireAccount frame="wide">
           <Routes>
             <Route element={<AdminLayout />}>
               <Route index element={<ToDashboard />} />

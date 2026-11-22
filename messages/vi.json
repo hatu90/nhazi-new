@@ -425,53 +425,54 @@
   "Home": {
     "badge": "Dành cho chủ nhà, người quản lý và người thuê",
     "title": "Nền tảng trọn gói để quản lý nhà cho thuê.",
-    "subtitle": "Nhazi gom căn nhà, hợp đồng, chỉ số đồng hồ và hóa đơn về một nơi, và cho mỗi người thuê một góc nhìn đơn giản về phần của mình.",
-    "ctaLandlord": "Tôi có nhà cho thuê",
+    "subtitle": "Nhazi giúp bạn quản lý căn nhà, hợp đồng, chỉ số điện nước và hóa đơn ở cùng một nơi.",
+    "ctaLandlord": "Bắt đầu cho thuê nhà",
+    "or": "hoặc",
     "ctaTenant": "Tôi là người thuê",
-    "featuresTitle": "Mọi thứ nhà cho thuê cần, không thừa thứ nào.",
+    "featuresTitle": "Có đủ những gì nhà cho thuê cần, gọn gàng và dễ dùng.",
     "featuresSubtitle": "Từ hợp đồng đầu tiên đến hóa đơn cuối cùng, mọi việc nằm ở một nơi.",
     "features": [
       {
         "title": "Căn nhà & phòng",
-        "body": "Thiết lập tòa nhà, phòng, dịch vụ và đồng hồ một lần, dùng lại cho mọi hợp đồng."
+        "body": "Thiết lập tòa nhà, phòng, dịch vụ và đồng hồ một lần, dùng cho mọi hợp đồng."
       },
       {
         "title": "Hợp đồng tự tính tiền",
-        "body": "Tiền thuê, tiền cọc và hợp đồng. Mỗi kỳ thanh toán tự thành hóa đơn."
+        "body": "Quản lý tiền thuê, tiền cọc; tự động lập hóa đơn mỗi kỳ."
       },
       {
         "title": "Điện nước theo đồng hồ",
-        "body": "Ghi chỉ số điện nước với giá bậc thang. Mỗi con số đều truy được về mức dùng."
+        "body": "Ghi chỉ số, tính theo giá bậc thang, truy xuất được mức dùng."
       },
       {
         "title": "Cổng dành cho người thuê",
-        "body": "Người thuê đăng nhập bằng số điện thoại để xem hợp đồng, hạn đóng tiền, hóa đơn và báo đã thanh toán."
+        "body": "Người thuê đăng nhập bằng số điện thoại để xem hợp đồng, hóa đơn và báo thanh toán."
       },
       {
         "title": "Yêu cầu sửa chữa",
-        "body": "Người thuê gửi yêu cầu ngay trên bảng điều khiển, không còn thất lạc trong tin nhắn."
+        "body": "Tiếp nhận và theo dõi yêu cầu ngay trên hệ thống, không thất lạc."
       },
       {
         "title": "Hóa đơn rõ ràng",
-        "body": "Tiền thuê, điện nước và phụ phí bằng đồng, có bảng chi tiết dễ đọc."
+        "body": "Chi tiết tiền thuê, điện nước và phụ phí bằng đồng."
       }
     ],
     "stepsTitle": "Bắt đầu chỉ với ba bước",
     "steps": [
       {
         "title": "Thêm căn nhà",
-        "body": "Tạo tòa nhà, phòng, dịch vụ và đồng hồ."
+        "body": "Tạo nhà, phòng, dịch vụ và đồng hồ."
       },
       {
         "title": "Bắt đầu hợp đồng",
-        "body": "Mời người thuê qua số điện thoại và đặt giá thuê."
+        "body": "Bắt đầu dễ dàng chỉ với số điện thoại."
       },
       {
         "title": "Nhập chỉ số, chốt kỳ",
-        "body": "Xem lại hóa đơn rồi gửi đi. Người thuê thấy ngay."
+        "body": "Xem lại hóa đơn rồi gửi đi."
       }
     ],
-    "ctaTitle": "Cho nhà cho thuê của bạn một ngôi nhà riêng.",
+    "ctaTitle": "Quản lý nhà cho thuê dễ hơn bạn nghĩ.",
     "ctaSubtitle": "Thiết lập căn nhà đầu tiên trong vài phút.",
     "getStarted": "Bắt đầu",
     "learnMore": "Tìm hiểu thêm",
@@ -836,7 +837,7 @@
   },
   "Site": {
     "any": "Tất cả",
-    "nameOrAddress": "Tên hoặc địa chỉ",
+    "nameOrAddress": "Địa chỉ nhà cần thuê",
     "category": "Loại hình",
     "search": "Tìm kiếm",
     "clear": "Xóa lọc",

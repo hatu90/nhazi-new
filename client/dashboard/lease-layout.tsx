@@ -13,7 +13,7 @@ import { formatDate } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { ILeaseDetailResponse } from "@/client/lib/types";
 import { NotFound } from "@/client/spa/not-found";
-import { ErrorBox, PageSpinner, StatusBadge, Tabs } from "@/client/ui";
+import { ErrorBox, PageSkeleton, StatusBadge, Tabs } from "@/client/ui";
 
 interface LeaseCtx {
   lease: ILeaseDetailResponse;
@@ -47,7 +47,7 @@ export function LeaseLayout() {
   const to = (suffix = "") => `/leases/${leaseId}${suffix ? `/${suffix}` : ""}`;
   const { data: lease, error, isPending, refetch } = useGet<ILeaseDetailResponse>(apiPath());
 
-  if (isPending) return <PageSpinner />;
+  if (isPending) return <PageSkeleton />;
   if (error) return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label={t("backToLeases")} /> : <ErrorBox error={error} retry={() => void refetch()} />;
 
   const section = pathname.split("/")[3] ?? "";

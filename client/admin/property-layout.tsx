@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyResponse, PropertyRole } from "@/client/lib/types";
 import { NotFound } from "@/client/spa/not-found";
-import { ErrorBox, PageSpinner, Tag } from "@/client/ui";
+import { ErrorBox, PageSkeleton, Tag } from "@/client/ui";
 
 interface PropertyCtx {
   propertyId: string;
@@ -41,7 +41,7 @@ export function PropertyLayout() {
   const to = (suffix = "") => `/properties/${propertyId}${suffix ? `/${suffix}` : ""}`;
   const { data: property, error, isPending, refetch } = useGet<IAdminPropertyResponse>(apiPath());
 
-  if (isPending) return <PageSpinner />;
+  if (isPending) return <PageSkeleton />;
   if (error) {
     return error instanceof ApiError && (error.status === 404 || error.status === 403) ? <NotFound backTo="/" label={t("backToDashboard")} /> : <ErrorBox error={error} retry={() => void refetch()} />;
   }

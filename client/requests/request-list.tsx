@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { formatDate } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
 import type { IRequestListResponse, IRequestResponse } from "@/client/lib/types";
-import { ErrorBox, PageSpinner, StatusBadge } from "@/client/ui";
+import { ErrorBox, ListSkeleton, StatusBadge } from "@/client/ui";
 import { RequestTypeIcon } from "./type-icon";
 
 function Meta({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -70,7 +70,7 @@ export function RequestList({
 }) {
   const t = useTranslations("Requests");
   const { isPending, error, data } = query;
-  if (isPending) return <PageSpinner />;
+  if (isPending) return <ListSkeleton />;
   if (error) return <ErrorBox error={error} retry={() => void query.refetch()} />;
   if (!data || data.items.length === 0) return <>{empty}</>;
   return (

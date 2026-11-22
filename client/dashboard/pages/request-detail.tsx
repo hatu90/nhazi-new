@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse } from "@/client/lib/types";
-import { ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge, useConfirm } from "@/client/ui";
+import { ErrorBox, Modal, PageHeader, PageSkeleton, Section, StatusBadge, useConfirm } from "@/client/ui";
 import { RequestTypeIcon } from "@/client/requests/type-icon";
 import { RequestBody, RequestFacts } from "@/client/requests/request-facts";
 import { RequestThread } from "@/client/requests/request-thread";
@@ -30,7 +30,7 @@ export function RequestDetailPage() {
   const [replying, setReplying] = useState(false);
   const reply = useReplyForm({ path, invalidate: [path], open: replying, onDone: () => setReplying(false) });
 
-  if (request.isPending) return <PageSpinner />;
+  if (request.isPending) return <PageSkeleton />;
   if (request.error) return <ErrorBox error={request.error} retry={() => void request.refetch()} />;
   const r = request.data;
   const closed = r.status === "resolved" || r.status === "rejected" || r.status === "cancelled";

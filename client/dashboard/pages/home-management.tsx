@@ -14,7 +14,7 @@ import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyListResponse, IDashboardResponse } from "@/client/lib/types";
 import { useEnum } from "@/client/lib/use-enum";
-import { Empty, ErrorBox, Kpi, PageSpinner, Section, Tag } from "@/client/ui";
+import { CardGridSkeleton, Empty, ErrorBox, Kpi, Section, Tag } from "@/client/ui";
 import { ListCard, Row } from "./home-parts";
 
 // the admin app is a separate SPA, so these are full navigations
@@ -57,7 +57,7 @@ export function ManagementSection({ data, onCreate }: { data: IDashboardResponse
 
         <VStack gap={3}>
           <Heading level={3}><span id="dashboard-properties">{t("properties")}</span></Heading>
-          {properties.isPending ? <PageSpinner /> : properties.error ? <ErrorBox error={properties.error} retry={() => void properties.refetch()} /> : properties.data.items.length === 0 ? (
+          {properties.isPending ? <CardGridSkeleton /> : properties.error ? <ErrorBox error={properties.error} retry={() => void properties.refetch()} /> : properties.data.items.length === 0 ? (
             <Empty title={t("noProperties")} />
           ) : (
             <VStack gap={4}>

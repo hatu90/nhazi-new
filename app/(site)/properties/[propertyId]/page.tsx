@@ -4,7 +4,7 @@ import { cache, Suspense } from "react";
 import { formatMoney } from "@/client/lib/format";
 import { getTranslations } from "next-intl/server";
 import { EnquiryButton } from "@/client/site/enquiry-button";
-import { PageSpinner, Tag } from "@/client/ui";
+import { PageSkeleton, Tag } from "@/client/ui";
 import { Divider } from "@astryxdesign/core/Divider";
 import Link from "next/link";
 import { getContainer } from "@/server/container";
@@ -44,7 +44,7 @@ const priceText = (s: IPublicServiceResponse, t: T) => {
 
 export default function PropertyPageRoute({ params }: PageProps<"/properties/[propertyId]">) {
   return (
-    <Suspense fallback={<PageSpinner />}>
+    <Suspense fallback={<PageSkeleton />}>
       <PropertyPage params={params} />
     </Suspense>
   );

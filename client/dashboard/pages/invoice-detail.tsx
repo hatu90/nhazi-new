@@ -9,7 +9,7 @@ import { formatDate, formatMoney } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
 import { useGet } from "@/client/lib/hooks";
 import type { IInvoiceDetailResponse } from "@/client/lib/types";
-import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge } from "@/client/ui";
+import { DataTable, DefList, Empty, ErrorBox, Modal, PageHeader, PageSkeleton, Section, StatusBadge } from "@/client/ui";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -32,7 +32,7 @@ export function InvoiceDetailPage() {
     const { url } = await api<{ url: string }>(apiPath("/files"), { query: { path } });
     window.open(url, "_blank", "noopener");
   };
-  if (invoice.isPending) return <PageSpinner />;
+  if (invoice.isPending) return <PageSkeleton />;
   if (invoice.error) return <ErrorBox error={invoice.error} retry={() => void invoice.refetch()} />;
   const inv = invoice.data;
   const owed = inv.amount - inv.paidAmount;

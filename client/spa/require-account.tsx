@@ -3,13 +3,13 @@
 import { useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import { loginUrl, useAuth } from "@/client/auth/auth-provider";
-import { ErrorBox, PageSpinner } from "@/client/ui";
+import { ErrorBox, PageSkeleton } from "@/client/ui";
 
 /**
  * Gate for both SPAs. Anonymous and not-yet-registered users leave the SPA for the (server-rendered) /auth page,
  * which sends them back to where they were.
  */
-export function RequireAccount({ children }: { children: ReactNode }) {
+export function RequireAccount({ children, frame }: { children: ReactNode; frame: "narrow" | "wide" }) {
   const { state, reload } = useAuth();
   const location = useLocation();
   const needsLogin = state.status === "anonymous" || state.status === "unregistered";
@@ -25,6 +25,6 @@ export function RequireAccount({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (state.status !== "ready") return <PageSpinner />;
+  if (state.status !== "ready") return <PageSkeleton frame={frame} />;
   return <>{children}</>;
 }

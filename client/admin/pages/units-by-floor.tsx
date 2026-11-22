@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { ITenancyListResponse, ITenancySummaryResponse, IUnitListResponse, IUnitResponse } from "@/client/lib/types";
-import { ErrorBox, Modal, PageSpinner, Section, Tag } from "@/client/ui";
+import { ErrorBox, Modal, PageSkeleton, Section, Tag } from "@/client/ui";
 import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
@@ -69,7 +69,7 @@ export function UnitsByFloor() {
     return [...byFloor.entries()].sort(([a], [b]) => a - b);
   }, [units.data, leases.data]);
 
-  if (units.isPending || leases.isPending) return <PageSpinner />;
+  if (units.isPending || leases.isPending) return <PageSkeleton />;
   const error = units.error ?? leases.error;
   if (error) return <ErrorBox error={error} retry={() => { void units.refetch(); void leases.refetch(); }} />;
 

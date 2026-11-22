@@ -21,7 +21,7 @@ export default function DashboardApp() {
   return (
     <BrowserRouter basename="/dashboard">
       <SpaProviders>
-        <RequireAccount>
+        <RequireAccount frame="narrow">
           <Routes>
             <Route element={<DashboardLayout />}>
               <Route index element={<HomePage />} />

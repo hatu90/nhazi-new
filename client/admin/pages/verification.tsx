@@ -13,7 +13,7 @@ import { useCriterionText } from "@/client/lib/criterion";
 import { useEnum } from "@/client/lib/use-enum";
 import { formatDate } from "@/client/lib/format";
 import type { CriterionStatus, IPropertyCriterionResponse, IPropertyVerificationResponse } from "@/client/lib/types";
-import { Empty, ErrorBox, Modal, PageSpinner, Section, Tag, VerificationBadge, useConfirm } from "@/client/ui";
+import { Empty, ErrorBox, Modal, PageSkeleton, Section, Tag, useConfirm, VerificationBadge } from "@/client/ui";
 import { text } from "@/client/ui/form";
 import { FArea, FormFooter, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { useProperty } from "../property-layout";
@@ -40,7 +40,7 @@ export function VerificationPage() {
   useOpenReset(editing !== null, () => { form.reset({ note: editing?.declaration?.note ?? "" }); save.reset(); }, editing?.criterion.id);
   const submit = useSubmit(form, save, (v) => ({ note: text(v.note) ?? null }), () => setEditing(null));
 
-  if (isPending) return <PageSpinner />;
+  if (isPending) return <PageSkeleton />;
   if (error) return <ErrorBox error={error} retry={() => void refetch()} />;
   const expired = (d: IPropertyCriterionResponse["declaration"]) => d?.status === "confirmed" && d.expiresAt !== null && Date.parse(d.expiresAt) < now;
   const renewable = (d: IPropertyCriterionResponse["declaration"]) => d?.status !== "confirmed" || (d.expiresAt !== null && Date.parse(d.expiresAt) - now < RENEW_WINDOW_MS);

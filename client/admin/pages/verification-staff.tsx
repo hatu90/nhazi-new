@@ -16,7 +16,7 @@ import { useCriterionText } from "@/client/lib/criterion";
 import { formatDate } from "@/client/lib/format";
 import type { ICriterionResponse, IReviewItemResponse, IReviewListResponse } from "@/client/lib/types";
 import { NotFound } from "@/client/spa/not-found";
-import { Empty, ErrorBox, Modal, PageSpinner, RowActions, Section, Tag, useConfirm } from "@/client/ui";
+import { Empty, ErrorBox, ListSkeleton, Modal, RowActions, Section, Tag, useConfirm } from "@/client/ui";
 import { num, text } from "@/client/ui/form";
 import { FArea, FCheck, FText, FormFooter, useOpenReset, useSubmit } from "@/client/ui/rhf";
 
@@ -73,7 +73,7 @@ function StaffContent() {
     <VStack gap={4}>
       <Heading level={1}>{t("title")}</Heading>
       <Section title={t("queue", { count: reviews.data?.total ?? 0 })}>
-        {reviews.isPending ? <PageSpinner /> : reviews.error ? <ErrorBox error={reviews.error} retry={() => void reviews.refetch()} /> : reviews.data.items.length === 0 ? <Empty title={t("queueEmpty")} /> : (
+        {reviews.isPending ? <ListSkeleton /> : reviews.error ? <ErrorBox error={reviews.error} retry={() => void reviews.refetch()} /> : reviews.data.items.length === 0 ? <Empty title={t("queueEmpty")} /> : (
           <VStack gap={4}>
             {reviews.data.items.map((r) => (
               <HStack key={r.id} justify="between" align="start" gap={3} wrap="wrap">
@@ -101,7 +101,7 @@ function StaffContent() {
         )}
       </Section>
       <Section title={t("catalog")} action={<Button icon={<Plus size={16} />} variant="primary" label={t("addCriterion")} onClick={() => setTarget("new")} />}>
-        {criteria.isPending ? <PageSpinner /> : criteria.error ? <ErrorBox error={criteria.error} retry={() => void criteria.refetch()} /> : criteria.data.length === 0 ? <Empty title={t("catalogEmpty")} /> : (
+        {criteria.isPending ? <ListSkeleton /> : criteria.error ? <ErrorBox error={criteria.error} retry={() => void criteria.refetch()} /> : criteria.data.length === 0 ? <Empty title={t("catalogEmpty")} /> : (
           <VStack gap={3}>
             {criteria.data.map((k) => (
               <HStack key={k.id} justify="between" align="start" gap={3}>
