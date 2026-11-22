@@ -5,13 +5,11 @@ import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
-import { formatDate } from "@/client/lib/format";
-import { useEnum } from "@/client/lib/use-enum";
 import { useGet } from "@/client/lib/hooks";
-import type { IRequestListResponse, IRequestResponse } from "@/client/lib/types";
-import { DataTable, Empty, Modal, StatusBadge } from "@/client/ui";
+import type { IRequestListResponse } from "@/client/lib/types";
+import { Empty, Modal } from "@/client/ui";
+import { RequestList } from "@/client/requests/request-list";
 import { Button } from "@astryxdesign/core/Button";
-import { Link } from "@astryxdesign/core/Link";
 import { HStack, Stack } from "@astryxdesign/core/Stack";
 import { useState } from "react";
 import { useLease } from "../lease-layout";
@@ -20,8 +18,6 @@ import { RequestFields, useRequestForm } from "./request-form";
 export function RequestsPage() {
   const t = useTranslations("Requests");
   const d = useTranslations("Dashboard");
-  const c = useTranslations("Common");
-  const en = useEnum();
   const { apiPath, to, lease } = useLease();
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
@@ -30,16 +26,11 @@ export function RequestsPage() {
   return (
     <Stack gap={4}>
       <HStack justify="end"><Button icon={<Plus size={16} />} variant="primary" label={t("newRequest")} onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} /></HStack>
-      <DataTable<IRequestResponse>
+      <RequestList
         query={query}
         paging={setPage}
-        empty={<Empty title={t("empty")} action={<Button icon={<Plus size={16} />} variant="primary" label={t("newRequest")} onClick={() => setCreating(true)} />} />}
-        columns={[
-          { key: "t", header: t("request"), render: (r) => <Link href={to(`requests/${r.id}`)}>{r.title}</Link> },
-          { key: "ty", header: c("type"), render: (r) => en("requestType", r.type) },
-          { key: "c", header: t("created"), render: (r) => formatDate(r.createdAt) },
-          { key: "s", header: c("status"), render: (r) => <StatusBadge status={r.status} /> },
-        ]}
+        hrefFor={(r) => to(`requests/${r.id}`)}
+        empty={<Empty title={t("empty")} hint={d("requestsHint")} action={<Button icon={<Plus size={16} />} variant="primary" label={t("newRequest")} onClick={() => setCreating(true)} isDisabled={lease.status === "ended"} />} />}
       />
       <Modal open={creating} onClose={() => setCreating(false)}>
         <form noValidate onSubmit={newRequest.submit} className="flex min-h-0 flex-1 flex-col">

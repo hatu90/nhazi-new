@@ -5,16 +5,17 @@ import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
+import { MessageSquare } from "lucide-react";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useParams } from "react-router";
-import { formatDateTime } from "@/client/lib/format";
-import { useEnum, useEnumOptions } from "@/client/lib/use-enum";
-import { useLocale } from "next-intl";
+import { useEnumOptions } from "@/client/lib/use-enum";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse, RequestStatus } from "@/client/lib/types";
-import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, SelectField, StatusBadge } from "@/client/ui";
+import { ErrorBox, Modal, PageHeader, PageSpinner, Section, SelectField, StatusBadge } from "@/client/ui";
+import { RequestTypeIcon } from "@/client/requests/type-icon";
+import { RequestBody, RequestFacts } from "@/client/requests/request-facts";
+import { RequestThread } from "@/client/requests/request-thread";
 import { ReplyFields, useReplyForm } from "@/client/ui/reply-form";
 import { useProperty } from "../property-layout";
 
@@ -22,10 +23,7 @@ const statuses: RequestStatus[] = ["open", "in_progress", "resolved", "rejected"
 
 export function RequestDetailPage() {
   const t = useTranslations("Requests");
-  const c = useTranslations("Common");
-  const en = useEnum();
   const options = useEnumOptions();
-  const locale = useLocale();
   const { requestId = "" } = useParams();
   const { apiPath, role, to } = useProperty();
   const path = apiPath(`/requests/${requestId}`);
@@ -42,21 +40,21 @@ export function RequestDetailPage() {
   return (
     <VStack gap={5}>
       <HStack><Button label={t("allRequests")} variant="ghost" size="sm" href={to("requests")} /></HStack>
-      <PageHeader title={r.title} subtitle={<HStack gap={2} align="center"><StatusBadge status={r.status} /><StatusBadge status={r.priority} /><Text color="secondary">{en("requestType", r.type)} · {r.unitName ?? t("noUnit")}</Text></HStack>}
+      <PageHeader title={r.title} subtitle={<HStack gap={2} align="center"><RequestTypeIcon type={r.type} size={24} /><StatusBadge status={r.status} /><StatusBadge status={r.priority} /></HStack>}
         actions={role !== "viewer" && !closed && <SelectField label={t("setStatus")} value={r.status} onChange={(v) => update.mutate({ status: v as RequestStatus })} options={options("status", statuses)} width={180} />} />
       {update.error && <ErrorBox error={update.error} />}
-      <Section title={t("details")}>
-        <DefList items={[[t("from"), r.requestedBy.displayName], [t("created"), formatDateTime(r.createdAt, locale)], [c("description"), r.description ?? "—"]]} />
-      </Section>
-      <Section title={t("conversation")}>
-        <VStack gap={3}>
-          {r.comments.length === 0 && <Text color="secondary">{t("noComments")}</Text>}
-          {r.comments.map((cm) => (
-            <Raised key={cm.id}><VStack gap={1}><HStack justify="between"><Text weight="semibold">{cm.author.displayName}</Text><Text size="sm" color="secondary">{formatDateTime(cm.createdAt, locale)}</Text></HStack><Text>{cm.body}</Text></VStack></Raised>
-          ))}
-          {role !== "viewer" && <HStack><Button variant="primary" label={t("reply")} onClick={() => setReplying(true)} /></HStack>}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <VStack gap={5}>
+          <RequestBody r={r} />
+          <Section title={t("conversation")}>
+            <VStack gap={4}>
+              <RequestThread comments={r.comments} />
+              {role !== "viewer" && <HStack><Button variant="primary" icon={<MessageSquare size={16} />} label={t("reply")} onClick={() => setReplying(true)} /></HStack>}
+            </VStack>
+          </Section>
         </VStack>
-      </Section>
+        <RequestFacts r={r} showRequester={true} />
+      </div>
       <Modal open={replying} onClose={() => setReplying(false)}>
         <form noValidate onSubmit={reply.submit} className="flex min-h-0 flex-1 flex-col">
           <Layout

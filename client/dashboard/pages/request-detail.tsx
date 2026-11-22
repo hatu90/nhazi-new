@@ -1,30 +1,26 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useLocale } from "next-intl";
-import { useEnum } from "@/client/lib/use-enum";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
 import { useParams } from "react-router";
-import { formatDateTime } from "@/client/lib/format";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IRequestDetailResponse } from "@/client/lib/types";
-import { DefList, ErrorBox, Modal, PageHeader, PageSpinner, Raised, Section, StatusBadge, useConfirm } from "@/client/ui";
+import { ErrorBox, Modal, PageHeader, PageSpinner, Section, StatusBadge, useConfirm } from "@/client/ui";
+import { RequestTypeIcon } from "@/client/requests/type-icon";
+import { RequestBody, RequestFacts } from "@/client/requests/request-facts";
+import { RequestThread } from "@/client/requests/request-thread";
 import { ReplyFields, useReplyForm } from "@/client/ui/reply-form";
 import { useLease } from "../lease-layout";
 
 export function RequestDetailPage() {
   const t = useTranslations("Requests");
   const d = useTranslations("Dashboard");
-  const c = useTranslations("Common");
-  const en = useEnum();
-  const locale = useLocale();
   const confirm = useConfirm();
   const { requestId = "" } = useParams();
   const { apiPath, to } = useLease();
@@ -44,20 +40,22 @@ export function RequestDetailPage() {
       <HStack><Button label={t("allRequests")} icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href={to("requests")} /></HStack>
       <PageHeader
         title={r.title}
-        subtitle={<HStack gap={2} align="center"><StatusBadge status={r.status} /><Text color="secondary">{en("requestType", r.type)}</Text></HStack>}
+        subtitle={<HStack gap={2} align="center"><RequestTypeIcon type={r.type} size={24} /><StatusBadge status={r.status} /></HStack>}
         actions={!closed && <Button label={t("cancelRequest")} variant="secondary" isLoading={cancel.isPending} onClick={() => confirm.ask({ title: d("cancelTitle"), description: d("cancelBody"), actionLabel: t("cancelRequest"), onConfirm: () => cancel.mutateAsync(undefined) })} />}
       />
       {cancel.error && <ErrorBox error={cancel.error} />}
-      <Section title={t("details")}><DefList items={[[t("sent"), formatDateTime(r.createdAt, locale)], [t("priority"), en("priority", r.priority)], [c("description"), r.description ?? "—"]]} /></Section>
-      <Section title={t("conversation")}>
-        <VStack gap={3}>
-          {r.comments.length === 0 && <Text color="secondary">{t("noComments")}</Text>}
-          {r.comments.map((cm) => (
-            <Raised key={cm.id}><VStack gap={1}><HStack justify="between"><Text weight="semibold">{cm.author.displayName}</Text><Text size="sm" color="secondary">{formatDateTime(cm.createdAt, locale)}</Text></HStack><Text>{cm.body}</Text></VStack></Raised>
-          ))}
-          {!closed && <HStack><Button variant="primary" label={t("reply")} onClick={() => setReplying(true)} /></HStack>}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <VStack gap={5}>
+          <RequestBody r={r} />
+          <Section title={t("conversation")}>
+            <VStack gap={4}>
+              <RequestThread comments={r.comments} />
+              {!closed && <HStack><Button variant="primary" icon={<MessageSquare size={16} />} label={t("reply")} onClick={() => setReplying(true)} /></HStack>}
+            </VStack>
+          </Section>
         </VStack>
-      </Section>
+        <RequestFacts r={r} showRequester={false} />
+      </div>
       <Modal open={replying} onClose={() => setReplying(false)}>
         <form noValidate onSubmit={reply.submit} className="flex min-h-0 flex-1 flex-col">
           <Layout

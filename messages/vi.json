@@ -314,7 +314,8 @@
     "cancelBody": "Yêu cầu sẽ được đóng lại.",
     "sendRequest": "Gửi yêu cầu",
     "moveOut": "Ngày trả phòng",
-    "requestDetails": "Chi tiết"
+    "requestDetails": "Chi tiết",
+    "requestsHint": "Báo sự cố, đặt câu hỏi hoặc yêu cầu kết thúc hợp đồng."
   },
   "Enums": {
     "status": {
@@ -781,7 +782,14 @@
     "sent": "Đã gửi",
     "newRequest": "Yêu cầu mới",
     "title": "Tiêu đề",
-    "cancelRequest": "Hủy yêu cầu"
+    "cancelRequest": "Hủy yêu cầu",
+    "description": "Mô tả",
+    "noDescription": "Không có mô tả",
+    "readings": "Chỉ số công tơ",
+    "assignedTo": "Người phụ trách",
+    "moveOut": "Ngày trả phòng",
+    "closed": "Đã đóng",
+    "count": "{count} yêu cầu"
   },
   "Services": {
     "add": "Thêm dịch vụ",

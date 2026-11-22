@@ -314,7 +314,8 @@
     "cancelBody": "The request will be closed.",
     "sendRequest": "Send request",
     "moveOut": "Move-out date",
-    "requestDetails": "Details"
+    "requestDetails": "Details",
+    "requestsHint": "Report a problem, ask a question or request to end your lease."
   },
   "Enums": {
     "status": {
@@ -781,7 +782,14 @@
     "sent": "Sent",
     "newRequest": "New request",
     "title": "Title",
-    "cancelRequest": "Cancel request"
+    "cancelRequest": "Cancel request",
+    "description": "Description",
+    "noDescription": "No description provided",
+    "readings": "Meter readings",
+    "assignedTo": "Assigned to",
+    "moveOut": "Move-out date",
+    "closed": "Closed",
+    "count": "{count, plural, one {# request} other {# requests}}"
   },
   "Services": {
     "add": "Add service",
