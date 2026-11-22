@@ -25,7 +25,7 @@ export function UserMenu() {
       header={<span className="block px-3 py-2 text-sm">{me.displayName}</span>}
       renderTrigger={(props) => (
         <button type="button" {...props} aria-label={t("accountMenu")} className="cursor-pointer rounded-full">
-          <Avatar name={me.displayName} size="sm" />
+          <Avatar name={me.displayName} size="md" />
         </button>
       )}
     />
