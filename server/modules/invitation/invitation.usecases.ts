@@ -1,3 +1,4 @@
+import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import type { IPropertyScope } from "@/server/shared/actor";
 import type { IPaginated } from "@/server/shared/pagination";
 import { ConflictError, NotFoundError } from "@/server/shared/errors";
@@ -21,7 +22,7 @@ const notPending = () => new ConflictError("This invitation is no longer open", 
 
 // ── admin side ──────────────────────────────────────────────────────────────────────
 abstract class AdminBase {
-  constructor(protected readonly invitations: IInvitationRepository, protected readonly policy: AccessPolicy) {}
+  constructor(protected readonly invitations: IInvitationRepository, protected readonly policy: AccessPolicy, protected readonly notifier: INotifier = noNotifier) {}
 }
 
 /** Ask someone to join the property team. Team management is owner-only (same as adding a member). */
@@ -31,7 +32,7 @@ export class InvitePropertyUseCase extends AdminBase implements IUseCase<IInvite
     if (await this.invitations.isMember(c.propertyId, c.phoneNumber)) {
       throw new ConflictError("This person is already a member of the property", "ALREADY_MEMBER");
     }
-    return this.invitations.create({
+    const inv = await this.invitations.create({
       kind: "property",
       propertyId: c.propertyId,
       leaseId: null,
@@ -39,6 +40,8 @@ export class InvitePropertyUseCase extends AdminBase implements IUseCase<IInvite
       role: c.role,
       invitedBy: c.actor.accountId,
     });
+    await this.notifier.publish({ event: "invitation.received", targetType: "invitation", targetId: inv.id, actorId: c.actor.accountId });
+    return inv;
   }
 }
 
@@ -52,7 +55,7 @@ export class InviteTenantUseCase extends AdminBase implements IUseCase<IInviteTe
     if (await this.invitations.isTenant(c.leaseId, c.phoneNumber)) {
       throw new ConflictError("This person is already a tenant of the lease", "ALREADY_TENANT");
     }
-    return this.invitations.create({
+    const inv = await this.invitations.create({
       kind: "lease",
       propertyId: c.propertyId,
       leaseId: c.leaseId,
@@ -60,6 +63,8 @@ export class InviteTenantUseCase extends AdminBase implements IUseCase<IInviteTe
       role: null,
       invitedBy: c.actor.accountId,
     });
+    await this.notifier.publish({ event: "invitation.received", targetType: "invitation", targetId: inv.id, actorId: c.actor.accountId });
+    return inv;
   }
 }
 
@@ -84,7 +89,7 @@ export class RevokeInvitationUseCase extends AdminBase implements IUseCase<IRevo
 
 // ── invitee side: the phone number on the account is the only credential ─────────────
 abstract class InviteeBase {
-  constructor(protected readonly invitations: IInvitationRepository) {}
+  constructor(protected readonly invitations: IInvitationRepository, protected readonly notifier: INotifier = noNotifier) {}
   protected async phoneOf(actor: IActor) {
     const phone = await this.invitations.findAccountPhone(actor.accountId);
     if (!phone) throw new NotFoundError("Account");
@@ -111,6 +116,7 @@ export class RespondInvitationUseCase extends InviteeBase implements IUseCase<IR
     if (!(await this.invitations.respond(invitationId, actor.accountId, decision))) throw notPending();
     const after = await this.invitations.findForPhone(phone, invitationId);
     if (!after) throw new NotFoundError("Invitation");
+    await this.notifier.publish({ event: decision === "accepted" ? "invitation.accepted" : "invitation.declined", targetType: "invitation", targetId: invitationId, actorId: actor.accountId });
     return after;
   }
 }

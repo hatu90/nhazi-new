@@ -57,35 +57,57 @@ async function Results({
   ) : (
     <VStack gap={4}>
       <div className="grid gap-4 sm:grid-cols-2">
-        {results.items.map((p) => (
-          <Card key={p.id} padding={4}>
-            <VStack gap={2}>
-              <HStack justify="between" align="start" gap={2}>
-                <Link href={`/properties/${p.id}`} className="hover:underline">
-                  <Heading level={3}>{p.name}</Heading>
-                </Link>
-                <Tag label={e(`category.${p.category}`)} tone="info" />
-              </HStack>
-              <Text color="secondary" size="sm">
-                {p.street}, {p.ward.name}, {p.province.name}
-              </Text>
-              <HStack justify="between">
-                <Text size="sm" color="secondary">
-                  {t("unitCount", { count: p.unitCount })}
+        {results.items.map((p) => {
+          const imageUrl = p.headerImage ? getContainer().publicFileUrl(p.headerImage) : null;
+          const price =
+            p.rentPriceFrom == null
+              ? p.rentNegotiable
+                ? t("negotiable")
+                : "—"
+              : p.rentPriceTo && p.rentPriceTo !== p.rentPriceFrom
+                ? `${formatMoney(p.rentPriceFrom)} – ${formatMoney(p.rentPriceTo)}`
+                : formatMoney(p.rentPriceFrom);
+          return (
+            <Link
+              key={p.id}
+              href={`/properties/${p.id}`}
+              className="group block overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/5"
+            >
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/10">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imageUrl}
+                    alt={p.name}
+                    loading="lazy"
+                    className="absolute inset-0 m-0 block h-full w-full max-w-none object-cover p-0 scale-[1.06] transition duration-300 group-hover:scale-[1.12]"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-black/25 dark:text-white/25">
+                    <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                      <path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+                <div className="absolute left-3 top-3">
+                  <Tag label={e(`category.${p.category}`)} tone="info" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 p-4">
+                <Heading level={3}>{p.name}</Heading>
+                <Text color="secondary" size="sm">
+                  {p.street}, {p.ward.name}, {p.province.name}
                 </Text>
-                <Text size="sm">
-                  {p.rentNegotiable && p.rentPriceFrom == null
-                    ? t("negotiable")
-                    : p.rentPriceFrom == null
-                      ? "—"
-                      : p.rentPriceTo && p.rentPriceTo !== p.rentPriceFrom
-                        ? `${formatMoney(p.rentPriceFrom)} – ${formatMoney(p.rentPriceTo)}`
-                        : formatMoney(p.rentPriceFrom)}
-                </Text>
-              </HStack>
-            </VStack>
-          </Card>
-        ))}
+                <div className="mt-1 flex items-center justify-between gap-2 border-t border-black/5 pt-3 dark:border-white/10">
+                  <Text size="sm" color="secondary">
+                    {t("unitCount", { count: p.unitCount })}
+                  </Text>
+                  <span className="text-sm font-semibold">{price}</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
       {results.total > results.pageSize && (
         <HStack justify="between" align="center">

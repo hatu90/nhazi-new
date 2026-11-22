@@ -7,6 +7,7 @@ import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useState } from "react";
+import { useGet } from "@/client/lib/hooks";
 import { formatMoney } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
 import { DefList, Modal, Section } from "@/client/ui";
@@ -17,6 +18,18 @@ import { TeamPage } from "./team";
 
 const formatDistance = (m: number | null) => (m === null ? null : m >= 1000 ? `${(m / 1000).toFixed(1).replace(/\.0$/, "")} km` : `${m} m`);
 
+function ImageTile({ base, path, cover }: { base: string; path: string; cover: boolean }) {
+  const t = useTranslations("Property");
+  const url = useGet<{ url: string }>(`${base}/files`, { path });
+  return (
+    <div style={{ position: "relative", height: 140, borderRadius: 8, overflow: "hidden", background: "rgba(128,128,128,0.15)" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {url.data && <img src={url.data.url} alt={t("image")} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+      {cover && <span style={{ position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "rgba(0,0,0,0.65)", color: "#fff" }}>{t("cover")}</span>}
+    </div>
+  );
+}
+
 /** Flat page: a heading and its content per block, blocks separated by a divider (no cards around cards). */
 export function SettingsPage() {
   const t = useTranslations("Settings");
@@ -24,7 +37,7 @@ export function SettingsPage() {
   const en = useEnum();
   const { property, canManage, apiPath } = useProperty();
   const [editing, setEditing] = useState(false);
-  const imageCount = property.images.length + (property.headerImage ? 1 : 0);
+  const images = property.headerImage && !property.images.includes(property.headerImage) ? [property.headerImage, ...property.images] : property.images;
   const propertyForm = usePropertyForm({ initial: property, method: "PATCH", path: apiPath(), open: editing, onDone: () => setEditing(false) });
 
   return (
@@ -35,25 +48,29 @@ export function SettingsPage() {
           [t("category"), en("category", property.category)],
           [t("address"), `${property.street}, ${property.ward.name}, ${property.province.name}`],
           [t("askingRent"), property.rentNegotiable ? t("negotiable") : property.rentPriceFrom === null ? "—" : `${formatMoney(property.rentPriceFrom)}${property.rentPriceTo !== null ? ` – ${formatMoney(property.rentPriceTo)}` : ""}`],
-          [t("images"), imageCount === 0 ? c("none") : `${imageCount}`],
         ]} />
-        <VStack gap={1}>
-          <Text size="sm" color="secondary">{t("nearby")}</Text>
-          {property.referenceAddresses.length > 0 && (
-            <VStack gap={1}>
-              {property.referenceAddresses.map((r) => (
-                <HStack key={r.id} justify="between" align="center" gap={3}>
-                  <Text>{r.name}</Text>
-                  <Text color="secondary">{formatDistance(r.distance) ?? "—"}</Text>
-                </HStack>
-              ))}
-            </VStack>
-          )}
-        </VStack>
-        <VStack gap={1}>
-          <Text size="sm" color="secondary">{t("rules")}</Text>
-          {property.rules.length === 0 ? <Text>—</Text> : <ul className="list-disc space-y-1 pl-5">{property.rules.map((r, i) => <li key={i}><Text>{r}</Text></li>)}</ul>}
-        </VStack>
+      </Section>
+      <Section title={t("nearby")}>
+        {property.referenceAddresses.length === 0 ? <Text>—</Text> : (
+          <VStack gap={1}>
+            {property.referenceAddresses.map((r) => (
+              <HStack key={r.id} justify="between" align="center" gap={3}>
+                <Text>{r.name}</Text>
+                <Text color="secondary">{formatDistance(r.distance) ?? "—"}</Text>
+              </HStack>
+            ))}
+          </VStack>
+        )}
+      </Section>
+      <Section title={t("images")}>
+        {images.length === 0 ? <Text>{c("none")}</Text> : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+            {images.map((p) => <ImageTile key={p} base={apiPath()} path={p} cover={p === property.headerImage} />)}
+          </div>
+        )}
+      </Section>
+      <Section title={t("rules")}>
+        {property.rules.length === 0 ? <Text>—</Text> : <ul className="list-disc space-y-1 pl-5">{property.rules.map((r, i) => <li key={i}><Text>{r}</Text></li>)}</ul>}
       </Section>
       <TeamPage />
       <Modal open={editing} onClose={() => setEditing(false)}>

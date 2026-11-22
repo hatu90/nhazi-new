@@ -6,12 +6,13 @@ import { api, withQuery } from "./api";
 type Query = Record<string, string | number | boolean | null | undefined>;
 
 /** GET `path` (with optional query string); cached under [path, query]. */
-export function useGet<T>(path: string, query?: Query, options: { enabled?: boolean; keepPrevious?: boolean } = {}) {
+export function useGet<T>(path: string, query?: Query, options: { enabled?: boolean; keepPrevious?: boolean; refetchInterval?: number } = {}) {
   return useQuery({
     queryKey: [path, query ?? {}],
     queryFn: () => api<T>(path, { query }),
     enabled: options.enabled ?? true,
     placeholderData: options.keepPrevious ? keepPreviousData : undefined,
+    refetchInterval: options.refetchInterval,
   });
 }
 

@@ -14,6 +14,12 @@ export type SearchValues = { q: string; category: string };
 
 /** Reads its initial values from the URL itself, so the page shell needs no request-time data. Render inside <Suspense>. */
 export function PropertySearchForm() {
+  const sp = useSearchParams();
+  // Remount when the URL changes (back/forward, external links) so the fields re-sync.
+  return <SearchFormInner key={`${sp.get("q") ?? ""}|${sp.get("category") ?? ""}`} />;
+}
+
+function SearchFormInner() {
   const t = useTranslations("Site");
   const options = useEnumOptions();
   const categoryOptions = [{ value: "", label: t("any") }, ...options("category", categories)];

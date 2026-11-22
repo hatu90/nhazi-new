@@ -1,3 +1,4 @@
+import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import type { IActor, IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
@@ -47,6 +48,7 @@ export class UpdateRequestUseCase implements IUseCase<IUpdateRequestCommand, IRe
     private readonly requests: IRequestRepository,
     private readonly policy: AccessPolicy,
     private readonly access: IAccessRepository,
+    private readonly notifier: INotifier = noNotifier,
   ) {}
   async execute(c: IUpdateRequestCommand) {
     const role = await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.field);
@@ -62,25 +64,30 @@ export class UpdateRequestUseCase implements IUseCase<IUpdateRequestCommand, IRe
     }
     const closing = c.status !== undefined && isClosed(c.status) && !isClosed(current.status);
     await this.requests.update(c, closing ? new Date() : null);
+    const actorId = c.actor.accountId;
+    if (c.status !== undefined && c.status !== current.status) await this.notifier.publish({ event: "request.status_changed", targetType: "request", targetId: c.requestId, actorId, extra: { status: c.status } });
+    if (c.assignedTo && c.assignedTo !== current.assignedTo?.id) await this.notifier.publish({ event: "request.assigned", targetType: "request", targetId: c.requestId, actorId, extra: { assigneeId: c.assignedTo } });
     return (await this.requests.find({ propertyId: c.propertyId }, c.requestId))!;
   }
 }
 
 export class AddStaffCommentUseCase implements IUseCase<IAdminCommentCommand, ICommentResponse> {
-  constructor(private readonly requests: IRequestRepository, private readonly policy: AccessPolicy) {}
+  constructor(private readonly requests: IRequestRepository, private readonly policy: AccessPolicy, private readonly notifier: INotifier = noNotifier) {}
   async execute(c: IAdminCommentCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.field);
     const r = await this.requests.find({ propertyId: c.propertyId }, c.requestId);
     if (!r) throw new NotFoundError("Request");
     if (isClosed(r.status)) throw CLOSED();
-    return this.requests.addComment(c.requestId, c.actor.accountId, c.body);
+    const comment = await this.requests.addComment(c.requestId, c.actor.accountId, c.body);
+    await this.notifier.publish({ event: "request_comment.created", targetType: "request_comment", targetId: comment.id, actorId: c.actor.accountId });
+    return comment;
   }
 }
 
 // ── tenant ──────────────────────────────────────────────────────────────────────────
 type TenantLease = { actor: IActor; leaseId: string };
 abstract class TenantBase {
-  constructor(protected readonly requests: IRequestRepository) {}
+  constructor(protected readonly requests: IRequestRepository, protected readonly notifier: INotifier = noNotifier) {}
   protected async lease(actor: IActor, leaseId: string) {
     const l = await this.requests.findTenantLease(actor.accountId, leaseId);
     if (!l) throw new NotFoundError("Lease");
@@ -109,6 +116,7 @@ export class CreateMyRequestUseCase extends TenantBase implements IUseCase<ICrea
   async execute(c: ICreateRequestCommand) {
     const lease = await this.lease(c.actor, c.leaseId);
     const id = await this.requests.create(c, lease);
+    await this.notifier.publish({ event: "request.created", targetType: "request", targetId: id, actorId: c.actor.accountId });
     return (await this.requests.find({ leaseId: c.leaseId }, id))!;
   }
 }
@@ -116,7 +124,10 @@ export class CancelMyRequestUseCase extends TenantBase implements IUseCase<Tenan
   async execute({ actor, leaseId, requestId }: TenantLease & { requestId: string }) {
     const r = await this.own(actor, leaseId, requestId);
     if (!canTransition(r.status, "cancelled")) throw new ConflictError("This request can no longer be cancelled", "INVALID_TRANSITION");
-    if (r.status !== "cancelled") await this.requests.setStatus(requestId, "cancelled", new Date());
+    if (r.status !== "cancelled") {
+      await this.requests.setStatus(requestId, "cancelled", new Date());
+      await this.notifier.publish({ event: "request.status_changed", targetType: "request", targetId: requestId, actorId: actor.accountId, extra: { status: "cancelled" } });
+    }
     return (await this.requests.find({ leaseId }, requestId))!;
   }
 }
@@ -124,14 +135,16 @@ export class AddMyCommentUseCase extends TenantBase implements IUseCase<ITenantC
   async execute(c: ITenantCommentCommand) {
     const r = await this.own(c.actor, c.leaseId, c.requestId);
     if (isClosed(r.status)) throw CLOSED();
-    return this.requests.addComment(c.requestId, c.actor.accountId, c.body);
+    const comment = await this.requests.addComment(c.requestId, c.actor.accountId, c.body);
+    await this.notifier.publish({ event: "request_comment.created", targetType: "request_comment", targetId: comment.id, actorId: c.actor.accountId });
+    return comment;
   }
 }
 
 // ── public ──────────────────────────────────────────────────────────────────────────
 /** A signed-in account asks the landlord about a property (or one of its units). Lands in the property's requests and notifications. */
 export class CreateEnquiryUseCase implements IUseCase<ICreateEnquiryCommand, { id: string }> {
-  constructor(private readonly requests: IRequestRepository) {}
+  constructor(private readonly requests: IRequestRepository, private readonly notifier: INotifier = noNotifier) {}
   async execute(c: ICreateEnquiryCommand) {
     const target = await this.requests.findEnquiryTarget(c.propertyId, c.unitId);
     if (!target) throw new NotFoundError(c.unitId ? "Unit" : "Property");
@@ -139,6 +152,7 @@ export class CreateEnquiryUseCase implements IUseCase<ICreateEnquiryCommand, { i
       throw new ConflictError("You already have an open enquiry for this property", "ENQUIRY_EXISTS");
     }
     const id = await this.requests.createEnquiry(c, `Enquiry: ${target.unitName ?? target.propertyName}`);
+    await this.notifier.publish({ event: "request.created", targetType: "request", targetId: id, actorId: c.actor.accountId });
     return { id };
   }
 }

@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { formatMoney } from "@/client/lib/format";
 import type { IMonthBreakdown } from "@/client/lib/types";
 
-const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#0ea5e9", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316"];
+const COLORS = ["#357d9d", "#10b981", "#f59e0b", "#7cc4e0", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316"];
 const monthLabel = (ym: string, locale: string) => new Date(`${ym}-01T00:00:00Z`).toLocaleDateString(locale === "vi" ? "vi-VN" : "en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
 const compact = (n: number, locale: string) => new Intl.NumberFormat(locale === "vi" ? "vi-VN" : "en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 

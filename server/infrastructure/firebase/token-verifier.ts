@@ -1,5 +1,5 @@
-import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirebaseApp } from "./app";
 import type { AuthProvider, ITokenVerifier, IVerifiedIdentity } from "@/server/shared/auth";
 import { UnauthorizedError } from "@/server/shared/errors";
 
@@ -13,21 +13,10 @@ const PROVIDERS: Record<string, AuthProvider> = {
 
 /** Verifies Firebase ID tokens. Credentials via FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY. */
 export class FirebaseTokenVerifier implements ITokenVerifier {
-  private app() {
-    const existing = getApps()[0];
-    if (existing) return existing;
-    const { FIREBASE_PROJECT_ID: projectId, FIREBASE_CLIENT_EMAIL: clientEmail, FIREBASE_PRIVATE_KEY: key } = process.env;
-    return initializeApp(
-      projectId && clientEmail && key
-        ? { credential: cert({ projectId, clientEmail, privateKey: key.replace(/\\n/g, "\n") }) }
-        : undefined, // falls back to GOOGLE_APPLICATION_CREDENTIALS
-    );
-  }
-
   async verify(token: string): Promise<IVerifiedIdentity> {
     let decoded;
     try {
-      decoded = await getAuth(this.app()).verifyIdToken(token);
+      decoded = await getAuth(getFirebaseApp()).verifyIdToken(token);
     } catch {
       throw new UnauthorizedError("Invalid or expired token");
     }

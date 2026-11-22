@@ -23,7 +23,7 @@ Dependency direction (never reversed, so no cycles):
 
 ## Endpoints
 `/api/public`  properties (search, detail) · plans · register
-`/api/me`  profile · subscription
+`/api/me`  profile · subscription · notifications (+ unread-count, read, read-all) · push-tokens
 `/api/lease/:leaseId`  tenant: lease, invoices (+detail), requests (create, list, cancel, comment)
 `/api/admin/properties` (+ `/:propertyId/...`, role-checked per call)
 - structure: units · handovers (items handed over per lease) · inventory-items · services (+ price versions) · meters · readings
@@ -41,6 +41,14 @@ Dependency direction (never reversed, so no cycles):
 - leases: create draft (tenants by phone, members, handover items, pinned template version) · rent versions · tenants · members · subscriptions · handovers
 - money: invoices (manual) · payments · cancel · refunds (+ pay / cancel) · billing-periods (read)
 - requests: list · update (status / assignee / priority) · comments
+
+## Notifications
+One stored row per **receiver** (`notifications`): `targetType` (lease · invitation · agreement · billing_period · request · request_comment · invoice · payment) + `targetId` say what it is about, `event` what happened (`invoice.created`, `payment.reported`, …), `metadata` carries `propertyId`, `leaseId`, `unitName`, … and `area` + `path` where it opens (`/admin` or `/dashboard` app).
+- **Publishing**: usecases call `notifier.publish({ event, targetType, targetId, actorId })` after the write. `notification.events.ts` is the catalog (pure: who hears it, title, body, severity); `notification.publisher.ts` loads the target's context, drops the actor, stores one row per receiver and pushes it. Best effort: a failure is logged, never fails the action.
+- **Push**: browsers register an FCM token (`POST /api/me/push-tokens`); the server sends DATA-only messages (`infrastructure/firebase/fcm-sender.ts`) and `public/sw.js` shows them and opens `url` on click. Dead tokens are dropped when FCM reports them. Needs `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` + `NEXT_PUBLIC_FIREBASE_VAPID_KEY`; on iPhone only from the installed (home screen) app.
+- **Cron**: `GET|POST /api/cron/notifications` with `Authorization: Bearer $CRON_SECRET`, once a day. Billing periods ending within 3 days → `billing_period.closing_soon` (once); past their end → `billing_period.overdue`; invoices past due → `invoice.overdue`; both repeat weekly until resolved. Re-running is safe: `dedupe_key` is unique per receiver. On Vercel, `vercel.json` schedules it daily at 01:00 UTC (08:00 in Vietnam); set `CRON_SECRET` in the project env and Vercel sends it as the Bearer token. Example: `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://host/api/cron/notifications`.
+- Invitations sent to a phone that has no account yet get their notification when that phone registers.
+- Texts (title, body) are written in Vietnamese in `notification.events.ts`; the client labels the kind (`targetType`) per locale, and can localise from `event` + `metadata`.
 
 ## Not built yet
 - **Billing automation**: periods, usages and event invoices are written by the admin (the frontend calculates and pre-fills); nothing opens or

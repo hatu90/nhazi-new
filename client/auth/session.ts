@@ -3,6 +3,7 @@
  * For local work add your test numbers in Firebase console -> Authentication -> Sign-in method -> Phone ->
  * "Phone numbers for testing" (fixed codes, no SMS sent) and make sure `localhost` is an authorized domain.
  */
+import type { FirebaseApp } from "firebase/app";
 import type { Auth, ConfirmationResult, RecaptchaVerifier } from "firebase/auth";
 
 export interface SessionUser {
@@ -11,20 +12,26 @@ export interface SessionUser {
 }
 
 // ── firebase ──────────────────────────────────────────────────────────────────────
+let appPromise: Promise<FirebaseApp> | null = null;
+/** The one client Firebase app (auth + push). */
+export const firebaseApp = (): Promise<FirebaseApp> => {
+  appPromise ??= import("firebase/app").then(({ initializeApp, getApps }) =>
+    getApps()[0] ??
+    initializeApp({
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    }));
+  return appPromise;
+};
+
 let authPromise: Promise<Auth> | null = null;
 const firebaseAuth = (): Promise<Auth> => {
   authPromise ??= (async () => {
-    const { initializeApp, getApps } = await import("firebase/app");
     const { getAuth } = await import("firebase/auth");
-    const app =
-      getApps()[0] ??
-      initializeApp({
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-      });
-    const auth = getAuth(app);
+    const auth = getAuth(await firebaseApp());
     await auth.authStateReady();
     return auth;
   })();

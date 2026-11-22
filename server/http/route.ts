@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z, type ZodType } from "zod";
 import { getContainer } from "@/server/container";
@@ -81,6 +82,17 @@ export const authedRoute = (handler: Handler<IAuthedRouteContext>) =>
   guard(async (request, params) => {
     const actor = await getContainer().authenticate.execute({ token: bearer(request) });
     return handler({ request, params, actor });
+  });
+
+/** Scheduled jobs: `Authorization: Bearer $CRON_SECRET`. Closed (503) while CRON_SECRET is not set, so a missing secret can never open the endpoint. */
+export const cronRoute = (handler: Handler<IRouteContext>) =>
+  guard(async (request, params) => {
+    const secret = process.env.CRON_SECRET;
+    if (!secret) return NextResponse.json({ error: { code: "CRON_DISABLED", message: "CRON_SECRET is not configured" } }, { status: 503 });
+    const given = Buffer.from(request.headers.get("authorization") ?? "");
+    const wanted = Buffer.from(`Bearer ${secret}`);
+    if (given.length !== wanted.length || !timingSafeEqual(given, wanted)) throw new UnauthorizedError();
+    return handler({ request, params });
   });
 
 /** `/api/admin/properties/:propertyId/...`: authenticated + a `scope` ({ actor, propertyId }) for property-scoped commands. */

@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  // The push service worker must never be served stale, and may control the whole site.
+  async headers() {
+    return [{
+      source: "/sw.js",
+      headers: [
+        { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        { key: "Service-Worker-Allowed", value: "/" },
+      ],
+    }];
+  },
   turbopack: {
     rules: {
       "*.css": {

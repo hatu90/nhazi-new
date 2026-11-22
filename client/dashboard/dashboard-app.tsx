@@ -12,6 +12,7 @@ import { HomePage } from "./pages/home";
 import { InvoiceDetailPage } from "./pages/invoice-detail";
 import { InvoicesPage } from "./pages/invoices";
 import { LeaseOverviewPage } from "./pages/lease-overview";
+import { NotificationsPage } from "./pages/notifications";
 import { RequestDetailPage } from "./pages/request-detail";
 import { RequestsPage } from "./pages/requests";
 
@@ -24,6 +25,7 @@ export default function DashboardApp() {
           <Routes>
             <Route element={<DashboardLayout />}>
               <Route index element={<HomePage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="leases/:leaseId" element={<LeaseLayout />}>
                 <Route index element={<LeaseOverviewPage />} />
                 <Route path="invoices" element={<InvoicesPage />} />

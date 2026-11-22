@@ -1,3 +1,4 @@
+import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import { addDays, meterQuantity, resolvePriceVersion, suggestAmount, usageCost } from "@/lib/billing/pricing";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
@@ -41,6 +42,7 @@ abstract class Base {
     protected readonly invoices: IInvoiceRepository,
     protected readonly refunds: IRefundRepository,
     protected readonly policy: AccessPolicy,
+    protected readonly notifier: INotifier = noNotifier,
   ) {}
 
   protected manage(s: IPropertyScope) {
@@ -183,6 +185,8 @@ export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseComma
     };
     const invoice: IInvoicePlan = { kind: "move_in", period: "new", title: c.title ?? `Move-in ${dmy(start)}`, dueDate: c.dueDate ?? start, items };
     const r = await this.life.applyStart({ propertyId: c.propertyId, leaseId: c.leaseId, actor: c.actor, readings: this.writes(c.readings, start), period, invoice, moveStart });
+    await this.notifier.publish({ event: "lease.started", targetType: "lease", targetId: c.leaseId, actorId: c.actor.accountId });
+    await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: r.invoiceId, actorId: c.actor.accountId });
     return { leaseId: c.leaseId, period: await this.periodDetail(c.propertyId, r.periodId), invoice: await this.invoiceDetail(c.propertyId, r.invoiceId) };
   }
 }
@@ -218,9 +222,12 @@ export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCom
     const { active, base, close, next, invoice } = await this.plan(c);
     if (!next) {
       await this.life.applyRollover({ ...base, close, next: null, invoice: null });
+      await this.notifier.publish({ event: "billing_period.closed", targetType: "billing_period", targetId: active.id, actorId: c.actor.accountId });
       return { period: await this.periodDetail(c.propertyId, active.id), next: null, invoice: null };
     }
     const r = await this.life.applyRollover({ ...base, close, next, invoice });
+    await this.notifier.publish({ event: "billing_period.closed", targetType: "billing_period", targetId: active.id, actorId: c.actor.accountId });
+    if (r.invoiceId) await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: r.invoiceId, actorId: c.actor.accountId });
     return {
       period: await this.periodDetail(c.propertyId, active.id),
       next: r.nextPeriodId ? await this.periodDetail(c.propertyId, r.nextPeriodId) : null,
@@ -305,6 +312,8 @@ export class CloseLeaseUseCase extends Base implements IUseCase<ICloseLeaseComma
       refund,
       handovers: c.handovers,
     });
+    await this.notifier.publish({ event: "lease.ended", targetType: "lease", targetId: c.leaseId, actorId: c.actor.accountId });
+    if (r.invoiceId) await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: r.invoiceId, actorId: c.actor.accountId });
     return {
       leaseId: c.leaseId,
       terminatedAt: t,
@@ -409,8 +418,9 @@ export class AddSubscriptionUseCase extends Base implements IUseCase<IAddSubscri
     policy: AccessPolicy,
     private readonly validator: CreateSubscriptionUseCase,
     private readonly tenancy: ITenancyRepository,
+    notifier: INotifier = noNotifier,
   ) {
-    super(life, billing, invoices, refunds, policy);
+    super(life, billing, invoices, refunds, policy, notifier);
   }
 
   async execute(c: IAddSubscriptionCommand): Promise<IAddSubscriptionResponse> {
@@ -469,6 +479,7 @@ export class AddSubscriptionUseCase extends Base implements IUseCase<IAddSubscri
     });
     const sub = await this.tenancy.findSubscription(c.leaseId, r.subscriptionId);
     if (!sub) throw new NotFoundError("Subscription");
+    if (r.invoiceId) await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: r.invoiceId, actorId: c.actor.accountId });
     return { ...sub, usageId: r.usageId, invoice: r.invoiceId ? await this.invoiceDetail(c.propertyId, r.invoiceId) : null };
   }
 }

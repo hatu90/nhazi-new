@@ -23,7 +23,9 @@ import { BulkCreateItemsUseCase, CreateHandoverUseCase, CreateItemUseCase, Delet
 import { AddTemplateVersionUseCase, CreateTemplateUseCase, DeleteTemplateUseCase, GetTemplateUseCase, GetTemplateVersionUseCase, ListTemplatesUseCase, UpdateTemplateUseCase } from "./modules/agreement/agreement.usecases";
 import { AddMemberUseCase, ChangeMemberRoleUseCase, ListMembersUseCase, RemoveMemberUseCase } from "./modules/member/member.usecases";
 import { InvitePropertyUseCase, InviteTenantUseCase, ListInvitationsUseCase, ListMyInvitationsUseCase, RespondInvitationUseCase, RevokeInvitationUseCase } from "./modules/invitation/invitation.usecases";
-import { ListMyNotificationsUseCase } from "./modules/notification/notification.usecases";
+import { BackfillInvitationNotificationsUseCase, CountMyUnreadUseCase, ListMyNotificationsUseCase, MarkAllNotificationsReadUseCase, MarkNotificationReadUseCase, RegisterPushTokenUseCase, RunScheduledNotificationsUseCase, UnregisterPushTokenUseCase } from "./modules/notification/notification.usecases";
+import { NotificationPublisher } from "./modules/notification/notification.publisher";
+import { FcmPushSender } from "./infrastructure/firebase/fcm-sender";
 import { PrismaNotificationRepository } from "./infrastructure/prisma/repositories/notification.repository";
 import { PrismaInvitationRepository } from "./infrastructure/prisma/repositories/invitation.repository";
 import { AddSubscriptionUseCase, CloseLeaseUseCase, ClosePeriodUseCase, StartLeaseUseCase } from "./modules/lifecycle/lifecycle.usecases";
@@ -83,6 +85,7 @@ function build() {
   const members = new PrismaMemberRepository(db);
   const invitations = new PrismaInvitationRepository(db);
   const notifications = new PrismaNotificationRepository(db);
+  const notifier = new NotificationPublisher(notifications, new FcmPushSender());
   const tenancies = new PrismaTenancyRepository(db);
   const invoices = new PrismaInvoiceRepository(db);
   const stats = new PrismaStatsRepository(db);
@@ -93,14 +96,16 @@ function build() {
   const access = new PrismaAccessRepository(db);
   const policy = new AccessPolicy(access);
   const lifecycle = new PrismaLifecycleRepository(db, billing);
-  const closePeriod = new ClosePeriodUseCase(lifecycle, billing, invoices, refunds, policy);
+  const closePeriod = new ClosePeriodUseCase(lifecycle, billing, invoices, refunds, policy, notifier);
   const subscriptionRules = new CreateSubscriptionUseCase(tenancies, policy);
 
   return {
+    /** Permanent URL of a public property image (by storage key). */
+    publicFileUrl: (path: string) => storage.publicUrl(path),
     // identity
     verifyToken: new VerifyTokenUseCase(verifier),
     authenticate: new AuthenticateUseCase(verifier, accounts),
-    register: new RegisterUseCase(accounts),
+    register: new RegisterUseCase(accounts, new BackfillInvitationNotificationsUseCase(notifications, notifier)),
     getMe: new GetMeUseCase(accounts),
     updateMe: new UpdateMeUseCase(accounts),
     // property: public
@@ -163,13 +168,13 @@ function build() {
     // leases (admin side)
     listTenancies: new ListTenanciesUseCase(tenancies, policy),
     getTenancy: new GetTenancyUseCase(tenancies, policy),
-    createTenancy: new CreateTenancyUseCase(tenancies, policy, invitations),
-    updateTenancy: new UpdateTenancyUseCase(tenancies, policy),
+    createTenancy: new CreateTenancyUseCase(tenancies, policy, invitations, notifier),
+    updateTenancy: new UpdateTenancyUseCase(tenancies, policy, notifier),
     deleteDraftTenancy: new DeleteDraftTenancyUseCase(tenancies, policy),
     addRentVersion: new AddRentVersionUseCase(tenancies, policy),
     addTenant: new AddTenantUseCase(tenancies, policy),
     removeTenant: new RemoveTenantUseCase(tenancies, policy),
-    addLeaseMember: new AddLeaseMemberUseCase(tenancies, policy, invitations),
+    addLeaseMember: new AddLeaseMemberUseCase(tenancies, policy, invitations, notifier),
     updateLeaseMember: new UpdateLeaseMemberUseCase(tenancies, policy),
     createSubscription: subscriptionRules,
     updateSubscription: new UpdateSubscriptionUseCase(tenancies, policy),
@@ -178,18 +183,18 @@ function build() {
     listBillingPeriods: new ListBillingPeriodsUseCase(billing, policy),
     getBillingPeriod: new GetBillingPeriodUseCase(billing, policy),
     openBillingPeriod: new OpenBillingPeriodUseCase(billing, policy),
-    startLease: new StartLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
+    startLease: new StartLeaseUseCase(lifecycle, billing, invoices, refunds, policy, notifier),
     closeBillingPeriod: closePeriod,
-    closeLease: new CloseLeaseUseCase(lifecycle, billing, invoices, refunds, policy),
-    addSubscription: new AddSubscriptionUseCase(lifecycle, billing, invoices, refunds, policy, subscriptionRules, tenancies),
+    closeLease: new CloseLeaseUseCase(lifecycle, billing, invoices, refunds, policy, notifier),
+    addSubscription: new AddSubscriptionUseCase(lifecycle, billing, invoices, refunds, policy, subscriptionRules, tenancies, notifier),
     updateUsage: new UpdateUsageUseCase(billing, policy),
     getPropertyStats: new GetPropertyStatsUseCase(stats, policy),
     listInvoices: new ListInvoicesUseCase(invoices, policy),
     getInvoice: new GetInvoiceUseCase(invoices, policy),
-    createInvoice: new CreateInvoiceUseCase(invoices, policy),
-    cancelInvoice: new CancelInvoiceUseCase(invoices, policy),
-    recordPayment: new RecordPaymentUseCase(invoices, policy),
-    reviewPayment: new ReviewPaymentUseCase(invoices, policy),
+    createInvoice: new CreateInvoiceUseCase(invoices, policy, notifier),
+    cancelInvoice: new CancelInvoiceUseCase(invoices, policy, notifier),
+    recordPayment: new RecordPaymentUseCase(invoices, policy, notifier),
+    reviewPayment: new ReviewPaymentUseCase(invoices, policy, notifier),
     deletePayment: new DeletePaymentUseCase(invoices, policy),
     listRefunds: new ListRefundsUseCase(refunds, policy),
     getRefund: new GetRefundUseCase(refunds, policy),
@@ -199,14 +204,14 @@ function build() {
     // requests: staff + tenant
     listRequests: new ListRequestsUseCase(requests, policy),
     getRequest: new GetRequestUseCase(requests, policy),
-    updateRequest: new UpdateRequestUseCase(requests, policy, access),
-    addStaffComment: new AddStaffCommentUseCase(requests, policy),
+    updateRequest: new UpdateRequestUseCase(requests, policy, access, notifier),
+    addStaffComment: new AddStaffCommentUseCase(requests, policy, notifier),
     listMyRequests: new ListMyRequestsUseCase(requests),
     getMyRequest: new GetMyRequestUseCase(requests),
-    createMyRequest: new CreateMyRequestUseCase(requests),
-    createEnquiry: new CreateEnquiryUseCase(requests),
-    cancelMyRequest: new CancelMyRequestUseCase(requests),
-    addMyComment: new AddMyCommentUseCase(requests),
+    createMyRequest: new CreateMyRequestUseCase(requests, notifier),
+    createEnquiry: new CreateEnquiryUseCase(requests, notifier),
+    cancelMyRequest: new CancelMyRequestUseCase(requests, notifier),
+    addMyComment: new AddMyCommentUseCase(requests, notifier),
     // SaaS plans
     listPlans: new ListPlansUseCase(plans),
     getMySubscription: new GetMySubscriptionUseCase(plans),
@@ -217,13 +222,19 @@ function build() {
     removeMember: new RemoveMemberUseCase(members, policy),
     // notifications
     listMyNotifications: new ListMyNotificationsUseCase(notifications),
+    countMyUnread: new CountMyUnreadUseCase(notifications),
+    markNotificationRead: new MarkNotificationReadUseCase(notifications),
+    markAllNotificationsRead: new MarkAllNotificationsReadUseCase(notifications),
+    registerPushToken: new RegisterPushTokenUseCase(notifications),
+    unregisterPushToken: new UnregisterPushTokenUseCase(notifications),
+    runScheduledNotifications: new RunScheduledNotificationsUseCase(notifications, notifier),
     // invitations
-    invitePropertyMember: new InvitePropertyUseCase(invitations, policy),
-    inviteTenant: new InviteTenantUseCase(invitations, policy),
+    invitePropertyMember: new InvitePropertyUseCase(invitations, policy, notifier),
+    inviteTenant: new InviteTenantUseCase(invitations, policy, notifier),
     listInvitations: new ListInvitationsUseCase(invitations, policy),
     revokeInvitation: new RevokeInvitationUseCase(invitations, policy),
     listMyInvitations: new ListMyInvitationsUseCase(invitations),
-    respondInvitation: new RespondInvitationUseCase(invitations),
+    respondInvitation: new RespondInvitationUseCase(invitations, notifier),
     // lease: tenant
     listMyLeases: new ListMyLeasesUseCase(leases),
     getMyBilling: new GetMyBillingUseCase(leases, lifecycle),
@@ -231,7 +242,7 @@ function build() {
     getMyLease: new GetMyLeaseUseCase(leases),
     listMyLeaseInvoices: new ListMyLeaseInvoicesUseCase(leases),
     getMyInvoice: new GetMyInvoiceUseCase(leases),
-    reportPayment: new ReportPaymentUseCase(invoices, leases),
+    reportPayment: new ReportPaymentUseCase(invoices, leases, notifier),
     uploadLeaseFile: new UploadLeaseFileUseCase(storage, leases),
     getLeaseFileUrl: new GetLeaseFileUrlUseCase(storage, leases),
   };

@@ -7,7 +7,7 @@
     "audiences": [
       {
         "title": "Dành cho chủ nhà và người quản lý",
-        "body": "Thiết lập từng bất động sản, phòng, dịch vụ và đồng hồ. Tạo hợp đồng, ghi chỉ số, chốt kỳ thanh toán và phát hành hóa đơn. Mời nhóm của bạn và phân quyền phù hợp cho từng người."
+        "body": "Thiết lập từng căn nhà, phòng, dịch vụ và đồng hồ. Tạo hợp đồng, ghi chỉ số, chốt kỳ thanh toán và phát hành hóa đơn. Mời nhóm của bạn và phân quyền phù hợp cho từng người."
       },
       {
         "title": "Dành cho người thuê",
@@ -33,7 +33,7 @@
         "body": "Chủ nhà quyết định thu gì và khi nào. Nhazi chỉ ghi lại hóa đơn và các khoản thanh toán được báo. Nhazi không bao giờ chuyển tiền thay bạn."
       }
     ],
-    "ctaTitle": "Thử với bất động sản đầu tiên của bạn."
+    "ctaTitle": "Thử với căn nhà đầu tiên của bạn."
   },
   "AdminNav": {
     "overview": "Tổng quan",
@@ -46,8 +46,8 @@
     "invoices": "Hóa đơn",
     "agreements": "Mẫu hợp đồng",
     "settings": "Cài đặt",
-    "property": "Bất động sản",
-    "otherProperties": "Bất động sản khác"
+    "property": "Căn nhà",
+    "otherProperties": "Căn nhà khác"
   },
   "AgreementEditor": {
     "fieldName": "Tên trường (duy nhất)",
@@ -181,6 +181,7 @@
     "required": "Bắt buộc",
     "moreActions": "Thêm thao tác",
     "accountMenu": "Menu tài khoản",
+    "notifications": "{count, plural, =0 {Thông báo} other {Thông báo, # chưa đọc}}",
     "menu": "Menu",
     "mainNav": "Điều hướng chính",
     "notFound": "Không tìm thấy trang",
@@ -208,6 +209,14 @@
       "agreement": "Hợp đồng"
     },
     "notifications": "Thông báo",
+    "notificationTarget": {"lease": "Hợp đồng", "invitation": "Lời mời", "agreement": "Thỏa thuận", "billing_period": "Kỳ thanh toán", "request": "Yêu cầu", "request_comment": "Bình luận", "invoice": "Hóa đơn", "payment": "Thanh toán"},
+    "seeAll": "Xem tất cả",
+    "unread": "Chưa đọc",
+    "unreadOnly": "Chỉ chưa đọc",
+    "showAll": "Hiện tất cả",
+    "markAllRead": "Đánh dấu đã đọc",
+    "unreadCount": "{count, plural, =0 {Không có thông báo mới} other {# chưa đọc}}",
+    "push": {"title": "Thông báo đẩy", "on": "Thiết bị này nhận thông báo ngay khi có thay đổi.", "off": "Nhận thông báo trên thiết bị này ngay khi có thay đổi.", "denied": "Thông báo đang bị chặn cho trang này. Hãy cho phép trong cài đặt trình duyệt.", "unsupported": "Trình duyệt này không hỗ trợ thông báo đẩy. Trên iPhone, hãy thêm ứng dụng vào màn hình chính trước.", "enable": "Bật", "disable": "Tắt", "failed": "Không thể thay đổi thông báo đẩy. Hãy thử lại."},
     "caughtUp": "Bạn đã xem hết thông báo.",
     "decline": "Từ chối",
     "accept": "Chấp nhận",
@@ -221,15 +230,15 @@
     "noLeases": "Chưa có hợp đồng",
     "from": "Từ {date}",
     "perMonth": "{amount} / tháng",
-    "properties": "Bất động sản",
-    "newProperty": "Thêm bất động sản",
-    "noProperties": "Chưa có bất động sản",
+    "properties": "Căn nhà",
+    "newProperty": "Thêm căn nhà",
+    "noProperties": "Chưa có căn nhà",
     "units": "{count} phòng",
-    "createProperty": "Tạo bất động sản",
+    "createProperty": "Tạo căn nhà",
     "noAgreement": "Chưa có hợp đồng",
     "agreementTitle": "Hợp đồng · {name}",
-    "propertyUnit": "Bất động sản & phòng",
-    "property": "Bất động sản",
+    "propertyUnit": "Căn nhà & phòng",
+    "property": "Căn nhà",
     "term": "Thời hạn",
     "openEnded": "không thời hạn",
     "currentPeriod": "Kỳ thanh toán hiện tại",
@@ -346,14 +355,14 @@
   "Home": {
     "badge": "Dành cho chủ nhà, người quản lý và người thuê",
     "title": "Nền tảng trọn gói để quản lý nhà cho thuê.",
-    "subtitle": "Nhazi gom bất động sản, hợp đồng, chỉ số đồng hồ và hóa đơn về một nơi, và cho mỗi người thuê một góc nhìn đơn giản về phần của mình.",
+    "subtitle": "Nhazi gom căn nhà, hợp đồng, chỉ số đồng hồ và hóa đơn về một nơi, và cho mỗi người thuê một góc nhìn đơn giản về phần của mình.",
     "ctaLandlord": "Tôi có nhà cho thuê",
     "ctaTenant": "Tôi là người thuê",
     "featuresTitle": "Mọi thứ nhà cho thuê cần, không thừa thứ nào.",
     "featuresSubtitle": "Từ hợp đồng đầu tiên đến hóa đơn cuối cùng, mọi việc nằm ở một nơi.",
     "features": [
       {
-        "title": "Bất động sản & phòng",
+        "title": "Căn nhà & phòng",
         "body": "Thiết lập tòa nhà, phòng, dịch vụ và đồng hồ một lần, dùng lại cho mọi hợp đồng."
       },
       {
@@ -380,7 +389,7 @@
     "stepsTitle": "Bắt đầu chỉ với ba bước",
     "steps": [
       {
-        "title": "Thêm bất động sản",
+        "title": "Thêm căn nhà",
         "body": "Tạo tòa nhà, phòng, dịch vụ và đồng hồ."
       },
       {
@@ -393,7 +402,7 @@
       }
     ],
     "ctaTitle": "Cho nhà cho thuê của bạn một ngôi nhà riêng.",
-    "ctaSubtitle": "Thiết lập bất động sản đầu tiên trong vài phút.",
+    "ctaSubtitle": "Thiết lập căn nhà đầu tiên trong vài phút.",
     "getStarted": "Bắt đầu",
     "learnMore": "Tìm hiểu thêm",
     "mockInvoice": "Hóa đơn · Phòng 204",
@@ -591,7 +600,7 @@
   },
   "Meta": {
     "appTitle": "Nhazi — quản lý nhà cho thuê",
-    "appDescription": "Quản lý bất động sản, hợp đồng, điện nước và hóa đơn, và cho người thuê một nơi để xem tất cả.",
+    "appDescription": "Quản lý căn nhà, hợp đồng, điện nước và hóa đơn, và cho người thuê một nơi để xem tất cả.",
     "about": "Giới thiệu",
     "terms": "Điều khoản sử dụng",
     "signIn": "Đăng nhập",
@@ -615,8 +624,8 @@
     "readAt": "Ngày đọc",
     "value": "Chỉ số",
     "recorded": "Ngày ghi",
-    "bulkAdd": "Thêm hàng loạt",
-    "bulkTitle": "Thêm đồng hồ hàng loạt",
+    "bulkAdd": "Thêm nhiều đồng hồ",
+    "bulkTitle": "Thêm nhiều đồng hồ",
     "addMeter": "Thêm đồng hồ",
     "editMeter": "Sửa đồng hồ",
     "createMeters": "Tạo đồng hồ",
@@ -672,7 +681,7 @@
     "cover": "Ảnh bìa",
     "coverImage": "Ảnh bìa",
     "setCover": "Đặt làm ảnh bìa",
-    "image": "Ảnh bất động sản",
+    "image": "Ảnh căn nhà",
     "moveUp": "Lên",
     "moveDown": "Xuống",
     "removeImage": "Xóa ảnh",
@@ -725,7 +734,7 @@
     "addTier": "Thêm bậc"
   },
   "Settings": {
-    "property": "Bất động sản",
+    "property": "Căn nhà",
     "edit": "Sửa thông tin",
     "category": "Loại hình",
     "address": "Địa chỉ",
@@ -745,7 +754,7 @@
     "findTitle": "Tìm nhà thuê",
     "findSubtitle": "Tìm nơi để thuê.",
     "invalidFilters": "Bộ lọc không hợp lệ",
-    "noResults": "Không tìm thấy bất động sản",
+    "noResults": "Không tìm thấy căn nhà",
     "negotiable": "Thương lượng",
     "previous": "Trước",
     "next": "Sau",
@@ -786,7 +795,7 @@
     "you": "(bạn)",
     "roleOf": "Vai trò của {name}",
     "removeTitle": "Xóa {name}?",
-    "removeBody": "Họ sẽ mất quyền truy cập bất động sản này.",
+    "removeBody": "Họ sẽ mất quyền truy cập căn nhà này.",
     "invitations": "Lời mời",
     "sent": "Đã gửi",
     "revoke": "Thu hồi lời mời",
@@ -815,7 +824,7 @@
       {
         "title": "Dữ liệu và quyền riêng tư",
         "body": [
-          "Chủ nhà kiểm soát dữ liệu bất động sản của mình, gồm hợp đồng, chỉ số và hóa đơn. Chúng tôi chỉ dùng dữ liệu cá nhân như số điện thoại và họ tên để vận hành dịch vụ, và không bán chúng.",
+          "Chủ nhà kiểm soát dữ liệu căn nhà của mình, gồm hợp đồng, chỉ số và hóa đơn. Chúng tôi chỉ dùng dữ liệu cá nhân như số điện thoại và họ tên để vận hành dịch vụ, và không bán chúng.",
           "Bạn có thể yêu cầu chúng tôi sửa hoặc xóa dữ liệu cá nhân, trừ các hồ sơ mà chủ nhà và người thuê cần lưu giữ cho hợp đồng."
         ]
       },
@@ -847,8 +856,8 @@
     ]
   },
   "Units": {
-    "bulkAdd": "Thêm hàng loạt",
-    "bulkTitle": "Thêm phòng hàng loạt",
+    "bulkAdd": "Thêm nhiều phòng",
+    "bulkTitle": "Thêm nhiều phòng",
     "addUnit": "Thêm phòng",
     "editUnit": "Sửa phòng",
     "empty": "Chưa có phòng",

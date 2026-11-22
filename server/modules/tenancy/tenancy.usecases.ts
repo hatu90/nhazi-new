@@ -1,3 +1,4 @@
+import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
 import type { IUseCase } from "@/server/shared/usecase";
@@ -28,7 +29,7 @@ const invalid = (message: string, field: string, detail: string) => new Validati
 
 /** Shared plumbing: authorisation, loading, and turning a stored record into the API response. */
 abstract class Base {
-  constructor(protected readonly leases: ITenancyRepository, protected readonly policy: AccessPolicy) {}
+  constructor(protected readonly leases: ITenancyRepository, protected readonly policy: AccessPolicy, protected readonly notifier: INotifier = noNotifier) {}
 
   protected enrich(r: ITenancyDetailRecord, on = today()): ITenancyDetailResponse {
     return { ...r, status: resolveLeaseStatus(r, on), currentRent: resolveRent(r.rentVersions, on) };
@@ -52,10 +53,11 @@ abstract class Base {
  * A person added to a lease with a phone number is invited to it, so they can sign in and see the lease.
  * Someone who is already a tenant or already has an open invitation is skipped, not an error.
  */
-const inviteToLease = async (invitations: IInvitationRepository, s: IPropertyScope & Lease, phoneNumber: string | undefined) => {
+const inviteToLease = async (invitations: IInvitationRepository, notifier: INotifier, s: IPropertyScope & Lease, phoneNumber: string | undefined) => {
   if (!phoneNumber || (await invitations.isTenant(s.leaseId, phoneNumber))) return;
   try {
-    await invitations.create({ kind: "lease", propertyId: s.propertyId, leaseId: s.leaseId, phoneNumber, role: null, invitedBy: s.actor.accountId });
+    const inv = await invitations.create({ kind: "lease", propertyId: s.propertyId, leaseId: s.leaseId, phoneNumber, role: null, invitedBy: s.actor.accountId });
+    await notifier.publish({ event: "invitation.received", targetType: "invitation", targetId: inv.id, actorId: s.actor.accountId });
   } catch (e) {
     if (!(e instanceof ConflictError)) throw e;
   }
@@ -81,8 +83,8 @@ export class GetTenancyUseCase extends Base implements IUseCase<IPropertyScope &
 }
 
 export class CreateTenancyUseCase extends Base implements IUseCase<ICreateLeaseCommand, ITenancyDetailResponse> {
-  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository) {
-    super(leases, policy);
+  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository, notifier: INotifier = noNotifier) {
+    super(leases, policy, notifier);
   }
   async execute(c: ICreateLeaseCommand) {
     await this.manage(c);
@@ -99,8 +101,8 @@ export class CreateTenancyUseCase extends Base implements IUseCase<ICreateLeaseC
     }
     const leaseId = await this.leases.create(c, templateVersion);
     // tenants are invited, not attached: they see the lease once they accept
-    for (const t of c.tenants) await inviteToLease(this.invitations, { actor: c.actor, propertyId: c.propertyId, leaseId }, t.phoneNumber);
-    for (const m of c.members) await inviteToLease(this.invitations, { actor: c.actor, propertyId: c.propertyId, leaseId }, m.phoneNumber);
+    for (const t of c.tenants) await inviteToLease(this.invitations, this.notifier, { actor: c.actor, propertyId: c.propertyId, leaseId }, t.phoneNumber);
+    for (const m of c.members) await inviteToLease(this.invitations, this.notifier, { actor: c.actor, propertyId: c.propertyId, leaseId }, m.phoneNumber);
     return this.detail(c.propertyId, leaseId);
   }
 }
@@ -121,6 +123,7 @@ export class UpdateTenancyUseCase extends Base implements IUseCase<IUpdateLeaseC
     }
     if (c.agreementValues && !core.hasAgreement) throw invalid("The lease has no agreement template", "agreementValues", "No agreement on this lease");
     await this.leases.update(c);
+    if (c.agreementValues && core.activatedAt !== null) await this.notifier.publish({ event: "agreement.updated", targetType: "agreement", targetId: c.leaseId, actorId: c.actor.accountId });
     return this.detail(c.propertyId, c.leaseId);
   }
 }
@@ -183,8 +186,8 @@ export class RemoveTenantUseCase extends Base implements IUseCase<IPropertyScope
 }
 
 export class AddLeaseMemberUseCase extends Base implements IUseCase<IAddLeaseMemberCommand, ITenancyDetailResponse> {
-  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository) {
-    super(leases, policy);
+  constructor(leases: ITenancyRepository, policy: AccessPolicy, private readonly invitations: IInvitationRepository, notifier: INotifier = noNotifier) {
+    super(leases, policy, notifier);
   }
   async execute(c: IAddLeaseMemberCommand) {
     await this.manage(c);
@@ -192,7 +195,7 @@ export class AddLeaseMemberUseCase extends Base implements IUseCase<IAddLeaseMem
     const joinedAt = c.joinedAt ?? (today() < core.startDate ? core.startDate : today());
     if (joinedAt < core.startDate) throw invalid("Invalid join date", "joinedAt", "Must be on/after the lease start");
     await this.leases.addMember(c, joinedAt);
-    await inviteToLease(this.invitations, c, c.phoneNumber);
+    await inviteToLease(this.invitations, this.notifier, c, c.phoneNumber);
     return this.detail(c.propertyId, c.leaseId);
   }
 }

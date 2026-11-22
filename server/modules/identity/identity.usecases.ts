@@ -30,7 +30,7 @@ export class AuthenticateUseCase implements IUseCase<{ token: string }, IActor> 
 }
 
 export class RegisterUseCase implements IUseCase<IRegisterCommand, IAccountResponse> {
-  constructor(private readonly accounts: IAccountRepository) {}
+  constructor(private readonly accounts: IAccountRepository, private readonly onRegistered?: IUseCase<{ accountId: string; phoneNumber: string }, void>) {}
 
   async execute(command: IRegisterCommand): Promise<IAccountResponse> {
     const { identity } = command;
@@ -42,7 +42,10 @@ export class RegisterUseCase implements IUseCase<IRegisterCommand, IAccountRespo
     }
     const existing = await this.accounts.findAccountIdByIdentity(identity.provider, identity.providerUserId);
     if (existing) throw new ConflictError("This login is already registered", "ALREADY_REGISTERED");
-    return this.accounts.createWithIdentity(command);
+    const account = await this.accounts.createWithIdentity(command);
+    // invitations sent to this phone before it had an account now reach a person
+    await this.onRegistered?.execute({ accountId: account.id, phoneNumber: command.phoneNumber }).catch((err) => console.error("[notifications] backfill failed", err));
+    return account;
   }
 }
 

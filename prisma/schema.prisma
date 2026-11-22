@@ -209,6 +209,9 @@ model Account {
   requests                Request[]             @relation("Request_requestedByRef")
   requestsByAssignedToRef Request[]             @relation("Request_assignedToRef")
   requestComments         RequestComment[]      @relation("RequestComment_author")
+  notifications           Notification[]        @relation("Notification_receiver")
+  notificationsCaused     Notification[]        @relation("Notification_actor")
+  pushTokens              PushToken[]           @relation("PushToken_account")
 
   @@map("accounts")
 }
@@ -842,4 +845,74 @@ model Invitation {
   @@index([propertyId, status])
   @@index([phoneNumber, status])
   @@map("invitations")
+}
+
+enum NotificationTargetType {
+  lease
+  invitation
+  agreement
+  billing_period
+  request
+  request_comment
+  invoice
+  payment
+
+  @@map("notification_target_type")
+}
+
+enum NotificationSeverity {
+  info
+  warning
+  urgent
+
+  @@map("notification_severity")
+}
+
+enum NotificationArea {
+  admin
+  dashboard
+
+  @@map("notification_area")
+}
+
+/// One row per receiver. `targetType` + `targetId` say what it is about; `metadata` carries the context (propertyId, leaseId, ...).
+model Notification {
+  id         String                 @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  receiverId String                 @map("receiver_id") @db.Uuid
+  actorId    String?                @map("actor_id") @db.Uuid
+  event      String                 @map("event")
+  targetType NotificationTargetType @map("target_type")
+  targetId   String                 @map("target_id") @db.Uuid
+  severity   NotificationSeverity   @default(info) @map("severity")
+  title      String                 @map("title")
+  body       String                 @map("body")
+  area       NotificationArea       @map("area")
+  path       String                 @map("path")
+  metadata   Json                   @default("{}") @map("metadata")
+  dedupeKey  String?                @map("dedupe_key")
+  readAt     DateTime?              @map("read_at") @db.Timestamptz(6)
+  createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  receiver   Account                @relation("Notification_receiver", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  actor      Account?               @relation("Notification_actor", fields: [actorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([receiverId, dedupeKey])
+  @@index([receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, readAt])
+  @@index([targetType, targetId])
+  @@map("notifications")
+}
+
+/// FCM registration tokens of an account's devices / browsers.
+model PushToken {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  accountId  String   @map("account_id") @db.Uuid
+  token      String   @unique @map("token")
+  platform   String   @default("web") @map("platform")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  account    Account  @relation("PushToken_account", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([accountId])
+  @@map("push_tokens")
 }

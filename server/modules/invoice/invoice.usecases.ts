@@ -1,3 +1,4 @@
+import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import { usageCost } from "@/lib/billing/pricing";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
@@ -19,7 +20,7 @@ import type {
 
 type Inv = { invoiceId: string };
 abstract class Base {
-  constructor(protected readonly invoices: IInvoiceRepository, protected readonly policy: AccessPolicy) {}
+  constructor(protected readonly invoices: IInvoiceRepository, protected readonly policy: AccessPolicy, protected readonly notifier: INotifier = noNotifier) {}
   protected async get(propertyId: string, invoiceId: string) {
     const i = await this.invoices.findById(propertyId, invoiceId);
     if (!i) throw new NotFoundError("Invoice");
@@ -57,6 +58,7 @@ export class CreateInvoiceUseCase extends Base implements IUseCase<ICreateInvoic
       return { ...it, detail: { quantity: u.quantity, price: u.price, calculatedAmount: usageCost({ quantity: u.quantity, price: u.price }).amount } };
     });
     const id = await this.invoices.create({ ...c, items });
+    await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: id, actorId: c.actor.accountId });
     return this.get(c.propertyId, id);
   }
 }
@@ -65,17 +67,19 @@ export class RecordPaymentUseCase extends Base implements IUseCase<IRecordPaymen
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
     const p = await this.invoices.recordPayment(c);
     if (!p) throw new NotFoundError("Invoice");
+    if (p.status === "confirmed") await this.notifier.publish({ event: "payment.recorded", targetType: "payment", targetId: p.id, actorId: c.actor.accountId });
     return p;
   }
 }
 /** Tenant: report that an invoice was paid. Stays pending until an admin confirms it. */
 export class ReportPaymentUseCase implements IUseCase<IReportPaymentCommand, IPaymentResponse> {
-  constructor(private readonly invoices: IInvoiceRepository, private readonly leases: ILeaseRepository) {}
+  constructor(private readonly invoices: IInvoiceRepository, private readonly leases: ILeaseRepository, private readonly notifier: INotifier = noNotifier) {}
   async execute(c: IReportPaymentCommand) {
     if (!(await this.leases.isTenant(c.actor.accountId, c.leaseId))) throw new NotFoundError("Lease");
     if (c.evidence.some((e) => !e.startsWith(leaseFilePrefix(c.leaseId)))) throw new ValidationError("Invalid attachment");
     const p = await this.invoices.reportPayment(c);
     if (!p) throw new NotFoundError("Invoice");
+    await this.notifier.publish({ event: "payment.reported", targetType: "payment", targetId: p.id, actorId: c.actor.accountId });
     return p;
   }
 }
@@ -84,6 +88,7 @@ export class ReviewPaymentUseCase extends Base implements IUseCase<IReviewPaymen
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
     const p = await this.invoices.reviewPayment(c);
     if (!p) throw new NotFoundError("Payment");
+    await this.notifier.publish({ event: c.decision === "confirm" ? "payment.confirmed" : "payment.rejected", targetType: "payment", targetId: p.id, actorId: c.actor.accountId });
     return p;
   }
 }
@@ -97,6 +102,7 @@ export class CancelInvoiceUseCase extends Base implements IUseCase<IPropertyScop
   async execute({ actor, propertyId, invoiceId }: IPropertyScope & Inv) {
     await this.policy.assertPropertyRole(actor, propertyId, ROLES.manage);
     if ((await this.invoices.cancel(propertyId, invoiceId)) === null) throw new NotFoundError("Invoice");
+    await this.notifier.publish({ event: "invoice.cancelled", targetType: "invoice", targetId: invoiceId, actorId: actor.accountId });
     return this.get(propertyId, invoiceId);
   }
 }

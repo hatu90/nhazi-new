@@ -64,7 +64,7 @@ export type { IInvitationResponse } from "@/server/modules/invitation/invitation
 export type { IPlanResponse } from "@/server/modules/plan/plan.schema";
 export type { IPropertyStatsResponse } from "@/server/modules/stats/stats.schema";
 export type { ITemplateListResponse, ITemplateSummaryResponse, ITemplateDetailResponse, ITemplateVersionResponse } from "@/server/modules/agreement/agreement.schema";
-export type { INotificationResponse, INotificationListResponse, NotificationKind } from "@/server/modules/notification/notification.schema";
+export type { INotificationResponse, INotificationListResponse, NotificationTargetType, NotificationEvent, NotificationSeverity } from "@/server/modules/notification/notification.schema";
 export type { IMyBillingResponse, IMonthBreakdown, ICloseMyPeriodResponse } from "@/server/modules/lease/lease.schema";
 
 export type { IInvoicePreview } from "@/server/modules/lifecycle/lifecycle.schema";
