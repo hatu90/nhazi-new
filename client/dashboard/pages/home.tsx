@@ -23,8 +23,8 @@ export function HomePage() {
   const [creating, setCreating] = useState(false);
   const propertyForm = usePropertyForm({
     method: "POST", path: "/api/admin/properties", open: creating, onDone: (p) => {
+      // Full page load: keep the dialog open until the browser leaves, so it does not flash closed.
       window.location.assign(`/admin/properties/${p.id}`);
-      setCreating(false);
     }
   });
 

@@ -21,7 +21,7 @@ export function RequestsPage() {
   const { apiPath, to, lease } = useLease();
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
-  const newRequest = useRequestForm({ open: creating, onDone: () => setCreating(false) });
+  const newRequest = useRequestForm({ open: creating });
   const query = useGet<IRequestListResponse>(apiPath("/requests"), { page, pageSize: 20 }, { keepPrevious: true });
   return (
     <Stack gap={4}>

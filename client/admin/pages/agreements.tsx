@@ -25,7 +25,7 @@ export function AgreementsPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [dialog, setDialog] = useState<"new" | null>(null);
-  const nameForm = useNameForm({ open: dialog !== null, onDone: (id) => { setDialog(null); if (id) navigate(to(`agreements/${id}`)); } });
+  const nameForm = useNameForm({ open: dialog !== null, onDone: (id) => { if (id) navigate(to(`agreements/${id}`)); else setDialog(null); } });
   const query = useGet<ITemplateListResponse>(apiPath("/agreement-templates"), { page, pageSize: 20 }, { keepPrevious: true });
   const remove = useSend<{ id: string }>("DELETE", (b) => apiPath(`/agreement-templates/${b.id}`), [apiPath("/agreement-templates")]);
   const create = canManage && <Button icon={<Plus size={16} />} variant="primary" label={t("newTemplate")} onClick={() => setDialog("new")} />;

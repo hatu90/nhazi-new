@@ -24,7 +24,7 @@ const types: RequestType[] = ["maintenance", "close_lease", "enquiry"];
 const priorities: RequestPriority[] = ["low", "normal", "high", "urgent"];
 const defaults: Values = { type: "maintenance", title: "", description: "", priority: "normal", requestedCloseDate: "" };
 
-export function useRequestForm({ open, onDone }: { open: boolean; onDone: () => void }) {
+export function useRequestForm({ open }: { open: boolean }) {
   const { apiPath, to } = useLease();
   const navigate = useNavigate();
   const save = useSend<object, { id: string }>("POST", apiPath("/requests"), [apiPath("/requests")]);
@@ -35,7 +35,7 @@ export function useRequestForm({ open, onDone }: { open: boolean; onDone: () => 
     form,
     save,
     (v) => ({ type: v.type, title: v.title.trim(), description: text(v.description), priority: v.priority, requestedCloseDate: v.type === "close_lease" ? v.requestedCloseDate : undefined }),
-    (r) => { onDone(); navigate(to(`requests/${r.id}`)); },
+    (r) => navigate(to(`requests/${r.id}`)), // the route change unmounts the dialog; closing first would flash the list,
   );
   return { form, submit, error: save.error, busy: save.isPending, type };
 }
