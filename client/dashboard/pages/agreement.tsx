@@ -36,6 +36,7 @@ export function AgreementPage() {
         <AgreementSection
           key={a.id}
           embedded
+          filesBase={apiPath()}
           title={a.templateName}
           content={a.content}
           facts={facts}

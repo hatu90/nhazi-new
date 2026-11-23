@@ -54,6 +54,10 @@
     "verificationQueue": "Xác minh"
   },
   "AgreementEditor": {
+    "dateInput": "Ô chọn ngày",
+    "imageUpload": "Ô tải ảnh",
+    "defaultDate": "Ngày mặc định (YYYY-MM-DD)",
+    "imageHeight": "Chiều cao ảnh tối đa (px)",
     "fieldName": "Tên trường (duy nhất)",
     "label": "Nhãn",
     "unit": "Đơn vị",
@@ -85,7 +89,7 @@
     "start": "Đầu dòng",
     "center": "Giữa",
     "end": "Cuối dòng",
-    "textInput": "Ô nhập liệu (trường điền)",
+    "textInput": "Ô nhập liệu",
     "grid": "Lưới",
     "gridCell": "Ô lưới",
     "columns": "Số cột",
@@ -122,6 +126,10 @@
     "removeAgreementBody": "Thỏa thuận và nội dung đã điền sẽ bị xóa khỏi hợp đồng này."
   },
   "Agreements": {
+    "uploadImage": "Tải ảnh lên",
+    "replaceImage": "Đổi ảnh",
+    "removeImage": "Xóa",
+    "uploading": "Đang tải lên…",
     "templates": "Mẫu thỏa thuận",
     "newTemplate": "Mẫu mới",
     "empty": "Chưa có mẫu nào",

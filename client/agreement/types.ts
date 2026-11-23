@@ -18,12 +18,37 @@ export type TextInputProps = {
   rows?: number;
 };
 
+export type DateInputProps = {
+  name: string;
+  label: string;
+  labelPosition: "top" | "bottom" | "left" | "right";
+  /** YYYY-MM-DD or empty. */
+  defaultValue: string;
+  fontSize: number;
+  lineHeight: number;
+};
+
+export type ImageUploadProps = {
+  name: string;
+  label: string;
+  labelPosition: "top" | "bottom" | "left" | "right";
+  /** Max height of the image on the sheet (px). */
+  height: number;
+  fontSize: number;
+  lineHeight: number;
+};
+
+/** Components whose value the filler types in: their `name` is the key in the agreement's values. */
+export const FIELD_TYPES = ["TextInput", "DateInput", "ImageUpload"] as const;
+
 export type ContentProps = { paddingTop: number; paddingRight: number; paddingBottom: number; paddingLeft: number };
 
 export type Components = {
   Content: ContentProps;
   Text: TextProps;
   TextInput: TextInputProps;
+  DateInput: DateInputProps;
+  ImageUpload: ImageUploadProps;
   Divider: { thickness: number };
   Spacer: { height: number };
   Grid: { content?: never };

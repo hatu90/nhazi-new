@@ -9,6 +9,7 @@ import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useMemo, useState, type ReactNode } from "react";
 import { toPages } from "./config";
+import { AgreementFiles } from "./fill-context";
 import { FillForm } from "./fill-form";
 import { withDefaults } from "./metadata";
 import { AgreementResult, hasFields } from "./render";
@@ -28,6 +29,7 @@ export function AgreementSection({
   after,
   action,
   embedded,
+  filesBase,
 }: {
   title?: string;
   content: unknown;
@@ -41,6 +43,8 @@ export function AgreementSection({
   action?: ReactNode;
   /** Inside another Section: no card of its own, a smaller title. */
   embedded?: boolean;
+  /** API base of the lease (`<base>/uploads`, `<base>/files`): lets image fields upload and show files. */
+  filesBase?: string;
 }) {
   const t = useTranslations("Agreements");
   const c = useTranslations("Common");
@@ -71,6 +75,7 @@ export function AgreementSection({
       {shown && canEdit && !editing && <Button label={t("fillIn")} size="sm" variant="secondary" onClick={() => setEditing(true)} />}
       {editing && <Button icon={<X size={16} />} label={c("close")} size="sm" variant="secondary" onClick={() => setEditing(false)} />}
     </HStack>,
+    <AgreementFiles value={filesBase ?? null}>
     <VStack gap={3}>
       {extra}
       {!shown ? null : editing ? (
@@ -81,6 +86,7 @@ export function AgreementSection({
         </div>
       )}
       {after}
-    </VStack>,
+    </VStack>
+    </AgreementFiles>,
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DateInput as AstryxDateInput } from "@astryxdesign/core/DateInput";
 import { InputGroup, InputGroupText } from "@astryxdesign/core/InputGroup";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput as AstryxTextInput } from "@astryxdesign/core/TextInput";
@@ -7,7 +8,8 @@ import { useMemo } from "react";
 import { Controller, FormProvider, type UseFormReturn } from "react-hook-form";
 import { toPages } from "./config";
 import { PageStack } from "./page-stack";
-import { withTextInput } from "./with-text-input";
+import { withRenderers } from "./with-renderers";
+import { ImageUploader } from "./image-upload";
 import { AgreementVars } from "./fill-context";
 import { FieldFrame } from "./field-frame";
 
@@ -16,7 +18,8 @@ export function AgreementFormFields({ form, data, vars }: { form: UseFormReturn<
   const pages = useMemo(() => toPages(data), [data]);
   const cfg = useMemo(
     () =>
-      withTextInput(({ name, label, unit, labelPosition, inputType, fontSize, lineHeight, placeholder, rows = 4 }) => (
+      withRenderers({
+        TextInput: ({ name, label, unit, labelPosition, inputType, fontSize, lineHeight, placeholder, rows = 4 }) => (
         <FieldFrame label={label} labelPosition={labelPosition} fontSize={fontSize} lineHeight={lineHeight}>
           <Controller
             name={name}
@@ -32,7 +35,18 @@ export function AgreementFormFields({ form, data, vars }: { form: UseFormReturn<
             )}
           />
         </FieldFrame>
-      )),
+        ),
+        DateInput: ({ name, label, labelPosition, fontSize, lineHeight }) => (
+          <FieldFrame label={label} labelPosition={labelPosition} fontSize={fontSize} lineHeight={lineHeight}>
+            <Controller name={name} render={({ field }) => <AstryxDateInput ref={field.ref} label={label} isLabelHidden value={(field.value || undefined) as never} onChange={(v) => field.onChange(v ?? "")} />} />
+          </FieldFrame>
+        ),
+        ImageUpload: ({ name, label, labelPosition, height, fontSize, lineHeight }) => (
+          <FieldFrame label={label} labelPosition={labelPosition} fontSize={fontSize} lineHeight={lineHeight}>
+            <Controller name={name} render={({ field }) => <ImageUploader label={label} value={field.value ?? ""} onChange={field.onChange} height={height} />} />
+          </FieldFrame>
+        ),
+      }),
     [],
   );
   return (

@@ -54,6 +54,10 @@
     "verificationQueue": "Verification"
   },
   "AgreementEditor": {
+    "dateInput": "Date input",
+    "imageUpload": "Image upload",
+    "defaultDate": "Default date (YYYY-MM-DD)",
+    "imageHeight": "Image max height (px)",
     "fieldName": "Field name (unique)",
     "label": "Label",
     "unit": "Unit",
@@ -85,7 +89,7 @@
     "start": "Start",
     "center": "Center",
     "end": "End",
-    "textInput": "Text input (form field)",
+    "textInput": "Text input",
     "grid": "Grid",
     "gridCell": "Grid cell",
     "columns": "Columns",
@@ -122,6 +126,10 @@
     "removeAgreementBody": "The agreement and what was filled in will be removed from this lease."
   },
   "Agreements": {
+    "uploadImage": "Upload image",
+    "replaceImage": "Replace image",
+    "removeImage": "Remove",
+    "uploading": "Uploading…",
     "templates": "Templates",
     "newTemplate": "New template",
     "empty": "No templates yet",

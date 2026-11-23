@@ -2,10 +2,10 @@
 
 import { type CSSProperties } from "react";
 import "./document.css";
-import type { TextInputProps } from "./types";
+import type { DateInputProps } from "./types";
 
 /** Layout of a TextInput: label next to / above / below the control. Shared by editor, form and result. */
-export function FieldFrame({ label, labelPosition, fontSize, lineHeight, children }: Pick<TextInputProps, "label" | "labelPosition" | "fontSize" | "lineHeight"> & { children: React.ReactNode }) {
+export function FieldFrame({ label, labelPosition, fontSize, lineHeight, children }: Pick<DateInputProps, "label" | "labelPosition" | "fontSize" | "lineHeight"> & { children: React.ReactNode }) {
   const horizontal = labelPosition === "left" || labelPosition === "right";
   const labelFirst = labelPosition === "top" || labelPosition === "left";
   const labelEl = label ? <span style={{ fontSize, lineHeight }}>{label}</span> : null;

@@ -66,6 +66,40 @@ export const createConfig = (t: Tr): Config<Components> => ({
         </FieldFrame>
       ),
     },
+    DateInput: {
+      label: t("dateInput"),
+      fields: {
+        name: { type: "text", label: t("fieldName") },
+        label: { type: "text", label: t("label") },
+        labelPosition: textInputFields(t).labelPosition,
+        defaultValue: { type: "text", label: t("defaultDate") },
+        fontSize: { type: "number", label: t("fontSize"), min: 8, max: 72 },
+        lineHeight: { type: "number", label: t("lineHeight"), min: 1, max: 3, step: 0.1 },
+      },
+      defaultProps: { name: t("defaultFieldName"), label: t("label"), labelPosition: "top", defaultValue: "", fontSize: 14, lineHeight: 1.5 },
+      render: ({ name, label, labelPosition, fontSize, lineHeight }) => (
+        <FieldFrame label={label} labelPosition={labelPosition} fontSize={fontSize} lineHeight={lineHeight}>
+          <div style={{ border: "1px dashed #9ca3af", borderRadius: 4, padding: "4px 8px", minHeight: 28, fontSize: 12, color: "#6b7280" }}>[{name}] dd/mm/yyyy</div>
+        </FieldFrame>
+      ),
+    },
+    ImageUpload: {
+      label: t("imageUpload"),
+      fields: {
+        name: { type: "text", label: t("fieldName") },
+        label: { type: "text", label: t("label") },
+        labelPosition: textInputFields(t).labelPosition,
+        height: { type: "number", label: t("imageHeight"), min: 40, max: 600 },
+        fontSize: { type: "number", label: t("fontSize"), min: 8, max: 72 },
+        lineHeight: { type: "number", label: t("lineHeight"), min: 1, max: 3, step: 0.1 },
+      },
+      defaultProps: { name: t("defaultFieldName"), label: t("label"), labelPosition: "top", height: 120, fontSize: 14, lineHeight: 1.5 },
+      render: ({ name, label, labelPosition, height, fontSize, lineHeight }) => (
+        <FieldFrame label={label} labelPosition={labelPosition} fontSize={fontSize} lineHeight={lineHeight}>
+          <div style={{ border: "1px dashed #9ca3af", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", height, fontSize: 12, color: "#6b7280" }}>[{name}] image</div>
+        </FieldFrame>
+      ),
+    },
     Grid: {
       label: t("grid"),
       fields: {},

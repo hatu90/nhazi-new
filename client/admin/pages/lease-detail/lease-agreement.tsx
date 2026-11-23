@@ -51,6 +51,7 @@ function LeaseAgreement({ lease, path, agreement: a }: { lease: ITenancyDetailRe
     <>
       <AgreementSection
         embedded
+        filesBase={path}
         title={`${a.templateName} · v${a.version}`}
         content={version.data.data}
         facts={{ propertyName: property.name, unitName: lease.unitName, tenantNames: lease.tenants.map((x) => x.displayName), startDate: lease.startDate, endDate: lease.endDate, rent: lease.currentRent, deposit: lease.depositAmount, billingDay: lease.billingCycleDay }}
