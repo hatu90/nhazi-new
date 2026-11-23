@@ -74,10 +74,10 @@ export function UnitsByFloor() {
   if (error) return <ErrorBox error={error} retry={() => { void units.refetch(); void leases.refetch(); }} />;
 
   const actions = canManage && (
-    <HStack gap={2}>
+    <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:grow sm:[&>*]:grow-0">
       <Button label={t("bulkTitle")} variant="secondary" onClick={() => setBulk(true)} />
       <Button icon={<Plus size={16} />} label={t("addUnit")} variant="primary" onClick={() => setAdding(true)} />
-    </HStack>
+    </div>
   );
 
   return (
@@ -86,7 +86,7 @@ export function UnitsByFloor() {
         <Section title={t("title")} action={actions}><Text color="secondary">{t("noUnits")}</Text></Section>
       ) : (
         <>
-          {actions && <HStack justify="end">{actions}</HStack>}
+          {actions && <div className="flex justify-end">{actions}</div>}
           {floors.map(([floor, rows]) => (
             <VStack key={floor} gap={3}>
               <Heading level={2}>{t("floorN", { n: floor })}</Heading>

@@ -5,6 +5,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Divider } from "@astryxdesign/core/Divider";
 import { HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
@@ -13,7 +14,10 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
     <AuthProvider>
       <header>
         <HStack align="center" justify="between" paddingInline={3} paddingBlock={3} gap={2} className="sm:px-5">
-          <Button label="Nhazi" variant="ghost" href="/" icon={<Logo size={24} />} />
+          <Link href="/" aria-label="Nhazi" className="inline-flex items-center gap-2.5 rounded-lg px-2 py-1 text-2xl font-bold hover:bg-black/5">
+            <Logo size={40} />
+            <span>Nhazi</span>
+          </Link>
           <HStack align="center" gap={1}>
             <span className="hidden items-center gap-1 sm:inline-flex">
               <Button label={t("pricing")} variant="ghost" href="/pricing" />
