@@ -62,18 +62,20 @@ export class NotificationPublisher implements INotifier {
         });
       }
     }
-    if (rows.length === 0) return;
+    if (rows.length === 0) { console.info(`[notifications] ${event} ${targetId}: no receivers`); return; }
     const stored = await this.repo.insertMany(rows);
+    console.info(`[notifications] ${event} ${targetId}: stored ${stored.length}/${rows.length}`);
     await this.pushAll(stored);
   }
 
   private async pushAll(stored: { receiverId: string; id: string; event: string; title: string; body: string; area: "admin" | "dashboard"; path: string }[]) {
     if (!this.push || stored.length === 0) return;
     const tokens = await this.repo.tokensOf(stored.map((s) => s.receiverId));
+    console.info(`[push] ${stored.length} notification(s), ${tokens.length} device token(s) for ${new Set(stored.map((s) => s.receiverId)).size} receiver(s)`);
     const dead: string[] = [];
     await Promise.all(stored.map(async (n) => {
       const mine = tokens.filter((t) => t.accountId === n.receiverId).map((t) => t.token);
-      if (mine.length === 0) return;
+      if (mine.length === 0) { console.info(`[push] receiver ${n.receiverId} has no registered device`); return; }
       const { invalidTokens } = await this.push!.send(mine, {
         title: n.title,
         body: n.body,

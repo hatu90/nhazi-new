@@ -22,6 +22,7 @@ export class FcmPushSender implements IPushSender {
           android: { priority: "high" },
           apns: { headers: { "apns-priority": "10" } },
         });
+        console.info(`[push] FCM sent: ${res.successCount} ok, ${res.failureCount} failed`);
         res.responses.forEach((r, idx) => {
           if (!r.success && r.error && DEAD.has(r.error.code)) invalidTokens.push(chunk[idx]);
           else if (!r.success) console.error("[push] send failed", r.error?.code);
