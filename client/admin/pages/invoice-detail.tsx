@@ -83,7 +83,7 @@ export function InvoiceDetailPage() {
               render: (p) => canManage && p.status === "pending" && (
                 <HStack gap={2} justify="end">
                   <Button label={c("reject")} size="sm" variant="secondary" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "reject" }); }} />
-                  <Button variant="primary" label={c("confirm")} size="sm" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
+                  <Button variant="primary" label={c("confirm")} size="md" isLoading={review.isPending} clickAction={async () => { await review.mutateAsync({ id: p.id, decision: "confirm" }); }} />
                 </HStack>
               ),
             },

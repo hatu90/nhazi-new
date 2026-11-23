@@ -5,19 +5,20 @@ import { PageSpinner } from "@/client/ui";
 import { FormError } from "@/client/ui/form";
 import { Card } from "@astryxdesign/core/Card";
 import { VStack } from "@astryxdesign/core/Stack";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { PhoneStep } from "./phone-step";
 import { RegisterStep } from "./register-step";
 
 export function Steps() {
   const { state, reload } = useAuth();
-  const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
 
   useEffect(() => {
-    if (state.status === "ready") router.replace(next);
-  }, [state.status, next, router]);
+    // /dashboard and /admin are separate SPAs behind a catch-all route: leave with a full page load (as RequireAccount does),
+    // a soft router.replace can stall on mobile browsers.
+    if (state.status === "ready") window.location.replace(next);
+  }, [state.status, next]);
 
   if (state.status === "loading" || state.status === "ready") return <PageSpinner />;
 

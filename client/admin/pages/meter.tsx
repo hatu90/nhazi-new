@@ -35,7 +35,7 @@ export function MeterPage() {
   return (
     <VStack gap={5}>
       <HStack><Button label={t("allMeters")} variant="ghost" size="sm" href={to("meters")} /></HStack>
-      <Section title={m.name} action={role !== "viewer" && <Button variant="primary" label={t("recordReading")} size="sm" onClick={() => setAdding(true)} />}>
+      <Section title={m.name} action={role !== "viewer" && <Button variant="primary" label={t("recordReading")} size="md" onClick={() => setAdding(true)} />}>
         <DefList items={[[c("unit"), m.unitName], [t("service"), m.serviceName], [t("serial"), m.serialNumber], [t("installed"), formatDate(m.installedAt)], [t("maxValue"), m.maxValue]]} />
       </Section>
       <DataTable<IReadingResponse>
