@@ -217,6 +217,7 @@
     "status": "Trạng thái",
     "name": "Tên",
     "search": "Tìm kiếm",
+    "selectAtLeastOne": "Chọn ít nhất một mục",
     "select": "Chọn…",
     "required": "Bắt buộc",
     "moreActions": "Thêm thao tác",

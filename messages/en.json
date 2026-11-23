@@ -217,6 +217,7 @@
     "status": "Status",
     "name": "Name",
     "search": "Search",
+    "selectAtLeastOne": "Select at least one",
     "select": "Select…",
     "required": "Required",
     "moreActions": "More actions",
