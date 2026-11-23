@@ -108,6 +108,16 @@ export class PrismaServiceRepository implements IServiceRepository {
     return toService({ ...row, prices });
   }
 
+  async replaceLatestPrice(propertyId: string, serviceId: string, tiers: IPriceVersion["tiers"]) {
+    const row = await this.db.service.findFirst({ where: live(propertyId, serviceId) });
+    if (!row) return null;
+    const all = pricesSchema.parse(row.prices);
+    const prices = [...all.slice(0, -1), { ...all[all.length - 1], tiers }];
+    const r = await this.db.service.updateMany({ where: { id: serviceId, updatedAt: row.updatedAt }, data: { prices } });
+    if (r.count === 0) throw new ConflictError("The service was changed meanwhile, retry", "STALE_WRITE");
+    return toService({ ...row, prices });
+  }
+
   async isInUse(serviceId: string) {
     const [m, s] = await Promise.all([
       this.db.meter.count({ where: { serviceId, deletedAt: null } }),

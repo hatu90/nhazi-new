@@ -32,7 +32,10 @@ const MAX_ROWS = 200;
 const emptyRow = (): Row => ({ floor: "1", name: "", area: "", bedrooms: "", bathrooms: "", rent: "" });
 
 /** Column layout shared by the header and every row: floor first, then the unit itself. Scrolls sideways on phones. */
-const GRID = "grid min-w-[640px] grid-cols-[72px_minmax(150px,1.5fr)_96px_88px_88px_130px_40px] items-start gap-2";
+// Floor and name stay in view while the row scrolls sideways (floor is 72px wide + 8px gap).
+const PIN_FLOOR = "sticky left-0 z-10 bg-white shadow-[8px_0_0_0_white]";
+const PIN_NAME = "sticky left-[80px] z-20 bg-white shadow-[8px_0_0_0_white]";
+const GRID = "grid min-w-[700px] grid-cols-[72px_96px_96px_88px_88px_170px_40px] items-start gap-2";
 
 /**
  * Bulk add units as a grid of inputs, one unit per row, the floor leftmost. New rows start as a copy of the row above
@@ -119,13 +122,13 @@ export function BulkUnitsFields({ x: { form, rows, count, addRows, addFloor, flo
         <div className="overflow-x-auto">
           <div className="flex flex-col gap-2">
             <div className={GRID} role="row">
-              {columns.map((col) => <Text key={col} size="sm" color="secondary" weight="semibold">{col}</Text>)}
+              {columns.map((col, k) => <Text key={col} size="sm" color="secondary" weight="semibold" className={k === 0 ? PIN_FLOOR : k === 1 ? PIN_NAME : undefined}>{col}</Text>)}
               <span />
             </div>
             {rows.fields.map((f, i) => (
               <div key={f.id} className={GRID} role="row">
-                <FNumber control={form.control} name={`rows.${i}.floor`} label={field(t("floor"), i + 1)} hideLabel required width="100%" />
-                <FText control={form.control} name={`rows.${i}.name`} label={field(c("name"), i + 1)} hideLabel required width="100%" />
+                <div className={PIN_FLOOR}><FNumber control={form.control} name={`rows.${i}.floor`} label={field(t("floor"), i + 1)} hideLabel required width="100%" /></div>
+                <div className={PIN_NAME}><FText control={form.control} name={`rows.${i}.name`} label={field(c("name"), i + 1)} hideLabel required width="100%" /></div>
                 <FNumber control={form.control} name={`rows.${i}.area`} label={field(t("area"), i + 1)} hideLabel unit="m²" required rules={{ validate: (v) => Number(v) > 0 || t("gtZero") }} width="100%" />
                 <FNumber control={form.control} name={`rows.${i}.bedrooms`} label={field(t("bedrooms"), i + 1)} hideLabel width="100%" />
                 <FNumber control={form.control} name={`rows.${i}.bathrooms`} label={field(t("bathrooms"), i + 1)} hideLabel width="100%" />

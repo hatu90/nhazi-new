@@ -17,7 +17,7 @@ import {
   SearchPropertiesUseCase,
 } from "./modules/property/property.usecases";
 import { BulkCreateUnitsUseCase, CreateUnitUseCase, DeleteUnitUseCase, GetUnitUseCase, ListUnitsUseCase, UpdateUnitUseCase } from "./modules/unit/unit.usecases";
-import { AddServicePriceUseCase, BulkCreateServicesUseCase, CreateServiceUseCase, DeleteServiceUseCase, GetServiceUseCase, ListServicesUseCase, UpdateServiceUseCase } from "./modules/service/service.usecases";
+import { AddServicePriceUseCase, EditLatestServicePriceUseCase, BulkCreateServicesUseCase, CreateServiceUseCase, DeleteServiceUseCase, GetServiceUseCase, ListServicesUseCase, UpdateServiceUseCase } from "./modules/service/service.usecases";
 import { BulkCreateMetersUseCase, CreateMeterUseCase, DeleteMeterUseCase, GetMeterUseCase, ListMetersUseCase, UpdateMeterUseCase } from "./modules/meter/meter.usecases";
 import { CreateReadingUseCase, DeleteReadingUseCase, ListReadingsUseCase } from "./modules/reading/reading.usecases";
 import { BulkCreateItemsUseCase, CreateHandoverUseCase, CreateItemUseCase, DeleteHandoverUseCase, DeleteItemUseCase, ListHandoversUseCase, ListItemsUseCase, UpdateHandoverUseCase, UpdateItemUseCase } from "./modules/inventory/inventory.usecases";
@@ -155,6 +155,7 @@ function build() {
     bulkCreateServices: new BulkCreateServicesUseCase(services, policy),
     updateService: new UpdateServiceUseCase(services, policy),
     addServicePrice: new AddServicePriceUseCase(services, policy),
+    editLatestServicePrice: new EditLatestServicePriceUseCase(services, policy),
     deleteService: new DeleteServiceUseCase(services, policy),
     // meters + readings
     listMeters: new ListMetersUseCase(meters, policy),

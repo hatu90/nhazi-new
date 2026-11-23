@@ -70,6 +70,17 @@ export interface IAddPriceCommand extends IPropertyScope {
 }
 export const toAddPriceCommand = (p: IAddPricePayload, s: IPropertyScope, serviceId: string): IAddPriceCommand => ({ ...s, serviceId, version: p });
 
+/** PUT .../prices : replace the tiers of the latest price version (its effective date stays). */
+export const editLatestPricePayloadSchema = z
+  .object({ tiers: priceVersionSchema.shape.tiers })
+  .refine((v) => priceVersionSchema.safeParse({ effectiveDate: "2000-01-01", tiers: v.tiers }).success, { message: "Invalid tiers", path: ["tiers"] });
+export type IEditLatestPricePayload = z.infer<typeof editLatestPricePayloadSchema>;
+export interface IEditLatestPriceCommand extends IPropertyScope {
+  serviceId: string;
+  tiers: IEditLatestPricePayload["tiers"];
+}
+export const toEditLatestPriceCommand = (p: IEditLatestPricePayload, s: IPropertyScope, serviceId: string): IEditLatestPriceCommand => ({ ...s, serviceId, tiers: p.tiers });
+
 export interface IServiceResponse {
   id: string;
   propertyId: string;

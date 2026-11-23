@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
+import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { formatMoney, todayIso } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
@@ -30,6 +31,7 @@ function priceLines(service: IServiceResponse, t: T): string[] {
 interface Values {
   serviceId: string;
   meterId: string;
+  reading: string;
   quantity: string;
   personIds: string[];
 }
@@ -40,11 +42,16 @@ export function useSubscriptionForm({ path, unitId, people, open, onDone }: { pa
   const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 }, { enabled: open });
   const meters = useGet<IMeterListResponse>(apiPath("/meters"), { unitId, inService: true, pageSize: 100 }, { enabled: open });
   const save = useSend<object>("POST", `${path}/subscriptions`, [path]);
-  const form = useForm<Values>({ defaultValues: { serviceId: "", meterId: "", quantity: "1", personIds: people.map((p) => p.id) } });
-  useOpenReset(open, () => { form.reset({ serviceId: "", meterId: "", quantity: "1", personIds: people.map((p) => p.id) }); save.reset(); });
+  const form = useForm<Values>({ defaultValues: { serviceId: "", meterId: "", reading: "", quantity: "1", personIds: people.map((p) => p.id) } });
+  useOpenReset(open, () => { form.reset({ serviceId: "", meterId: "", reading: "", quantity: "1", personIds: people.map((p) => p.id) }); save.reset(); });
   const serviceId = useWatch({ control: form.control, name: "serviceId" });
   const service = services.data?.items.find((s) => s.id === serviceId);
   const unitMeters = (meters.data?.items ?? []).filter((m) => m.serviceId === serviceId);
+  const meterId = useWatch({ control: form.control, name: "meterId" });
+  // default to the unit's meter for this service
+  useEffect(() => {
+    if (service?.usageBase === "meter" && !unitMeters.some((m) => m.id === meterId)) form.setValue("meterId", unitMeters[0]?.id ?? "");
+  }, [service?.usageBase, unitMeters.map((m) => m.id).join(","), meterId, form]); // eslint-disable-line react-hooks/exhaustive-deps
   const prices = service ? priceLines(service, t) : [];
   const submit = useSubmit(
     form,
@@ -54,7 +61,7 @@ export function useSubscriptionForm({ path, unitId, people, open, onDone }: { pa
         const chosen = people.filter((p) => v.personIds.includes(p.id));
         return { serviceId: v.serviceId, quantity: Math.min(Math.max(chosen.length, 1), 100), details: chosen.map((p) => p.name).join(", ") || undefined };
       }
-      return { serviceId: v.serviceId, meterId: service?.usageBase === "meter" ? v.meterId : undefined, quantity: service?.usageBase === "device" ? (num(v.quantity) ?? 1) : 1 };
+      return { serviceId: v.serviceId, meterId: service?.usageBase === "meter" ? v.meterId : undefined, reading: service?.usageBase === "meter" ? num(v.reading) : undefined, quantity: service?.usageBase === "device" ? (num(v.quantity) ?? 1) : 1 };
     },
     onDone,
   );
@@ -68,6 +75,7 @@ export function SubscriptionFields({ x: { form, services, service, unitMeters, p
     <VStack gap={4}>
       <FSelect control={form.control} name="serviceId" label={t("service")} required options={(services.data?.items ?? []).map((s) => ({ value: s.id, label: s.name }))} onValueChange={() => form.setValue("meterId", "")} width="100%" />
       {service?.usageBase === "meter" && <FSelect control={form.control} name="meterId" label={t("meter")} required options={unitMeters.map((m) => ({ value: m.id, label: m.name }))} hint={unitMeters.length === 0 ? t("noMeter") : undefined} width="100%" />}
+      {service?.usageBase === "meter" && <FNumber control={form.control} name="reading" label={t("startReading")} hint={t("startReadingHint")} width="100%" />}
       {service?.usageBase === "member" && <FMulti control={form.control} name="personIds" label={t("people")} required options={people.map((p) => ({ value: p.id, label: p.name }))} hint={people.length === 0 ? t("addPeopleFirst") : undefined} width="100%" />}
       {service?.usageBase === "device" && <FNumber control={form.control} name="quantity" label={t("quantity")} required width="100%" />}
       {service && (

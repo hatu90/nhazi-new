@@ -2,11 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { useEnumOptions } from "@/client/lib/use-enum";
-import { todayIso } from "@/client/lib/format";
+import { formatDate, formatMoney, todayIso } from "@/client/lib/format";
 import { useSend } from "@/client/lib/hooks";
 import { text } from "@/client/ui/form";
 import { FArea, applyServerErrors, FDate, FSelect, FText, useOpenReset, useSubmit } from "@/client/ui/rhf";
 import { VStack } from "@astryxdesign/core/Stack";
+import { Text } from "@astryxdesign/core/Text";
 import { useForm, useWatch } from "react-hook-form";
 import { useProperty } from "../property-layout";
 import { TierFields, emptyTier, toTiers } from "../tier-editor";
@@ -63,7 +64,7 @@ interface EditValues {
   name: string;
   unitOfMeasure: string;
   description: string;
-  /** Empty = keep the current price; a date adds a new price version from that day. */
+  /** Defaults to today. The latest version's date edits it in place; a later date adds a new version. */
   effectiveDate: string;
   tiers: TierRow[];
 }
@@ -73,27 +74,31 @@ export function useServiceEditForm({ service, onDone }: { service: IServiceRespo
   const { apiPath } = useProperty();
   const save = useSend<object>("PATCH", apiPath(`/services/${service?.id}`), [apiPath("/services")]);
   const addPrice = useSend<object>("POST", apiPath(`/services/${service?.id}/prices`), [apiPath("/services")]);
+  const editLatest = useSend<object>("PUT", apiPath(`/services/${service?.id}/prices`), [apiPath("/services")]);
   const last = service?.prices[service.prices.length - 1];
   const defaults = (): EditValues => ({
     name: service?.name ?? "",
     unitOfMeasure: service?.unitOfMeasure ?? "",
     description: service?.description ?? "",
-    effectiveDate: "",
+    effectiveDate: last && last.effectiveDate > todayIso() ? last.effectiveDate : todayIso(),
     tiers: last ? last.tiers.map((t) => ({ upTo: t.upTo?.toString() ?? "", rate: t.rate.toString() })) : [emptyTier()],
   });
   const form = useForm<EditValues>({ defaultValues: defaults() });
-  useOpenReset(service !== null, () => { form.reset(defaults()); save.reset(); addPrice.reset(); }, service?.id);
+  useOpenReset(service !== null, () => { form.reset(defaults()); save.reset(); addPrice.reset(); editLatest.reset(); }, service?.id);
   const multi = service?.usageBase === "meter" || service?.usageBase === "member";
   const submit = form.handleSubmit(async (v) => {
     try {
       await save.mutateAsync({ name: v.name.trim(), unitOfMeasure: service?.usageBase === "meter" ? text(v.unitOfMeasure) ?? null : undefined, description: text(v.description) ?? null });
-      if (v.effectiveDate) await addPrice.mutateAsync({ effectiveDate: v.effectiveDate, tiers: toTiers(multi ? v.tiers : v.tiers.slice(0, 1)) });
+      const tiers = toTiers(multi ? v.tiers : v.tiers.slice(0, 1));
+      // the latest version's own date = correct it in place (any number of times); a later date = add a new version
+      if (last && v.effectiveDate === last.effectiveDate) await editLatest.mutateAsync({ tiers });
+      else await addPrice.mutateAsync({ effectiveDate: v.effectiveDate, tiers });
       onDone();
     } catch (e) {
       applyServerErrors(form, e);
     }
   });
-  return { form, submit, error: save.error ?? addPrice.error, busy: save.isPending || addPrice.isPending, service, last, multi };
+  return { form, submit, error: save.error ?? addPrice.error ?? editLatest.error, busy: save.isPending || addPrice.isPending || editLatest.isPending, service, last, multi };
 }
 
 export function ServiceEditFields({ x: { form, service, last, multi } }: { x: ReturnType<typeof useServiceEditForm> }) {
@@ -106,7 +111,22 @@ export function ServiceEditFields({ x: { form, service, last, multi } }: { x: Re
       {service.usageBase === "meter" && <FText control={form.control} name="unitOfMeasure" label={t("unitOfMeasure")} width="100%" />}
       <FArea control={form.control} name="description" label={c("description")} rows={2} width="100%" />
       <TierFields control={form.control} name="tiers" multi={multi} unit={service.unitOfMeasure ?? t("unitFallback")} />
-      <FDate control={form.control} name="effectiveDate" label={t("newPriceFrom")} min={last?.effectiveDate} width="100%" />
+      <details className="rounded border border-neutral-200 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium">{t("priceHistory", { n: service.prices.length })}</summary>
+        <VStack gap={2} style={{ marginTop: 8 }}>
+          {[...service.prices].reverse().map((p, i) => (
+            <VStack key={p.effectiveDate} gap={0.5}>
+              <Text size="sm" color="secondary">{formatDate(p.effectiveDate)}{i === 0 ? ` · ${t("latestTag")}` : ""}</Text>
+              {p.tiers.map((tier, j, all) => (
+                <Text key={j} size="sm">
+                  {all.length === 1 ? formatMoney(tier.rate) : `${tier.upTo === null ? t("above", { n: all[j - 1]?.upTo ?? 0 }) : t("upTo", { n: tier.upTo })} · ${formatMoney(tier.rate)}`}
+                </Text>
+              ))}
+            </VStack>
+          ))}
+        </VStack>
+      </details>
+      <FDate control={form.control} name="effectiveDate" label={t("newPriceFrom")} required min={last?.effectiveDate} width="100%" />
     </VStack>
   );
 }

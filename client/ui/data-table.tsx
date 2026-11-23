@@ -3,7 +3,7 @@
 import { Card } from "@astryxdesign/core/Card";
 import { Pagination } from "@astryxdesign/core/Pagination";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
-import { Table, type TableColumn } from "@astryxdesign/core/Table";
+import { Table, pixel, useTableStickyColumns, type TableColumn, type TablePlugin } from "@astryxdesign/core/Table";
 import { Text } from "@astryxdesign/core/Text";
 import type { ReactNode } from "react";
 import { ErrorBox } from "./error-box";
@@ -19,12 +19,17 @@ export function DataTable<T extends { id: string }>({
   query,
   empty,
   paging,
+  pinStart,
 }: {
-  columns: { key: string; header: string; render: (row: T) => ReactNode; align?: "start" | "end" }[];
+  /** `title` = the card title on phones (default: the first column); `width` = fixed pixel width. */
+  columns: { key: string; header: string; render: (row: T) => ReactNode; align?: "start" | "end"; title?: boolean; width?: number }[];
   query: { isPending: boolean; error: unknown; refetch: () => unknown; data?: { items: T[]; page: number; pageSize: number; total: number } };
   empty: ReactNode;
   paging?: (page: number) => void;
+  /** Keys of the columns frozen at the start while scrolling sideways: must be the first columns, in order. */
+  pinStart?: string[];
 }) {
+  const sticky = useTableStickyColumns({ startKeys: pinStart });
   const mobile = useIsMobile();
   const nested = useInSection();
   // Inside a Section the surrounding card is already the surface: no second bordered card.
@@ -40,7 +45,8 @@ export function DataTable<T extends { id: string }>({
   );
   // Phones: one card per row (first column is the title, the rest are label/value pairs) instead of a wide table.
   if (mobile) {
-    const [first, ...rest] = columns;
+    const first = columns.find((c) => c.title) ?? columns[0];
+    const rest = columns.filter((c) => c !== first);
     return (
       <VStack gap={2}>
         {data.items.map((row) => (
@@ -68,11 +74,12 @@ export function DataTable<T extends { id: string }>({
     key: c.key,
     header: c.header,
     align: c.align,
+    width: c.width ? pixel(c.width) : undefined,
     renderCell: (row) => c.render(row as T),
   }));
   return (
     <Card variant={variant} padding={nested ? 0 : undefined}>
-      <Table data={data.items as (T & Record<string, unknown>)[]} columns={cols} idKey="id" hasHover />
+      <Table data={data.items as (T & Record<string, unknown>)[]} columns={cols} idKey="id" hasHover plugins={pinStart?.length ? ({ sticky } as unknown as Record<string, TablePlugin<T & Record<string, unknown>>>) : undefined} />
       {pager}
     </Card>
   );

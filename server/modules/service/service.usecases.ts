@@ -6,6 +6,7 @@ import type { IServiceRepository } from "./service.repository";
 import {
   tiersFitUsageBase,
   type IAddPriceCommand,
+  type IEditLatestPriceCommand,
   type IBulkServicesCommand,
   type ICreateServiceCommand,
   type IServiceListQuery,
@@ -75,6 +76,18 @@ export class AddServicePriceUseCase extends Base implements IUseCase<IAddPriceCo
       });
     }
     const updated = await this.services.appendPrice(c.propertyId, c.serviceId, c.version);
+    if (!updated) throw new NotFoundError("Service");
+    return updated;
+  }
+}
+export class EditLatestServicePriceUseCase extends Base implements IUseCase<IEditLatestPriceCommand, IServiceResponse> {
+  async execute(c: IEditLatestPriceCommand) {
+    await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
+    const service = await this.get(c.propertyId, c.serviceId);
+    if (!tiersFitUsageBase(service.usageBase, [{ effectiveDate: "", tiers: c.tiers }])) {
+      throw new ValidationError("This usage base takes a single flat tier", { fieldErrors: { tiers: ["Single flat tier required"] } });
+    }
+    const updated = await this.services.replaceLatestPrice(c.propertyId, c.serviceId, c.tiers);
     if (!updated) throw new NotFoundError("Service");
     return updated;
   }

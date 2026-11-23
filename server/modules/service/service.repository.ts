@@ -11,6 +11,8 @@ export interface IServiceRepository {
   update(command: IUpdateServiceCommand): Promise<IServiceResponse | null>;
   /** Appends atomically; ConflictError if another writer changed the prices meanwhile. */
   appendPrice(propertyId: string, serviceId: string, version: IPriceVersion): Promise<IServiceResponse | null>;
+  /** Replaces the tiers of the latest version; same optimistic lock as appendPrice. */
+  replaceLatestPrice(propertyId: string, serviceId: string, tiers: IPriceVersion["tiers"]): Promise<IServiceResponse | null>;
   isInUse(serviceId: string): Promise<boolean>;
   softDelete(propertyId: string, serviceId: string): Promise<boolean>;
 }
