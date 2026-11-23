@@ -250,6 +250,9 @@
       "off": "Get a notification on this device as soon as something happens.",
       "denied": "Notifications are blocked for this site. Allow them in your browser settings.",
       "unsupported": "This browser does not support push. On iPhone, add the app to your home screen first.",
+      "promptTitle": "Stay in the loop?",
+      "promptBody": "Turn on notifications to hear about invoices, requests and invitations as soon as they happen.",
+      "notNow": "Not now",
       "enable": "Turn on",
       "disable": "Turn off",
       "failed": "Could not change push notifications. Try again."

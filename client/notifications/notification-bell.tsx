@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { INotificationListResponse, INotificationResponse } from "@/client/lib/types";
 import { syncPush } from "./push";
+import { PushPrompt } from "./push-prompt";
 
 const MENU_SIZE = 5;
 
@@ -39,6 +40,8 @@ export function NotificationBell() {
   ];
 
   return (
+    <>
+    <PushPrompt />
     <DropdownMenu
       items={items}
       placement="below"
@@ -52,5 +55,6 @@ export function NotificationBell() {
         </button>
       )}
     />
+    </>
   );
 }

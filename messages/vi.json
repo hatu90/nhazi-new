@@ -250,6 +250,9 @@
       "off": "Nhận thông báo trên thiết bị này ngay khi có thay đổi.",
       "denied": "Thông báo đang bị chặn cho trang này. Hãy cho phép trong cài đặt trình duyệt.",
       "unsupported": "Trình duyệt này không hỗ trợ thông báo đẩy. Trên iPhone, hãy thêm ứng dụng vào màn hình chính trước.",
+      "promptTitle": "Muốn nhận thông báo?",
+      "promptBody": "Bật thông báo để biết ngay về hóa đơn, yêu cầu và lời mời khi có thay đổi.",
+      "notNow": "Để sau",
       "enable": "Bật",
       "disable": "Tắt",
       "failed": "Không thể thay đổi thông báo đẩy. Hãy thử lại."
