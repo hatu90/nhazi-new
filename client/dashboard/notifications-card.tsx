@@ -17,7 +17,7 @@ import { ErrorBox, Tag } from "@/client/ui";
 export function NotificationsCard() {
   const t = useTranslations("Dashboard");
   const c = useTranslations("Common");
-  const list = useGet<INotificationListResponse>("/api/me/notifications", { unread: true, pageSize: 20 });
+  const list = useGet<INotificationListResponse>("/api/me/notifications", { unread: true, pageSize: 20 }, { refetchInterval: 60_000 });
   const pending = usePendingInvitationIds();
   const [index, setIndex] = useState(0);
 

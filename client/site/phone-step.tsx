@@ -48,7 +48,7 @@ export function PhoneStep({ onDone }: { onDone: () => Promise<void> }) {
         )}
         <FormError error={error} />
         <Button variant="primary" type="submit" label={sent ? t("verify") : t("sendCode")} isLoading={form.formState.isSubmitting} />
-        {sent && <Button label={t("changeNumber")} variant="ghost" onClick={() => { setSent(false); form.setValue("code", ""); }} />}
+        {sent && <Button label={t("changeNumber")} variant="ghost" onClick={() => window.location.reload()} />}
       </VStack>
       <div ref={recaptcha} />
     </form>
