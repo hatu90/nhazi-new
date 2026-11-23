@@ -16,6 +16,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
           <Button label="Nhazi" variant="ghost" href="/" icon={<Logo size={24} />} />
           <HStack align="center" gap={1}>
             <span className="hidden items-center gap-1 sm:inline-flex">
+              <Button label={t("pricing")} variant="ghost" href="/pricing" />
               <Button label={t("about")} variant="ghost" href="/about" />
               <Button label={t("terms")} variant="ghost" href="/term" />
             </span>
@@ -30,6 +31,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
         <HStack justify="between" align="center" paddingInline={3} paddingBlock={4} wrap="wrap" gap={3} className="sm:px-5">
           <Text color="secondary" size="sm">© Nhazi</Text>
           <HStack gap={1}>
+            <Button label={t("pricing")} variant="ghost" size="sm" href="/pricing" />
             <Button label={t("about")} variant="ghost" size="sm" href="/about" />
             <Button label={t("terms")} variant="ghost" size="sm" href="/term" />
           </HStack>

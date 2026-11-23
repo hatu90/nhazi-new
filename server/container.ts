@@ -63,7 +63,7 @@ import { PrismaAccountRepository } from "./infrastructure/prisma/repositories/ac
 import { PrismaLeaseRepository } from "./infrastructure/prisma/repositories/lease.repository";
 import { CreateReferenceAddressUseCase, SearchReferenceAddressesUseCase } from "./modules/reference-address/reference-address.usecases";
 import { PrismaReferenceAddressRepository } from "./infrastructure/prisma/repositories/reference-address.repository";
-import { CreateCriterionUseCase, DeclareCriterionUseCase, DeleteCriterionUseCase, GetPropertyVerificationUseCase, ListCriteriaUseCase, ListReviewsUseCase, RefreshVerificationUseCase, ReviewDeclarationUseCase, UpdateCriterionUseCase, WithdrawCriterionUseCase } from "./modules/verification/verification.usecases";
+import { CreateCriterionUseCase, DeclareAllCriteriaUseCase, DeleteCriterionUseCase, GetPropertyVerificationUseCase, ListCriteriaUseCase, ListReviewsUseCase, RefreshVerificationUseCase, ReviewDeclarationUseCase, UpdateCriterionUseCase, WithdrawCriterionUseCase } from "./modules/verification/verification.usecases";
 import { PrismaVerificationRepository } from "./infrastructure/prisma/repositories/verification.repository";
 import { PrismaPropertyRepository } from "./infrastructure/prisma/repositories/property.repository";
 
@@ -132,7 +132,7 @@ function build() {
     getPropertyFileUrl: new GetPropertyFileUrlUseCase(storage, policy),
     // verification: owner side + platform staff
     getPropertyVerification: new GetPropertyVerificationUseCase(verification, policy),
-    declareCriterion: new DeclareCriterionUseCase(verification, policy),
+    declareAllCriteria: new DeclareAllCriteriaUseCase(verification, policy),
     withdrawCriterion: new WithdrawCriterionUseCase(verification, policy),
     listCriteria: new ListCriteriaUseCase(verification, policy),
     createCriterion: new CreateCriterionUseCase(verification, policy),

@@ -215,7 +215,8 @@
     "paid": "Đã trả",
     "due": "Hạn",
     "description": "Mô tả",
-    "open": "Mở"
+    "open": "Mở",
+    "pricing": "Bảng giá"
   },
   "Dashboard": {
     "backToLeases": "Về hợp đồng của tôi",
@@ -689,7 +690,8 @@
     "signIn": "Đăng nhập",
     "findProperty": "Tìm nhà thuê",
     "admin": "Quản trị",
-    "myLeases": "Hợp đồng của tôi"
+    "myLeases": "Hợp đồng của tôi",
+    "pricing": "Bảng giá"
   },
   "Meters": {
     "unit": "Phòng",
@@ -1028,6 +1030,11 @@
     "reviewedOn": "Duyệt ngày {date}",
     "declaredOn": "Khai báo ngày {date}",
     "declare": "Khai báo đã đạt",
+    "declareAll": "Khai báo nhiều tiêu chí",
+    "declareAllTitle": "Khai báo tiêu chí đã đạt",
+    "declareAllBody": "Chọn các tiêu chí mà bất động sản đáp ứng. Tất cả sẽ được gửi cho đội ngũ của chúng tôi xem xét cùng lúc.",
+    "selectAll": "Chọn tất cả",
+    "declareSelected": "Khai báo {count} tiêu chí đã chọn",
     "redeclare": "Khai báo lại",
     "withdraw": "Rút lại",
     "withdrawTitle": "Rút lại \"{name}\"?",
@@ -1075,5 +1082,96 @@
     "deleteTitle": "Xóa \"{name}\"?",
     "deleteBody": "Thao tác này cũng xóa khai báo của mọi căn nhà. Hãy ngừng dùng để giữ lại.",
     "confirmFor": "Xác nhận · {years} năm"
+  },
+  "Pricing": {
+    "eyebrow": "Bảng giá",
+    "heading": "Giá đơn giản, tăng theo số phòng của bạn.",
+    "lead": "Bắt đầu miễn phí với những phòng đầu tiên. Chỉ nâng cấp khi bạn quản lý nhiều hơn. Người thuê luôn dùng Nhazi miễn phí.",
+    "monthly": "/ tháng",
+    "yearlyNote": "hoặc {price} / năm — tặng 2 tháng",
+    "free": "Miễn phí mãi mãi",
+    "popular": "Phổ biến nhất",
+    "plans": [
+      {
+        "name": "Khởi đầu",
+        "tagline": "Cho chủ nhà có vài phòng",
+        "price": "0 ₫",
+        "yearly": "",
+        "cta": "Dùng miễn phí",
+        "features": [
+          "1 căn nhà, tối đa 10 phòng",
+          "Hợp đồng, thỏa thuận và biên bản bàn giao",
+          "Ghi chỉ số đồng hồ, giá điện nước bậc thang",
+          "Hóa đơn hằng tháng và theo dõi thanh toán",
+          "Ứng dụng người thuê: hóa đơn, yêu cầu, thông báo"
+        ]
+      },
+      {
+        "name": "Chủ nhà",
+        "tagline": "Cho danh mục cho thuê đang lớn",
+        "price": "199.000 ₫",
+        "yearly": "1.990.000 ₫",
+        "cta": "Chọn gói Chủ nhà",
+        "highlight": true,
+        "features": [
+          "Tối đa 5 căn nhà, 60 phòng",
+          "Mọi tính năng của gói Khởi đầu",
+          "Mời nhân viên, phân quyền theo vai trò",
+          "Hoàn tiền và tất toán tiền cọc",
+          "Mẫu thỏa thuận tùy chỉnh",
+          "Xuất hóa đơn PDF"
+        ]
+      },
+      {
+        "name": "Quản lý",
+        "tagline": "Cho đơn vị quản lý chuyên nghiệp",
+        "price": "499.000 ₫",
+        "yearly": "4.990.000 ₫",
+        "cta": "Chọn gói Quản lý",
+        "features": [
+          "Không giới hạn căn nhà, tối đa 300 phòng",
+          "Mọi tính năng của gói Chủ nhà",
+          "Huy hiệu xác minh căn nhà",
+          "Thiết lập hàng loạt phòng, đồng hồ, dịch vụ",
+          "Báo cáo và thống kê doanh thu",
+          "Hỗ trợ ưu tiên"
+        ]
+      }
+    ],
+    "compareTitle": "Mọi gói đều có",
+    "includes": [
+      {
+        "title": "Không phí thiết lập",
+        "body": "Đăng ký và bắt đầu trong vài phút. Không ràng buộc, hủy bất cứ lúc nào."
+      },
+      {
+        "title": "Miễn phí cho người thuê",
+        "body": "Người thuê không mất phí khi xem hóa đơn, thanh toán tiền thuê hay gửi yêu cầu."
+      },
+      {
+        "title": "Dữ liệu là của bạn",
+        "body": "Xuất dữ liệu của bạn bất cứ khi nào."
+      }
+    ],
+    "faqTitle": "Câu hỏi thường gặp",
+    "faqs": [
+      {
+        "title": "Thế nào là một phòng?",
+        "body": "Một phòng là một đơn vị cho thuê: phòng trọ, căn hộ hoặc văn phòng. Phòng đang trống cũng được tính."
+      },
+      {
+        "title": "Nếu vượt giới hạn thì sao?",
+        "body": "Dữ liệu hiện có không bao giờ bị xóa. Bạn chỉ không thể thêm phòng mới cho đến khi nâng cấp."
+      },
+      {
+        "title": "Tôi có đổi gói được không?",
+        "body": "Được. Nâng hoặc hạ gói bất cứ lúc nào; thay đổi áp dụng từ chu kỳ thanh toán kế tiếp."
+      },
+      {
+        "title": "Thanh toán thế nào?",
+        "body": "Chuyển khoản ngân hàng hoặc ví điện tử. Chúng tôi xuất hóa đơn cho mỗi kỳ."
+      }
+    ],
+    "ctaTitle": "Sẵn sàng làm việc cho thuê đơn giản hơn?"
   }
 }

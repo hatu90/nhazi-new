@@ -215,7 +215,8 @@
     "paid": "Paid",
     "due": "Due",
     "description": "Description",
-    "open": "Open"
+    "open": "Open",
+    "pricing": "Pricing"
   },
   "Dashboard": {
     "backToLeases": "Back to my leases",
@@ -689,7 +690,8 @@
     "signIn": "Sign in",
     "findProperty": "Find a property",
     "admin": "Admin",
-    "myLeases": "My leases"
+    "myLeases": "My leases",
+    "pricing": "Pricing"
   },
   "Meters": {
     "unit": "Unit",
@@ -1028,6 +1030,11 @@
     "reviewedOn": "Reviewed {date}",
     "declaredOn": "Declared {date}",
     "declare": "Declare as met",
+    "declareAll": "Declare several at once",
+    "declareAllTitle": "Declare criteria as met",
+    "declareAllBody": "Tick the criteria this property meets. They are all sent to our team for review together.",
+    "selectAll": "Select all",
+    "declareSelected": "Declare {count} selected",
     "redeclare": "Declare again",
     "withdraw": "Withdraw",
     "withdrawTitle": "Withdraw \"{name}\"?",
@@ -1075,5 +1082,96 @@
     "deleteTitle": "Delete \"{name}\"?",
     "deleteBody": "This also deletes every property's declaration of it. Deactivate it instead to keep them.",
     "confirmFor": "Confirm · {years, plural, one {# year} other {# years}}"
+  },
+  "Pricing": {
+    "eyebrow": "Pricing",
+    "heading": "Simple pricing that grows with your rooms.",
+    "lead": "Start free with your first rooms. Upgrade only when you manage more. Tenants always use Nhazi for free.",
+    "monthly": "/ month",
+    "yearlyNote": "or {price} / year — 2 months free",
+    "free": "Free forever",
+    "popular": "Most popular",
+    "plans": [
+      {
+        "name": "Starter",
+        "tagline": "For owners with a few rooms",
+        "price": "0 ₫",
+        "yearly": "",
+        "cta": "Start free",
+        "features": [
+          "1 property, up to 10 units",
+          "Leases, agreements and handover records",
+          "Meter readings with tiered utility pricing",
+          "Monthly invoices and payment tracking",
+          "Tenant app: invoices, requests, notifications"
+        ]
+      },
+      {
+        "name": "Landlord",
+        "tagline": "For growing rental portfolios",
+        "price": "199.000 ₫",
+        "yearly": "1.990.000 ₫",
+        "cta": "Choose Landlord",
+        "highlight": true,
+        "features": [
+          "Up to 5 properties, 60 units",
+          "Everything in Starter",
+          "Invite staff with role-based access",
+          "Refunds and deposit settlement",
+          "Custom agreement templates",
+          "Export invoices to PDF"
+        ]
+      },
+      {
+        "name": "Manager",
+        "tagline": "For professional operators",
+        "price": "499.000 ₫",
+        "yearly": "4.990.000 ₫",
+        "cta": "Choose Manager",
+        "features": [
+          "Unlimited properties, up to 300 units",
+          "Everything in Landlord",
+          "Property verification badge",
+          "Bulk setup for units, meters and services",
+          "Reports and revenue stats",
+          "Priority support"
+        ]
+      }
+    ],
+    "compareTitle": "Every plan includes",
+    "includes": [
+      {
+        "title": "No setup fees",
+        "body": "Sign up and start in minutes. No contracts, cancel any time."
+      },
+      {
+        "title": "Free for tenants",
+        "body": "Your tenants never pay to view invoices, pay rent or send requests."
+      },
+      {
+        "title": "Your data stays yours",
+        "body": "Export your records whenever you like."
+      }
+    ],
+    "faqTitle": "Questions",
+    "faqs": [
+      {
+        "title": "What counts as a unit?",
+        "body": "A unit is one rentable room, apartment or office. Vacant units count too."
+      },
+      {
+        "title": "What happens if I go over my limit?",
+        "body": "Existing data is never deleted. You just can't add more units until you upgrade."
+      },
+      {
+        "title": "Can I change plans?",
+        "body": "Yes. Upgrade or downgrade at any time; the change applies from your next billing cycle."
+      },
+      {
+        "title": "How do I pay?",
+        "body": "By bank transfer or e-wallet. We issue an invoice for every period."
+      }
+    ],
+    "ctaTitle": "Ready to simplify your rentals?"
   }
 }

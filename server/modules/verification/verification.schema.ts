@@ -44,10 +44,9 @@ export interface IUpdateCriterionCommand extends IUpdateCriterionPayload {
 export const criterionParamsSchema = z.object({ criterionId: idSchema });
 
 // ── owner: declare a criterion as met ───────────────────────────────────────────────
-export const declarePayloadSchema = z.object({ note: optionalText(1000).optional() });
-export type IDeclarePayload = z.infer<typeof declarePayloadSchema>;
-export interface IDeclareCommand extends IPropertyScope {
-  criterionId: string;
+export const declareManyPayloadSchema = z.object({ criterionIds: z.array(idSchema).min(1).max(200), note: optionalText(1000).optional() });
+export interface IDeclareAllCommand extends IPropertyScope {
+  criterionIds: string[];
   note: string | null;
 }
 export interface IWithdrawCommand extends IPropertyScope {

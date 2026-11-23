@@ -6,7 +6,7 @@ import type { IVerificationRepository } from "./verification.repository";
 import type {
   ICreateCriterionPayload,
   ICriterionResponse,
-  IDeclareCommand,
+  IDeclareAllCommand,
   IPropertyVerificationResponse,
   IReviewCommand,
   IReviewListQuery,
@@ -25,12 +25,12 @@ export class GetPropertyVerificationUseCase implements IUseCase<{ actor: IActor;
   }
 }
 
-/** Owner / admin says a criterion is met. Re-declaring (e.g. after a rejection or an edit) sends it back for review. */
-export class DeclareCriterionUseCase implements IUseCase<IDeclareCommand, IPropertyVerificationResponse> {
+/** Owner / admin raises the chosen criteria (not declared, rejected, or due for renewal) at once. */
+export class DeclareAllCriteriaUseCase implements IUseCase<IDeclareAllCommand, IPropertyVerificationResponse> {
   constructor(private readonly verification: IVerificationRepository, private readonly policy: AccessPolicy) {}
-  async execute(c: IDeclareCommand) {
+  async execute(c: IDeclareAllCommand) {
     await this.policy.assertPropertyRole(c.actor, c.propertyId, ROLES.manage);
-    if (!(await this.verification.declare(c))) throw new NotFoundError("Criterion");
+    await this.verification.declareAll(c);
     return this.verification.getForProperty(c.propertyId);
   }
 }

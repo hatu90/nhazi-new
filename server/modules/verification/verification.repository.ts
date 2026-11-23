@@ -1,4 +1,4 @@
-import type { ICriterionResponse, IDeclareCommand, IPropertyVerificationResponse, IReviewCommand, IReviewItemResponse, IReviewListQuery, ICreateCriterionPayload, IUpdateCriterionCommand, VerificationStatus } from "./verification.schema";
+import type { ICriterionResponse, IDeclareAllCommand, IPropertyVerificationResponse, IReviewCommand, IReviewItemResponse, IReviewListQuery, ICreateCriterionPayload, IUpdateCriterionCommand, VerificationStatus } from "./verification.schema";
 import type { IPaginated } from "@/server/shared/pagination";
 
 export interface IVerificationRepository {
@@ -10,8 +10,8 @@ export interface IVerificationRepository {
   deleteCriterion(criterionId: string): Promise<boolean>;
   // per property
   getForProperty(propertyId: string): Promise<IPropertyVerificationResponse>;
-  /** False when the criterion does not exist or is inactive. Creates or resets the declaration to `declared`. */
-  declare(command: IDeclareCommand): Promise<boolean>;
+  /** Declares the chosen active criteria that are not yet declared, were rejected, or are expired / close to expiry (a renewal), in one transaction. Pending and confirmed ones are left alone. Returns how many were raised. */
+  declareAll(command: IDeclareAllCommand): Promise<number>;
   withdraw(propertyId: string, criterionId: string): Promise<boolean>;
   /** Re-derives the status of every property (confirmations that expired no longer count). Returns the number of statuses that changed. */
   refreshExpired(): Promise<number>;

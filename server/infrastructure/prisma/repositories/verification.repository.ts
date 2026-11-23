@@ -3,7 +3,7 @@ import type {
   ICreateCriterionPayload,
   ICriterionResponse,
   IDeclarationResponse,
-  IDeclareCommand,
+  IDeclareAllCommand,
   IReviewCommand,
   IVerificationResultResponse,
   IReviewListQuery,
@@ -15,6 +15,7 @@ import { Prisma, type PrismaClient } from "../client";
 import { isoDateTime } from "../mappers";
 import { deriveStatus } from "@/server/modules/verification/verification.rules";
 
+const RENEW_WINDOW_MS = 60 * 24 * 3600 * 1000;
 const criterionSelect = { id: true, name: true, nameEn: true, description: true, descriptionEn: true, required: true, active: true, sortOrder: true } as const;
 const declarationSelect = { id: true, status: true, note: true, reviewNote: true, declaredAt: true, reviewedAt: true, validityYears: true, expiresAt: true } as const;
 const catalogOrder = [{ sortOrder: "asc" }, { createdAt: "asc" }] satisfies Prisma.VerificationCriterionOrderByWithRelationInput[];
@@ -149,17 +150,22 @@ export class PrismaVerificationRepository implements IVerificationRepository {
     };
   }
 
-  async declare({ propertyId, criterionId, note }: IDeclareCommand): Promise<boolean> {
+  async declareAll({ propertyId, criterionIds, note }: IDeclareAllCommand): Promise<number> {
     return this.db.$transaction(async (tx) => {
-      if (!(await tx.verificationCriterion.findFirst({ where: { id: criterionId, active: true }, select: { id: true } }))) return false;
-      const reset = { status: "declared", note, reviewNote: null, declaredAt: new Date(), reviewedAt: null, reviewedBy: null, validityYears: null, expiresAt: null } as const;
-      await tx.propertyVerification.upsert({
-        where: { propertyId_criterionId: { propertyId, criterionId } },
-        create: { propertyId, criterionId, ...reset },
-        update: reset,
+      const todo = await tx.verificationCriterion.findMany({
+        where: { id: { in: criterionIds }, active: true, NOT: { verifications: { some: { propertyId, OR: [{ status: "declared" }, { status: "confirmed", expiresAt: { gt: new Date(Date.now() + RENEW_WINDOW_MS) } }] } } } },
+        select: { id: true },
       });
-      await this.recompute(tx, propertyId);
-      return true;
+      const reset = { status: "declared", note, reviewNote: null, declaredAt: new Date(), reviewedAt: null, reviewedBy: null, validityYears: null, expiresAt: null } as const;
+      for (const { id: criterionId } of todo) {
+        await tx.propertyVerification.upsert({
+          where: { propertyId_criterionId: { propertyId, criterionId } },
+          create: { propertyId, criterionId, ...reset },
+          update: reset,
+        });
+      }
+      if (todo.length > 0) await this.recompute(tx, propertyId);
+      return todo.length;
     });
   }
 
