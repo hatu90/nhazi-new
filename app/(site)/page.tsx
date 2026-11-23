@@ -113,7 +113,7 @@ export default async function HomePage() {
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <Text color="secondary">{t("ctaSubtitle")}</Text>
           <HStack gap={3} wrap="wrap" justify="center">
-            <Button variant="primary" label={t("getStarted")} size="lg" href="/auth?next=/admin" />
+            <Button variant="primary" label={t("getStarted")} size="lg" href="/auth?next=/dashboard" />
             <Button label={t("learnMore")} size="lg" variant="secondary" href="/about" />
           </HStack>
         </VStack>

@@ -44,6 +44,44 @@ export class GetMyLeaseUseCase implements IUseCase<{ actor: IActor; leaseId: str
   }
 }
 
+export class ListMyAgreementTemplatesUseCase implements IUseCase<{ actor: IActor; leaseId: string }, { items: { id: string; name: string }[] }> {
+  constructor(private readonly leases: ILeaseRepository) {}
+  async execute({ actor, leaseId }: { actor: IActor; leaseId: string }) {
+    if (!(await this.leases.isTenant(actor.accountId, leaseId))) throw new NotFoundError("Lease");
+    return { items: await this.leases.listTemplates(leaseId) };
+  }
+}
+
+/** Tenant: add an agreement from one of the property's templates. */
+export class AddMyAgreementUseCase implements IUseCase<{ actor: IActor; leaseId: string; templateId: string }, { ok: true }> {
+  constructor(private readonly leases: ILeaseRepository) {}
+  async execute({ actor, leaseId, templateId }: { actor: IActor; leaseId: string; templateId: string }) {
+    if (!(await this.leases.isTenant(actor.accountId, leaseId))) throw new NotFoundError("Lease");
+    if (!(await this.leases.addAgreement(leaseId, templateId))) throw new NotFoundError("Agreement template");
+    return { ok: true as const };
+  }
+}
+
+/** Tenant: remove one of the lease's agreements. */
+export class RemoveMyAgreementUseCase implements IUseCase<{ actor: IActor; leaseId: string; agreementId: string }, { ok: true }> {
+  constructor(private readonly leases: ILeaseRepository) {}
+  async execute({ actor, leaseId, agreementId }: { actor: IActor; leaseId: string; agreementId: string }) {
+    if (!(await this.leases.isTenant(actor.accountId, leaseId))) throw new NotFoundError("Lease");
+    if (!(await this.leases.removeAgreement(leaseId, agreementId))) throw new NotFoundError("Agreement");
+    return { ok: true as const };
+  }
+}
+
+/** Tenant: fill in the values of one agreement's form. */
+export class SetMyAgreementValuesUseCase implements IUseCase<{ actor: IActor; leaseId: string; agreementId: string; values: Record<string, unknown> }, { ok: true }> {
+  constructor(private readonly leases: ILeaseRepository) {}
+  async execute({ actor, leaseId, agreementId, values }: { actor: IActor; leaseId: string; agreementId: string; values: Record<string, unknown> }) {
+    if (!(await this.leases.isTenant(actor.accountId, leaseId))) throw new NotFoundError("Lease");
+    if (!(await this.leases.setAgreementValues(leaseId, agreementId, values))) throw new NotFoundError("Agreement");
+    return { ok: true as const };
+  }
+}
+
 export class ListMyLeaseInvoicesUseCase
   implements IUseCase<{ actor: IActor; leaseId: string; query: IInvoiceListQuery }, IInvoiceListResponse>
 {

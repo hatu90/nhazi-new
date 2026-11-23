@@ -518,7 +518,6 @@ model AgreementTemplate {
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
   property       Property  @relation("AgreementTemplate_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdByRef   Account   @relation("AgreementTemplate_createdByRef", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  leases         Lease[]   @relation("Lease_agreementTemplate")
 
   @@unique([id, propertyId])
   @@index([propertyId])
@@ -581,9 +580,8 @@ model Lease {
   activatedAt              DateTime?             @map("activated_at") @db.Timestamptz(6)
   firstPeriodEnd           DateTime?             @map("first_period_end") @db.Date
   terminationReason        String?               @map("termination_reason")
-  agreementTemplateId      String?               @map("agreement_template_id") @db.Uuid
-  agreementTemplateVersion Int?                  @map("agreement_template_version")
-  agreementData            Json?                 @map("agreement_data")
+  /// [{ id, templateId, version, values }]: agreements on the lease (template version pinned when added + the filled-in values)
+  agreements               Json                  @default("[]") @map("agreements")
   /// [{ path, name }]: files attached to the lease (storage key + caption)
   documents                Json                  @default("[]") @map("documents")
   createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -591,7 +589,6 @@ model Lease {
   deletedAt                DateTime?             @map("deleted_at") @db.Timestamptz(6)
   property                 Property              @relation("Lease_property", fields: [propertyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   unit                     Unit                  @relation("Lease_unit", fields: [unitId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
-  agreementTemplate        AgreementTemplate?    @relation("Lease_agreementTemplate", fields: [agreementTemplateId, propertyId], references: [id, propertyId], onDelete: NoAction, onUpdate: NoAction)
   accountLeases            AccountLease[]        @relation("AccountLease_lease")
   invitations              Invitation[]          @relation("Invitation_lease")
   leaseMembers             LeaseMember[]         @relation("LeaseMember_lease")
@@ -608,7 +605,6 @@ model Lease {
   @@unique([id, unitId])
   @@index([propertyId])
   @@index([unitId, propertyId])
-  @@index([agreementTemplateId, propertyId])
   @@map("leases")
 }
 

@@ -1,13 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { ILeaseDetailRecord, ILeaseRepository, ILeaseSummaryRecord } from "@/server/modules/lease/lease.repository";
 import {
   rentVersionsSchema,
+  leaseAgreementsSchema,
   type IInvoiceDetailResponse,
   type IInvoiceListQuery,
   type IInvoiceResponse,
   type ILeaseListQuery,
   type IMonthBreakdown,
   type ILeaseDocument,
+  type ILeaseAgreementEntry,
 } from "@/server/modules/lease/lease.schema";
 import { paginated, toSkipTake } from "@/server/shared/pagination";
 import { Prisma, type PrismaClient } from "../client";
@@ -86,11 +89,8 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       select: {
         ...summarySelect,
         billingCycleDay: true,
-        agreementTemplateId: true,
-        agreementTemplateVersion: true,
-        agreementData: true,
+        agreements: true,
         documents: true,
-        agreementTemplate: { select: { templateName: true, versions: true } },
         leaseMembers: { orderBy: { joinedAt: "asc" } },
       },
     });
@@ -98,22 +98,19 @@ export class PrismaLeaseRepository implements ILeaseRepository {
 
     const { rentVersions, ...summary } = toSummary(row);
     // `summary.activatedAt` rides along so the usecase can tell a draft apart
-    let agreement: ILeaseDetailRecord["agreement"] = null;
-    if (row.agreementTemplateId && row.agreementTemplate && row.agreementTemplateVersion !== null) {
-      const versions = templateVersionsSchema.parse(row.agreementTemplate.versions);
-      agreement = {
-        templateId: row.agreementTemplateId,
-        templateName: row.agreementTemplate.templateName,
-        version: row.agreementTemplateVersion,
-        content: versions.find((v) => v.version === row.agreementTemplateVersion)?.data ?? null,
-        values: row.agreementData,
-      };
-    }
+    const entries = leaseAgreementsSchema.parse(row.agreements);
+    const templates = entries.length ? await this.db.agreementTemplate.findMany({ where: { id: { in: entries.map((e) => e.templateId) } }, select: { id: true, templateName: true, versions: true } }) : [];
+    const agreements: ILeaseDetailRecord["agreements"] = entries.flatMap((e) => {
+      const t = templates.find((x) => x.id === e.templateId);
+      if (!t) return [];
+      const versions = templateVersionsSchema.parse(t.versions);
+      return [{ id: e.id, templateId: e.templateId, templateName: t.templateName, version: e.version, content: versions.find((v) => v.version === e.version)?.data ?? null, values: e.values }];
+    });
     return {
       ...summary,
       billingCycleDay: row.billingCycleDay,
       rentVersions,
-      agreement,
+      agreements,
       documents: toDocuments(row.documents),
       members: row.leaseMembers.map((m) => ({
         id: m.id,
@@ -163,6 +160,45 @@ export class PrismaLeaseRepository implements ILeaseRepository {
       const next = [...current, ...documents.filter((d) => !current.some((c) => c.path === d.path))];
       await tx.lease.update({ where: { id: leaseId }, data: { documents: toJson(next) } });
       return next;
+    });
+  }
+
+  async listTemplates(leaseId: string) {
+    const rows = await this.db.agreementTemplate.findMany({
+      where: { deletedAt: null, property: { leases: { some: { id: leaseId } } } },
+      select: { id: true, templateName: true },
+      orderBy: [{ isDefault: "desc" }, { templateName: "asc" }],
+    });
+    return rows.map((r) => ({ id: r.id, name: r.templateName }));
+  }
+
+  async addAgreement(leaseId: string, templateId: string) {
+    return this.db.$transaction(async (tx) => {
+      const lease = await tx.lease.findUniqueOrThrow({ where: { id: leaseId }, select: { propertyId: true, agreements: true } });
+      const t = await tx.agreementTemplate.findFirst({ where: { id: templateId, propertyId: lease.propertyId, deletedAt: null }, select: { currentVersion: true } });
+      if (!t) return false;
+      const next = [...leaseAgreementsSchema.parse(lease.agreements), { id: randomUUID(), templateId, version: t.currentVersion, values: {} }];
+      await tx.lease.update({ where: { id: leaseId }, data: { agreements: toJson(next) } });
+      return true;
+    });
+  }
+
+  async removeAgreement(leaseId: string, agreementId: string) {
+    return this.mutateAgreements(leaseId, (list) => (list.some((a) => a.id === agreementId) ? list.filter((a) => a.id !== agreementId) : null));
+  }
+
+  async setAgreementValues(leaseId: string, agreementId: string, values: Record<string, unknown>) {
+    return this.mutateAgreements(leaseId, (list) => (list.some((a) => a.id === agreementId) ? list.map((a) => (a.id === agreementId ? { ...a, values } : a)) : null));
+  }
+
+  /** Read-modify-write of the lease's agreements; `fn` returns null to abort (false is returned). */
+  private mutateAgreements(leaseId: string, fn: (list: ILeaseAgreementEntry[]) => ILeaseAgreementEntry[] | null) {
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.lease.findUniqueOrThrow({ where: { id: leaseId }, select: { agreements: true } });
+      const next = fn(leaseAgreementsSchema.parse(row.agreements));
+      if (!next) return false;
+      await tx.lease.update({ where: { id: leaseId }, data: { agreements: toJson(next) } });
+      return true;
     });
   }
 

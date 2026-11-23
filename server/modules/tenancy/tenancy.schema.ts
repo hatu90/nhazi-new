@@ -31,6 +31,7 @@ export const createLeasePayloadSchema = z
       .array(z.object({ name: z.string().trim().min(1).max(100), phoneNumber: phoneSchema.optional(), yearOfBirth }))
       .max(20)
       .default([]),
+    /** Optionally start the lease with one agreement; more can be added later. */
     agreement: z.object({ templateId: idSchema, values: z.record(z.string(), z.unknown()).default({}) }).optional(),
     documents: z.array(leaseDocumentSchema).max(50).default([]),
     /** Inventory items handed over with the lease. More can be added later via /handovers. */
@@ -52,13 +53,20 @@ export const updateLeasePayloadSchema = z
     /** Draft only. */
     firstPeriodEnd: isoDateSchema,
     documents: z.array(leaseDocumentSchema).max(50),
-    agreementValues: z.record(z.string(), z.unknown()),
+    /** Fill in one agreement's form fields. */
+    agreementValues: z.object({ agreementId: idSchema, values: z.record(z.string(), z.unknown()) }),
+    /** Add an agreement from this template (its current version is pinned). */
+    addAgreement: idSchema,
+    /** Remove an agreement (by its id on the lease). */
+    removeAgreement: idSchema,
   })
   .partial()
   .refine(nonEmptyPatch, "Nothing to update");
 export type IUpdateLeasePayload = z.infer<typeof updateLeasePayloadSchema>;
 export interface IUpdateLeaseCommand extends IUpdateLeasePayload, IPropertyScope {
   leaseId: string;
+  /** Set by the use case from `addAgreement`. */
+  newAgreement?: { id: string; templateId: string; version: number };
 }
 export const toUpdateLeaseCommand = (p: IUpdateLeasePayload, s: IPropertyScope, leaseId: string): IUpdateLeaseCommand => ({ ...p, ...s, leaseId });
 
@@ -193,7 +201,7 @@ export interface ITenancyDetailResponse extends ITenancySummaryResponse {
   billingCycleDay: number;
   terminationReason: string | null;
   rentVersions: IRentVersion[];
-  agreement: { templateId: string; templateName: string; version: number; values: unknown } | null;
+  agreements: { id: string; templateId: string; templateName: string; version: number; values: unknown }[];
   documents: ILeaseDocument[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
   handovers: { id: string; itemId: string; itemName: string; quantity: number; condition: ItemCondition; description: string | null; returnedQuantity: number | null; returnedCondition: ItemCondition | null; returnNote: string | null }[];

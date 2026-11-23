@@ -26,7 +26,7 @@ export interface ILeaseCore {
   terminatedAt: string | null;
   /** null = draft */
   activatedAt: string | null;
-  hasAgreement: boolean;
+  agreementIds: string[];
   /** Latest member join date (null = no members): a lease cannot end before someone moved in. */
   lastMemberJoinedAt: string | null;
   rentVersions: IRentVersion[];

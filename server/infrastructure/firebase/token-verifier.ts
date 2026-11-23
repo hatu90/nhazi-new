@@ -11,6 +11,17 @@ const PROVIDERS: Record<string, AuthProvider> = {
   password: "password",
 };
 
+/** Diagnostics only: the project/expiry claims of an UNVERIFIED token (never the uid, phone or the token itself). */
+function describeToken(token: string): string {
+  try {
+    const c = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString()) as { aud?: string; iss?: string; exp?: number };
+    const skew = c.exp ? `expires in ${c.exp - Math.floor(Date.now() / 1000)}s` : "no exp";
+    return `token aud="${c.aud}" iss="${c.iss}" ${skew}`;
+  } catch {
+    return "token is not a decodable JWT";
+  }
+}
+
 /** Verifies Firebase ID tokens. Credentials via FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY. */
 export class FirebaseTokenVerifier implements ITokenVerifier {
   async verify(token: string): Promise<IVerifiedIdentity> {
@@ -21,7 +32,10 @@ export class FirebaseTokenVerifier implements ITokenVerifier {
       // Bad tokens are routine; anything else (credentials, network) is a server problem that must not hide as a 401.
       const { code = "", message = "" } = err as { code?: string; message?: string };
       // "auth/argument-error" also covers a wrong audience/issuer (token from another Firebase project), so it is logged too.
-      if (!code.startsWith("auth/id-token-expired")) console.error(`[auth] token verification failed: ${code} ${message}`);
+      if (!code.startsWith("auth/id-token-expired")) {
+        console.error(`[auth] token verification failed: ${code} ${message}`);
+        console.error(`[auth] ${describeToken(token)}; server expects project "${process.env.FIREBASE_PROJECT_ID ?? "(unset: using default credentials)"}"`);
+      }
       throw new UnauthorizedError("Invalid or expired token");
     }
     const provider = PROVIDERS[decoded.firebase.sign_in_provider];

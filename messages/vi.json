@@ -45,7 +45,7 @@
     "meters": "Đồng hồ",
     "requests": "Yêu cầu",
     "invoices": "Hóa đơn",
-    "agreements": "Mẫu hợp đồng",
+    "agreements": "Mẫu thỏa thuận",
     "settings": "Cài đặt",
     "property": "Căn nhà",
     "otherProperties": "Căn nhà khác",
@@ -97,20 +97,32 @@
   },
   "Documents": {
     "title": "Tài liệu",
-    "agreement": "Hợp đồng",
+    "agreement": "Thỏa thuận",
     "files": "Tệp đính kèm",
     "file": "Tệp {n}",
     "caption": "Chú thích",
     "captionPlaceholder": "Chú thích, ví dụ: CCCD (mặt trước)",
-    "hint": "Ví dụ: ảnh CCCD hoặc bản hợp đồng đã ký. JPG, PNG, WebP hoặc PDF, tối đa 5 MB mỗi tệp.",
+    "hint": "JPG, PNG, WebP hoặc PDF · tối đa 5 MB",
+    "dropzone": "Thả tệp vào đây hoặc bấm để chọn",
+    "changeFile": "Bấm để đổi tệp",
+    "addFile": "Thêm tệp",
+    "upload": "Tải lên",
+    "chooseFile": "Chọn tệp",
     "addFiles": "Thêm tệp",
     "uploading": "Đang tải lên…",
     "remove": "Xóa",
     "empty": "Chưa có tệp nào.",
-    "noAgreement": "Chưa có hợp đồng"
+    "noAgreement": "Chưa có thỏa thuận",
+    "pickTemplate": "Mẫu thỏa thuận",
+    "noTemplates": "Chủ nhà chưa có mẫu thỏa thuận nào.",
+    "agreements": "Thỏa thuận",
+    "addAgreement": "Thêm thỏa thuận",
+    "removeAgreement": "Xóa",
+    "removeAgreementTitle": "Xóa \"{name}\"?",
+    "removeAgreementBody": "Thỏa thuận và nội dung đã điền sẽ bị xóa khỏi hợp đồng này."
   },
   "Agreements": {
-    "templates": "Mẫu hợp đồng",
+    "templates": "Mẫu thỏa thuận",
     "newTemplate": "Mẫu mới",
     "empty": "Chưa có mẫu nào",
     "default": "Mặc định",
@@ -132,9 +144,11 @@
     "a4": "A4 dọc",
     "problemNoName": "Một ô nhập (\"{label}\") chưa có tên trường.",
     "problemDuplicate": "Tên trường \"{name}\" bị dùng {count} lần; tên phải là duy nhất.",
-    "title": "Hợp đồng",
-    "unavailable": "Phiên bản hợp đồng này không còn khả dụng.",
+    "title": "Thỏa thuận",
+    "unavailable": "Phiên bản thỏa thuận này không còn khả dụng.",
     "fillIn": "Điền thông tin",
+    "show": "Hiện",
+    "hide": "Ẩn",
     "print": "In / lưu PDF",
     "openEnded": "không thời hạn",
     "billingDay": "ngày {n} hàng tháng"
@@ -298,8 +312,8 @@
     "noPaymentsAwaiting": "Không có thanh toán nào của bạn đang chờ xác nhận.",
     "paidOn": "Thanh toán ngày {date}",
     "activeLeases": "{n} đang hiệu lực",
-    "noAgreement": "Chưa có hợp đồng",
-    "agreementTitle": "Hợp đồng · {name}",
+    "noAgreement": "Chưa có thỏa thuận",
+    "agreementTitle": "Thỏa thuận · {name}",
     "propertyUnit": "Căn nhà & phòng",
     "property": "Căn nhà",
     "term": "Thời hạn",
@@ -664,8 +678,8 @@
     "rentDeposit": "Tiền thuê & cọc",
     "monthlyRent": "Giá thuê tháng",
     "deposit": "Tiền cọc",
-    "agreement": "Hợp đồng",
-    "template": "Mẫu hợp đồng",
+    "agreement": "Thỏa thuận",
+    "template": "Mẫu thỏa thuận",
     "defaultSuffix": "{name} (mặc định)",
     "tenants": "Người thuê",
     "addTenant": "Thêm người thuê",
@@ -1088,8 +1102,8 @@
   },
   "Pricing": {
     "eyebrow": "Bảng giá",
-    "heading": "Giá đơn giản, tăng theo số phòng của bạn.",
-    "lead": "Bắt đầu miễn phí với những phòng đầu tiên. Chỉ nâng cấp khi bạn quản lý nhiều hơn. Người thuê luôn dùng Nhazi miễn phí.",
+    "heading": "Giá đơn giản, nâng cấp khi bạn cần thêm.",
+    "lead": "Bắt đầu miễn phí với đầy đủ tính năng quản lý cơ bản. Chỉ nâng cấp khi bạn cần thêm. Người thuê luôn dùng Nhazi miễn phí.",
     "monthly": "/ tháng",
     "yearlyNote": "hoặc {price} / năm — tặng 2 tháng",
     "free": "Miễn phí mãi mãi",
@@ -1097,12 +1111,11 @@
     "plans": [
       {
         "name": "Khởi đầu",
-        "tagline": "Cho chủ nhà có vài phòng",
+        "tagline": "Cho chủ nhà mới bắt đầu",
         "price": "0 ₫",
         "yearly": "",
         "cta": "Dùng miễn phí",
         "features": [
-          "1 căn nhà, tối đa 10 phòng",
           "Hợp đồng, thỏa thuận và biên bản bàn giao",
           "Ghi chỉ số đồng hồ, giá điện nước bậc thang",
           "Hóa đơn hằng tháng và theo dõi thanh toán",
@@ -1111,33 +1124,29 @@
       },
       {
         "name": "Chủ nhà",
-        "tagline": "Cho danh mục cho thuê đang lớn",
-        "price": "199.000 ₫",
-        "yearly": "1.990.000 ₫",
+        "tagline": "Cho chủ nhà có đội ngũ",
+        "price": "20.000 ₫",
+        "yearly": "200.000 ₫",
         "cta": "Chọn gói Chủ nhà",
         "highlight": true,
         "features": [
-          "Tối đa 5 căn nhà, 60 phòng",
           "Mọi tính năng của gói Khởi đầu",
           "Mời nhân viên, phân quyền theo vai trò",
           "Hoàn tiền và tất toán tiền cọc",
-          "Mẫu thỏa thuận tùy chỉnh",
-          "Xuất hóa đơn PDF"
+          "Mẫu thỏa thuận tùy chỉnh"
         ]
       },
       {
         "name": "Quản lý",
         "tagline": "Cho đơn vị quản lý chuyên nghiệp",
-        "price": "499.000 ₫",
-        "yearly": "4.990.000 ₫",
+        "price": "50.000 ₫",
+        "yearly": "500.000 ₫",
         "cta": "Chọn gói Quản lý",
         "features": [
-          "Không giới hạn căn nhà, tối đa 300 phòng",
           "Mọi tính năng của gói Chủ nhà",
           "Huy hiệu xác minh căn nhà",
           "Thiết lập hàng loạt phòng, đồng hồ, dịch vụ",
-          "Báo cáo và thống kê doanh thu",
-          "Hỗ trợ ưu tiên"
+          "Hỗ trợ 24/7"
         ]
       }
     ],
@@ -1158,14 +1167,6 @@
     ],
     "faqTitle": "Câu hỏi thường gặp",
     "faqs": [
-      {
-        "title": "Thế nào là một phòng?",
-        "body": "Một phòng là một đơn vị cho thuê: phòng trọ, căn hộ hoặc văn phòng. Phòng đang trống cũng được tính."
-      },
-      {
-        "title": "Nếu vượt giới hạn thì sao?",
-        "body": "Dữ liệu hiện có không bao giờ bị xóa. Bạn chỉ không thể thêm phòng mới cho đến khi nâng cấp."
-      },
       {
         "title": "Tôi có đổi gói được không?",
         "body": "Được. Nâng hoặc hạ gói bất cứ lúc nào; thay đổi áp dụng từ chu kỳ thanh toán kế tiếp."

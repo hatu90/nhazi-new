@@ -19,7 +19,7 @@ export async function HeroIntro() {
       <HeroSearch />
       <HStack gap={3} align="center" wrap="wrap">
         <Text color="secondary">{t("landlordPrompt")}</Text>
-        <Button variant="primary" label={t("ctaLandlord")} size="md" endContent={<ArrowRight size={16} />} href="/auth?next=/admin" />
+        <Button variant="primary" label={t("ctaLandlord")} size="md" endContent={<ArrowRight size={16} />} href="/auth?next=/dashboard" />
       </HStack>
     </VStack>
   );

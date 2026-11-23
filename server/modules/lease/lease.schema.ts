@@ -33,6 +33,10 @@ export interface ILeaseSummaryResponse {
 }
 
 /** A file attached to a lease: its storage key and a caption (e.g. "ID card, front"). */
+/** An agreement on a lease as stored: the template version pinned when it was added + the filled-in values. */
+export const leaseAgreementsSchema = z.array(z.object({ id: z.string(), templateId: z.string(), version: z.number().int(), values: z.record(z.string(), z.unknown()).catch({}) }));
+export type ILeaseAgreementEntry = z.infer<typeof leaseAgreementsSchema>[number];
+
 export interface ILeaseDocument {
   path: string;
   name: string;
@@ -42,7 +46,7 @@ export interface ILeaseDetailResponse extends ILeaseSummaryResponse {
   billingCycleDay: number;
   rentVersions: IRentVersion[];
   /** `content` = the template version in use (Puck JSON); `values` = filled data (names, address, signature URL). */
-  agreement: { templateId: string; templateName: string; version: number; content: unknown; values: unknown } | null;
+  agreements: { id: string; templateId: string; templateName: string; version: number; content: unknown; values: unknown }[];
   documents: ILeaseDocument[];
   members: { id: string; name: string; phoneNumber: string | null; yearOfBirth: number; joinedAt: string; leftAt: string | null }[];
 }

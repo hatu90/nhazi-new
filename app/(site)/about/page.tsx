@@ -51,7 +51,7 @@ export default async function AboutPage() {
         <VStack gap={4} align="center">
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <HStack gap={3} wrap="wrap" justify="center">
-            <Button variant="primary" label={(await getTranslations("Home"))("ctaLandlord")} size="lg" href="/auth?next=/admin" />
+            <Button variant="primary" label={(await getTranslations("Home"))("ctaLandlord")} size="lg" href="/auth?next=/dashboard" />
             <Button label={(await getTranslations("Home"))("ctaTenant")} size="lg" variant="secondary" href="/auth?next=/dashboard" />
           </HStack>
         </VStack>

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { noNotifier, type INotifier } from "../notification/notification.publisher";
 import type { IPropertyScope } from "@/server/shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/shared/errors";
@@ -121,8 +122,16 @@ export class UpdateTenancyUseCase extends Base implements IUseCase<IUpdateLeaseC
     if (c.endDate && (await this.leases.hasOverlap(core.unitId, core.startDate, c.endDate, core.id))) {
       throw new ConflictError("The new end date overlaps another lease of the unit", "LEASE_OVERLAP");
     }
-    if (c.agreementValues && !core.hasAgreement) throw invalid("The lease has no agreement template", "agreementValues", "No agreement on this lease");
-    await this.leases.update(c);
+    if (c.agreementValues && !core.agreementIds.includes(c.agreementValues.agreementId)) throw invalid("Agreement not found on this lease", "agreementValues", "No such agreement");
+    if (c.removeAgreement && !core.agreementIds.includes(c.removeAgreement)) throw invalid("Agreement not found on this lease", "removeAgreement", "No such agreement");
+    let newAgreement: IUpdateLeaseCommand["newAgreement"];
+    if (c.addAgreement) {
+      const t = await this.leases.findTemplate(c.propertyId, c.addAgreement);
+      if (!t) throw new NotFoundError("Agreement template");
+      newAgreement = { id: randomUUID(), templateId: c.addAgreement, version: t.currentVersion };
+    }
+    await this.leases.update({ ...c, newAgreement });
+    if (c.addAgreement && core.activatedAt !== null) await this.notifier.publish({ event: "agreement.updated", targetType: "agreement", targetId: c.leaseId, actorId: c.actor.accountId });
     if (c.agreementValues && core.activatedAt !== null) await this.notifier.publish({ event: "agreement.updated", targetType: "agreement", targetId: c.leaseId, actorId: c.actor.accountId });
     return this.detail(c.propertyId, c.leaseId);
   }

@@ -1,5 +1,6 @@
 import type { ILeaseCore, ITenancyRepository } from "@/server/modules/tenancy/tenancy.repository";
-import { rentVersionsSchema } from "@/server/modules/lease/lease.schema";
+import { randomUUID } from "node:crypto";
+import { leaseAgreementsSchema, rentVersionsSchema } from "@/server/modules/lease/lease.schema";
 import type {
   IAddLeaseMemberCommand,
   IAddRentCommand,
@@ -34,7 +35,6 @@ const summaryInclude = {
 } satisfies Prisma.LeaseInclude;
 const detailInclude = {
   ...summaryInclude,
-  agreementTemplate: { select: { templateName: true } },
   leaseMembers: { orderBy: { joinedAt: "asc" } },
   handovers: { where: { deletedAt: null }, include: { inventoryItem: { select: { inventoryName: true } } }, orderBy: { createdAt: "asc" } },
   serviceSubscriptions: { where: { deletedAt: null }, include: { service: { select: { serviceName: true, usageBase: true } }, meter: { select: { meterName: true } } }, orderBy: { startDate: "asc" } },
@@ -79,7 +79,7 @@ const toSubscription = (s: SubRow): ISubscriptionResponse => ({
 });
 const subInclude = { service: { select: { serviceName: true, usageBase: true } }, meter: { select: { meterName: true } } } satisfies Prisma.ServiceSubscriptionInclude;
 
-const toDetail = (r: DetailRow): ITenancyDetailRecord => {
+const toDetail = (r: DetailRow, templateNames: Map<string, string>): ITenancyDetailRecord => {
   const { rentVersions, ...summary } = toSummary(r);
   return {
     ...summary,
@@ -87,10 +87,7 @@ const toDetail = (r: DetailRow): ITenancyDetailRecord => {
     billingCycleDay: r.billingCycleDay,
     terminationReason: r.terminationReason,
     rentVersions,
-    agreement:
-      r.agreementTemplateId && r.agreementTemplateVersion !== null && r.agreementTemplate
-        ? { templateId: r.agreementTemplateId, templateName: r.agreementTemplate.templateName, version: r.agreementTemplateVersion, values: r.agreementData }
-        : null,
+    agreements: leaseAgreementsSchema.parse(r.agreements).map((a) => ({ ...a, templateName: templateNames.get(a.templateId) ?? "" })),
     documents: toDocuments(r.documents),
     members: r.leaseMembers.map((m) => ({
       id: m.id,
@@ -141,7 +138,10 @@ export class PrismaTenancyRepository implements ITenancyRepository {
 
   async findDetail(propertyId: string, leaseId: string) {
     const r = await this.db.lease.findFirst({ where: live(propertyId, leaseId), include: detailInclude });
-    return r ? toDetail(r) : null;
+    if (!r) return null;
+    const ids = leaseAgreementsSchema.parse(r.agreements).map((a) => a.templateId);
+    const templates = ids.length ? await this.db.agreementTemplate.findMany({ where: { id: { in: ids } }, select: { id: true, templateName: true } }) : [];
+    return toDetail(r, new Map(templates.map((t) => [t.id, t.templateName])));
   }
 
   async findCore(propertyId: string, leaseId: string): Promise<ILeaseCore | null> {
@@ -156,7 +156,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         endDate: isoDateOrNull(r.endDate),
         terminatedAt: isoDateOrNull(r.terminatedAt),
         activatedAt: r.activatedAt && r.activatedAt.toISOString(),
-        hasAgreement: r.agreementTemplateId !== null,
+        agreementIds: leaseAgreementsSchema.parse(r.agreements).map((a) => a.id),
         rentVersions: rentVersionsSchema.parse(r.prices),
       }
     );
@@ -202,11 +202,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               prices: toJson([{ effectiveDate: c.startDate, amount: c.rent }]),
               depositAmount: c.depositAmount,
               documents: toJson(c.documents),
-              ...(c.agreement && templateVersion !== null && {
-                agreementTemplateId: c.agreement.templateId,
-                agreementTemplateVersion: templateVersion,
-                agreementData: toJson(c.agreement.values),
-              }),
+              agreements: toJson(c.agreement && templateVersion !== null ? [{ id: randomUUID(), templateId: c.agreement.templateId, version: templateVersion, values: c.agreement.values }] : []),
               leaseMembers: {
                 create: c.members.map((m) => ({ name: m.name, phoneNumber: m.phoneNumber, yearOfBirth: m.yearOfBirth, joinedAt: d(c.startDate) })),
               },
@@ -239,6 +235,14 @@ export class PrismaTenancyRepository implements ITenancyRepository {
 
   async update(c: IUpdateLeaseCommand) {
     await this.db.$transaction(async (tx) => {
+    let agreements: ReturnType<typeof leaseAgreementsSchema.parse> | undefined;
+    if (c.newAgreement || c.removeAgreement || c.agreementValues) {
+      const cur = leaseAgreementsSchema.parse((await tx.lease.findUniqueOrThrow({ where: { id: c.leaseId }, select: { agreements: true } })).agreements);
+      agreements = cur;
+      if (c.newAgreement) agreements = [...agreements, { ...c.newAgreement, values: {} }];
+      if (c.removeAgreement) agreements = agreements.filter((a) => a.id !== c.removeAgreement);
+      if (c.agreementValues) agreements = agreements.map((a) => (a.id === c.agreementValues!.agreementId ? { ...a, values: c.agreementValues!.values } : a));
+    }
     await tx.lease.update({
       where: { id: c.leaseId },
       data: {
@@ -247,7 +251,7 @@ export class PrismaTenancyRepository implements ITenancyRepository {
         depositAmount: c.depositAmount,
         firstPeriodEnd: dn(c.firstPeriodEnd),
         ...(c.documents && { documents: toJson(c.documents) }),
-        ...(c.agreementValues && { agreementData: toJson(c.agreementValues) }),
+        ...(agreements && { agreements: toJson(agreements) }),
       },
     });
     if (c.depositAmount !== undefined) {

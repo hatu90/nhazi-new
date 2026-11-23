@@ -102,12 +102,24 @@
     "file": "File {n}",
     "caption": "Caption",
     "captionPlaceholder": "Caption, e.g. ID card (front)",
-    "hint": "e.g. ID card photos or a signed copy. JPG, PNG, WebP or PDF, up to 5 MB each.",
+    "hint": "JPG, PNG, WebP or PDF · max 5 MB",
+    "dropzone": "Drop a file here or click to browse",
+    "changeFile": "Click to change",
+    "addFile": "Add file",
+    "upload": "Upload",
+    "chooseFile": "Choose a file",
     "addFiles": "Add files",
     "uploading": "Uploading…",
     "remove": "Remove",
     "empty": "No files yet.",
-    "noAgreement": "No agreement"
+    "noAgreement": "No agreement",
+    "pickTemplate": "Agreement template",
+    "noTemplates": "The landlord has no agreement templates yet.",
+    "agreements": "Agreements",
+    "addAgreement": "Add agreement",
+    "removeAgreement": "Remove",
+    "removeAgreementTitle": "Remove \"{name}\"?",
+    "removeAgreementBody": "The agreement and what was filled in will be removed from this lease."
   },
   "Agreements": {
     "templates": "Templates",
@@ -135,6 +147,8 @@
     "title": "Agreement",
     "unavailable": "This agreement version isn't available.",
     "fillIn": "Fill in",
+    "show": "Show",
+    "hide": "Hide",
     "print": "Print / save as PDF",
     "openEnded": "open-ended",
     "billingDay": "day {n} of the month"
@@ -1088,8 +1102,8 @@
   },
   "Pricing": {
     "eyebrow": "Pricing",
-    "heading": "Simple pricing that grows with your rooms.",
-    "lead": "Start free with your first rooms. Upgrade only when you manage more. Tenants always use Nhazi for free.",
+    "heading": "Simple pricing that grows with you.",
+    "lead": "Start free with all the core rental tools. Upgrade only when you need more. Tenants always use Nhazi for free.",
     "monthly": "/ month",
     "yearlyNote": "or {price} / year — 2 months free",
     "free": "Free forever",
@@ -1097,12 +1111,11 @@
     "plans": [
       {
         "name": "Starter",
-        "tagline": "For owners with a few rooms",
+        "tagline": "For owners just getting started",
         "price": "0 ₫",
         "yearly": "",
         "cta": "Start free",
         "features": [
-          "1 property, up to 10 units",
           "Leases, agreements and handover records",
           "Meter readings with tiered utility pricing",
           "Monthly invoices and payment tracking",
@@ -1111,33 +1124,29 @@
       },
       {
         "name": "Landlord",
-        "tagline": "For growing rental portfolios",
-        "price": "199.000 ₫",
-        "yearly": "1.990.000 ₫",
+        "tagline": "For owners working with a team",
+        "price": "20.000 ₫",
+        "yearly": "200.000 ₫",
         "cta": "Choose Landlord",
         "highlight": true,
         "features": [
-          "Up to 5 properties, 60 units",
           "Everything in Starter",
           "Invite staff with role-based access",
           "Refunds and deposit settlement",
-          "Custom agreement templates",
-          "Export invoices to PDF"
+          "Custom agreement templates"
         ]
       },
       {
         "name": "Manager",
         "tagline": "For professional operators",
-        "price": "499.000 ₫",
-        "yearly": "4.990.000 ₫",
+        "price": "50.000 ₫",
+        "yearly": "500.000 ₫",
         "cta": "Choose Manager",
         "features": [
-          "Unlimited properties, up to 300 units",
           "Everything in Landlord",
           "Property verification badge",
           "Bulk setup for units, meters and services",
-          "Reports and revenue stats",
-          "Priority support"
+          "24/7 support"
         ]
       }
     ],
@@ -1158,14 +1167,6 @@
     ],
     "faqTitle": "Questions",
     "faqs": [
-      {
-        "title": "What counts as a unit?",
-        "body": "A unit is one rentable room, apartment or office. Vacant units count too."
-      },
-      {
-        "title": "What happens if I go over my limit?",
-        "body": "Existing data is never deleted. You just can't add more units until you upgrade."
-      },
       {
         "title": "Can I change plans?",
         "body": "Yes. Upgrade or downgrade at any time; the change applies from your next billing cycle."

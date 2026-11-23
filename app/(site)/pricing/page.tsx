@@ -70,7 +70,7 @@ export default async function PricingPage() {
                   variant={p.highlight ? "primary" : "secondary"}
                   size="lg"
                   label={p.cta}
-                  href="/auth?next=/admin"
+                  href="/auth?next=/dashboard"
                 />
                 <VStack gap={3} className="border-t border-current/10 pt-4">
                   {p.features.map((f) => (
@@ -113,7 +113,7 @@ export default async function PricingPage() {
       <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-6 py-12 text-center">
         <VStack gap={4} align="center">
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
-          <Button variant="primary" size="lg" label={t("plans.0.cta")} href="/auth?next=/admin" />
+          <Button variant="primary" size="lg" label={t("plans.0.cta")} href="/auth?next=/dashboard" />
         </VStack>
       </section>
     </div>

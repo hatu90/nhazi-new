@@ -6,7 +6,7 @@ import {
   UpdateMeUseCase,
   VerifyTokenUseCase,
 } from "./modules/identity/identity.usecases";
-import { GetMyBillingUseCase, CloseMyPeriodUseCase, GetMyInvoiceUseCase, GetMyLeaseUseCase, ListMyLeaseInvoicesUseCase, ListMyLeasesUseCase } from "./modules/lease/lease.usecases";
+import { GetMyBillingUseCase, CloseMyPeriodUseCase, GetMyInvoiceUseCase, GetMyLeaseUseCase, ListMyAgreementTemplatesUseCase, AddMyAgreementUseCase, RemoveMyAgreementUseCase, SetMyAgreementValuesUseCase, ListMyLeaseInvoicesUseCase, ListMyLeasesUseCase } from "./modules/lease/lease.usecases";
 import {
   CreatePropertyUseCase,
   UpdatePropertyUseCase,
@@ -260,6 +260,10 @@ function build() {
     getMyBilling: new GetMyBillingUseCase(leases, lifecycle),
     closeMyPeriod: new CloseMyPeriodUseCase(leases, lifecycle, closePeriod),
     getMyLease: new GetMyLeaseUseCase(leases),
+    listMyAgreementTemplates: new ListMyAgreementTemplatesUseCase(leases),
+    addMyAgreement: new AddMyAgreementUseCase(leases),
+    removeMyAgreement: new RemoveMyAgreementUseCase(leases),
+    setMyAgreementValues: new SetMyAgreementValuesUseCase(leases),
     listMyLeaseInvoices: new ListMyLeaseInvoicesUseCase(leases),
     getMyInvoice: new GetMyInvoiceUseCase(leases),
     reportPayment: new ReportPaymentUseCase(invoices, leases, notifier),
