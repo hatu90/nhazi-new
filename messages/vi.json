@@ -426,7 +426,8 @@
     "badge": "Dành cho chủ nhà, người quản lý và người thuê",
     "title": "Nền tảng trọn gói để quản lý nhà cho thuê.",
     "subtitle": "Nhazi giúp bạn quản lý căn nhà, hợp đồng, chỉ số điện nước và hóa đơn ở cùng một nơi.",
-    "ctaLandlord": "Bắt đầu cho thuê nhà",
+    "landlordPrompt": "Bạn có nhà cho thuê?",
+    "ctaLandlord": "Bắt đầu",
     "or": "hoặc",
     "ctaTenant": "Tôi là người thuê",
     "featuresTitle": "Có đủ những gì nhà cho thuê cần, gọn gàng và dễ dùng.",
@@ -496,6 +497,15 @@
     "deleteBody": "Vật dụng sẽ bị xóa khỏi danh sách."
   },
   "Invoices": {
+    "generated": {
+      "moveIn": "Nhận nhà {date}",
+      "transition": "Hóa đơn {date}",
+      "closing": "Tất toán {date}",
+      "rent": "Tiền nhà {date}",
+      "deposit": "Tiền cọc",
+      "credit": "Hoàn lại: {inner} (còn {unused}/{total} ngày chưa dùng)",
+      "heldCredit": "Trừ vào tiền cọc / tiền nhà / dịch vụ chưa dùng"
+    },
     "newInvoice": "Hóa đơn mới",
     "createInvoice": "Tạo hóa đơn",
     "empty": "Chưa có hóa đơn",

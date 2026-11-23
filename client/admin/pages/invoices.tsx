@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -21,6 +22,7 @@ const statuses = ["pending", "partial", "paid", "cancelled"];
 
 export function InvoicesPage() {
   const t = useTranslations("Invoices");
+  const it = useInvoiceTitle();
   const c = useTranslations("Common");
   const en = useEnum();
   const options = useEnumOptions();
@@ -42,7 +44,7 @@ export function InvoicesPage() {
         paging={setPage}
         empty={<Empty title={t("empty")} />}
         columns={[
-          { key: "t", header: t("invoice"), render: (i) => <Link href={to(`invoices/${i.id}`)}>{i.title}</Link> },
+          { key: "t", header: t("invoice"), render: (i) => <Link href={to(`invoices/${i.id}`)}>{it(i.title)}</Link> },
           { key: "u", header: c("unit"), render: (i) => i.unitName },
           { key: "k", header: c("type"), render: (i) => en("invoiceKind", i.kind) },
           { key: "a", header: c("amount"), render: (i) => formatMoney(i.amount) },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { useQuery } from "@tanstack/react-query";
@@ -86,6 +87,7 @@ export function useClosePeriodForm({ path, invalidate, period, meters = [], askN
 
 export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readings, ready, preview, today } }: { x: ReturnType<typeof useClosePeriodForm> }) {
   const t = useTranslations("ClosePeriod");
+  const it = useInvoiceTitle();
   if (!period) return null;
   return (
     <VStack gap={4}>
@@ -137,11 +139,11 @@ export function ClosePeriodFields({ x: { form, period, meters, askNextEnd, readi
         ) : (
           <Raised>
             <VStack gap={2}>
-              <Text size="sm" color="secondary">{t("issued", { title: preview.data.title ?? "", date: formatDate(today) })}</Text>
-              {preview.data.items.map((it, i) => (
+              <Text size="sm" color="secondary">{t("issued", { title: it(preview.data.title ?? ""), date: formatDate(today) })}</Text>
+              {preview.data.items.map((row, i) => (
                 <HStack key={i} justify="between" gap={2}>
-                  <Text size="sm">{it.title}</Text>
-                  <Text size="sm">{formatMoney(it.amount)}</Text>
+                  <Text size="sm">{it(row.title)}</Text>
+                  <Text size="sm">{formatMoney(row.amount)}</Text>
                 </HStack>
               ))}
               <HStack justify="between" gap={2}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { FormFooter } from "@/client/ui/rhf";
@@ -19,6 +20,7 @@ import { PaymentFields, usePaymentForm } from "./invoice-payment-form";
 
 export function InvoiceDetailPage() {
   const t = useTranslations("Invoices");
+  const it = useInvoiceTitle();
   const c = useTranslations("Common");
   const en = useEnum();
   const confirm = useConfirm();
@@ -41,7 +43,7 @@ export function InvoiceDetailPage() {
     <VStack gap={5}>
       <HStack><Button label={t("allInvoices")} variant="ghost" size="sm" href={to("invoices")} /></HStack>
       <PageHeader
-        title={inv.title}
+        title={it(inv.title)}
         subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{t("dueOn", { unit: inv.unitName, date: formatDate(inv.dueDate) })}</Text></HStack>}
         actions={canManage && open && (
           <>
@@ -59,7 +61,7 @@ export function InvoiceDetailPage() {
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: inv.items.filter((i) => !i.voided), page: 1, pageSize: 1000, total: inv.items.length } }}
           empty={<Empty title={t("noLines")} />}
           columns={[
-            { key: "t", header: c("description"), render: (i) => i.title },
+            { key: "t", header: c("description"), render: (i) => it(i.title) },
             { key: "k", header: c("type"), render: (i) => en("itemKind", i.kind) },
             { key: "d", header: t("usage"), render: (i) => (i.detail ? t("usageDetail", { quantity: i.detail.quantity, amount: formatMoney(i.detail.calculatedAmount) }) : "") },
             { key: "a", header: c("amount"), align: "end", render: (i) => formatMoney(i.amount) },

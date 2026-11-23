@@ -2,6 +2,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
+import { ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { HeroSearch } from "./hero-search";
 
@@ -16,13 +17,9 @@ export async function HeroIntro() {
         <Text color="secondary" size="lg">{t("subtitle")}</Text>
       </VStack>
       <HeroSearch />
-      <div role="separator" className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-current/15" />
-        <Text size="sm" color="secondary">{t("or")}</Text>
-        <span className="h-px flex-1 bg-current/15" />
-      </div>
-      <HStack gap={3} wrap="wrap">
-        <Button variant="primary" label={t("ctaLandlord")} size="lg" href="/auth?next=/admin" />
+      <HStack gap={3} align="center" wrap="wrap">
+        <Text color="secondary">{t("landlordPrompt")}</Text>
+        <Button variant="primary" label={t("ctaLandlord")} size="md" endContent={<ArrowRight size={16} />} href="/auth?next=/admin" />
       </HStack>
     </VStack>
   );

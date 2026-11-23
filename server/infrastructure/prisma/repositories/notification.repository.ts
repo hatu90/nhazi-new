@@ -8,6 +8,7 @@ import type {
 } from "@/server/modules/notification/notification.schema";
 import type { Prisma, PrismaClient } from "../client";
 import { isoDate, isoDateTime, num, toJson } from "../mappers";
+import { invoiceLabel } from "@/server/modules/notification/notification.labels";
 
 type Row = Prisma.NotificationGetPayload<object>;
 
@@ -107,13 +108,13 @@ export class PrismaNotificationRepository implements INotificationRepository {
         const i = await this.db.invoice.findFirst({ where: { id: targetId, deletedAt: null }, select: { propertyId: true, leaseId: true, title: true, status: true, amount: true, dueDate: true, createdBy: true, property: { select: { propertyName: true } }, lease: { select: { activatedAt: true, unit: { select: { unitName: true } } } }, payments: { where: { status: "confirmed", deletedAt: null }, select: { amount: true } } } });
         if (!i) return null;
         const left = num(i.amount) - i.payments.reduce((s, p) => s + num(p.amount), 0);
-        return base({ propertyId: i.propertyId, propertyName: i.property.propertyName, leaseId: i.leaseId, unitName: i.lease.unit.unitName, leaseStarted: i.lease.activatedAt !== null, label: i.title, status: i.status, amount: left, date: isoDate(i.dueDate), creatorId: i.createdBy });
+        return base({ propertyId: i.propertyId, propertyName: i.property.propertyName, leaseId: i.leaseId, unitName: i.lease.unit.unitName, leaseStarted: i.lease.activatedAt !== null, label: invoiceLabel(i.title), status: i.status, amount: left, date: isoDate(i.dueDate), creatorId: i.createdBy });
       }
       case "payment": {
         const p = await this.db.payment.findFirst({ where: { id: targetId, deletedAt: null }, select: { invoiceId: true, amount: true, status: true, createdBy: true, createdByRef: { select: { displayName: true } }, invoice: { select: { title: true, propertyId: true, leaseId: true, property: { select: { propertyName: true } }, lease: { select: { activatedAt: true, ...unitOf.select } } } } } });
         if (!p) return null;
         const i = p.invoice;
-        return base({ propertyId: i.propertyId, propertyName: i.property.propertyName, leaseId: i.leaseId, unitName: i.lease.unit.unitName, leaseStarted: i.lease.activatedAt !== null, label: i.title, status: p.status, amount: num(p.amount), creatorId: p.createdBy, creatorName: p.createdByRef.displayName, parentId: p.invoiceId });
+        return base({ propertyId: i.propertyId, propertyName: i.property.propertyName, leaseId: i.leaseId, unitName: i.lease.unit.unitName, leaseStarted: i.lease.activatedAt !== null, label: invoiceLabel(i.title), status: p.status, amount: num(p.amount), creatorId: p.createdBy, creatorName: p.createdByRef.displayName, parentId: p.invoiceId });
       }
       case "request": {
         const r = await this.db.request.findFirst({ where: { id: targetId, deletedAt: null }, select: { propertyId: true, leaseId: true, title: true, status: true, requestedBy: true, assignedTo: true, property: { select: { propertyName: true } }, unit: { select: { unitName: true } }, lease: { select: { activatedAt: true } }, requestedByRef: { select: { displayName: true } } } });

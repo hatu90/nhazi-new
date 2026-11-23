@@ -426,7 +426,8 @@
     "badge": "For landlords, property managers and their tenants",
     "title": "The all-in-one platform for managing rental property.",
     "subtitle": "Nhazi keeps properties, leases, meter readings and invoices in one place, and gives every tenant a simple view of theirs.",
-    "ctaLandlord": "I have a property for rent",
+    "landlordPrompt": "Own a property?",
+    "ctaLandlord": "Get started",
     "or": "or",
     "ctaTenant": "I'm a tenant",
     "featuresTitle": "Everything a rental needs, nothing it doesn't.",
@@ -496,6 +497,15 @@
     "deleteBody": "The item is removed from the inventory."
   },
   "Invoices": {
+    "generated": {
+      "moveIn": "Move-in {date}",
+      "transition": "Invoice {date}",
+      "closing": "Closing {date}",
+      "rent": "Rent {date}",
+      "deposit": "Deposit",
+      "credit": "Credit: {inner} ({unused}/{total} days unused)",
+      "heldCredit": "Taken from the deposit / unused rent / services"
+    },
     "newInvoice": "New invoice",
     "createInvoice": "Create invoice",
     "empty": "No invoices yet",

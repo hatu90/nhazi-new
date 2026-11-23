@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { Link } from "@astryxdesign/core/Link";
 import { VStack } from "@astryxdesign/core/Stack";
 import { formatDate, formatMoney } from "@/client/lib/format";
@@ -13,6 +14,7 @@ import { useProperty } from "../../property-layout";
 /** Every invoice of the lease with what has been paid; open one to see its lines and payments. */
 export function InvoicesTab({ leaseId }: { leaseId: string }) {
   const t = useTranslations("LeaseDetail");
+  const it = useInvoiceTitle();
   const c = useTranslations("Common");
   const en = useEnum();
   const { apiPath, to } = useProperty();
@@ -31,7 +33,7 @@ export function InvoicesTab({ leaseId }: { leaseId: string }) {
           query={invoices}
           empty={<Empty title={t("noInvoices")} />}
           columns={[
-            { key: "t", header: t("invoice"), render: (i) => <Link href={to(`invoices/${i.id}`)}>{i.title}</Link> },
+            { key: "t", header: t("invoice"), render: (i) => <Link href={to(`invoices/${i.id}`)}>{it(i.title)}</Link> },
             { key: "k", header: c("type"), render: (i) => en("invoiceKind", i.kind) },
             { key: "a", header: c("amount"), render: (i) => formatMoney(i.amount) },
             { key: "p", header: c("paid"), render: (i) => formatMoney(i.paidAmount) },

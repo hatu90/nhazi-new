@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { ArrowLeft, Plus } from "lucide-react";
 import { DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -21,6 +22,7 @@ import { api } from "@/client/lib/api";
 
 export function InvoiceDetailPage() {
   const t = useTranslations("Invoices");
+  const it = useInvoiceTitle();
   const c = useTranslations("Common");
   const en = useEnum();
   const { invoiceId = "" } = useParams();
@@ -40,13 +42,13 @@ export function InvoiceDetailPage() {
   return (
     <VStack gap={5}>
       <HStack><Button label={t("allInvoices")} icon={<ArrowLeft size={16} />} variant="ghost" size="sm" href={to("invoices")} /></HStack>
-      <PageHeader title={inv.title} subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{t("dueShort", { date: formatDate(inv.dueDate) })}</Text></HStack>} actions={canReport && <Button icon={<Plus size={16} />} variant="primary" label={t("addPayment")} onClick={() => setPaying(true)} />} />
+      <PageHeader title={it(inv.title)} subtitle={<HStack gap={2} align="center"><StatusBadge status={inv.status} /><Text color="secondary">{t("dueShort", { date: formatDate(inv.dueDate) })}</Text></HStack>} actions={canReport && <Button icon={<Plus size={16} />} variant="primary" label={t("addPayment")} onClick={() => setPaying(true)} />} />
       <Section title={t("summary")}><DefList items={[[c("type"), en("invoiceKind", inv.kind)], [c("total"), formatMoney(inv.amount)], [c("paid"), formatMoney(inv.paidAmount)], [t("outstanding"), formatMoney(inv.status === "cancelled" ? 0 : inv.amount - inv.paidAmount)]]} /></Section>
       <Section title={t("whatYouPay")}>
         <DataTable<IInvoiceDetailResponse["items"][number]>
           query={{ isPending: false, error: null, refetch: () => {}, data: { items: inv.items, page: 1, pageSize: 1000, total: inv.items.length } }}
           empty={<Empty title={t("noLines")} />}
-          columns={[{ key: "t", header: c("description"), render: (i) => i.title }, { key: "k", header: c("type"), render: (i) => en("itemKind", i.kind) }, { key: "a", header: c("amount"), align: "end", render: (i) => formatMoney(i.amount) }]}
+          columns={[{ key: "t", header: c("description"), render: (i) => it(i.title) }, { key: "k", header: c("type"), render: (i) => en("itemKind", i.kind) }, { key: "a", header: c("amount"), align: "end", render: (i) => formatMoney(i.amount) }]}
         />
       </Section>
       <Section title={t("payments")}>
