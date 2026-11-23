@@ -114,6 +114,18 @@ export const parseQuery = <S extends ZodType>(schema: S, request: NextRequest) =
 
 export const parseParams = <S extends ZodType>(schema: S, params: Params) => parse(schema, params);
 
+/** Reads the multipart field `file`. The declared body size is checked first, so an oversized upload is refused before it is buffered. */
+export const parseUpload = async (request: NextRequest, maxBytes = 5 * 1024 * 1024) => {
+  const declared = Number(request.headers.get("content-length"));
+  if (!Number.isFinite(declared) || declared <= 0 || declared > maxBytes + 64 * 1024) {
+    throw new ValidationError("The file must be 5 MB or smaller");
+  }
+  const form = await request.formData().catch(() => null);
+  const file = form?.get("file");
+  if (!(file instanceof File)) throw new ValidationError("Attach a file in the `file` field");
+  return { name: file.name, contentType: file.type, bytes: await file.arrayBuffer() };
+};
+
 export const parseBody = async <S extends ZodType>(schema: S, request: NextRequest) => {
   let json: unknown;
   try {

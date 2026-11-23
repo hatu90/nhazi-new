@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { IActor } from "@/server/shared/actor";
 import { paginationQuerySchema } from "@/server/shared/pagination";
-import { idSchema } from "@/server/shared/schema";
 
 /** What a notification is about. */
 export const NOTIFICATION_TARGETS = ["lease", "invitation", "agreement", "billing_period", "request", "request_comment", "invoice", "payment"] as const;

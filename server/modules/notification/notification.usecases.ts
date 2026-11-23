@@ -61,7 +61,8 @@ export class BackfillInvitationNotificationsUseCase implements IUseCase<{ accoun
 // ── scheduled ───────────────────────────────────────────────────────────────────────
 /** A billing period that ends within this many days is "closing soon". */
 export const CLOSING_SOON_DAYS = 3;
-const BATCH = 500;
+const BATCH = 200;
+const CONCURRENCY = 10;
 const WEEK = 7;
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 const addDays = (d: string, n: number) => new Date(Date.parse(d) + n * 86_400_000).toISOString().slice(0, 10);
@@ -82,18 +83,30 @@ export class RunScheduledNotificationsUseCase implements IUseCase<{ now?: string
 
   async execute(input?: { now?: string } | void): Promise<IScheduledResult> {
     const day = input?.now ?? today();
-    const periods = await this.notifications.periodsEndingBy(addDays(day, CLOSING_SOON_DAYS), BATCH);
-    for (const p of periods) {
+    const until = addDays(day, CLOSING_SOON_DAYS);
+    const periods = await this.eachPage((after) => this.notifications.periodsEndingBy(until, BATCH, after), async (p) => {
       const late = daysBetween(p.endDate, day);
       await this.notifier.publish(late > 0
         ? { event: "billing_period.overdue", targetType: "billing_period", targetId: p.id, extra: { daysLate: late }, dedupeKey: `billing_period.overdue:${p.id}:${Math.floor((late - 1) / WEEK)}` }
         : { event: "billing_period.closing_soon", targetType: "billing_period", targetId: p.id, dedupeKey: `billing_period.closing_soon:${p.id}` });
-    }
-    const invoices = await this.notifications.overdueInvoices(day, BATCH);
-    for (const i of invoices) {
+    });
+    const invoices = await this.eachPage((after) => this.notifications.overdueInvoices(day, BATCH, after), async (i) => {
       const late = daysBetween(i.dueDate, day);
       await this.notifier.publish({ event: "invoice.overdue", targetType: "invoice", targetId: i.id, extra: { daysLate: late }, dedupeKey: `invoice.overdue:${i.id}:${Math.floor((late - 1) / WEEK)}` });
+    });
+    return { periods, invoices };
+  }
+
+  /** Walks every page (cursor on id, so late items are never starved by older ones), publishing a few at a time. */
+  private async eachPage<T extends { id: string }>(fetch: (afterId?: string) => Promise<T[]>, each: (item: T) => Promise<void>): Promise<number> {
+    let count = 0;
+    let after: string | undefined;
+    for (;;) {
+      const page = await fetch(after);
+      for (let i = 0; i < page.length; i += CONCURRENCY) await Promise.all(page.slice(i, i + CONCURRENCY).map(each));
+      count += page.length;
+      if (page.length < BATCH) return count;
+      after = page[page.length - 1].id;
     }
-    return { periods: periods.length, invoices: invoices.length };
   }
 }

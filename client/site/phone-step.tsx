@@ -8,9 +8,8 @@ import { FText } from "@/client/ui/rhf";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
 import { VStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
 import { useRef, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 export function PhoneStep({ onDone }: { onDone: () => Promise<void> }) {
   const t = useTranslations("Auth");
@@ -19,7 +18,6 @@ export function PhoneStep({ onDone }: { onDone: () => Promise<void> }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const recaptcha = useRef<HTMLDivElement>(null);
-  const phone = useWatch({ control: form.control, name: "phone" });
 
   const run = async (v: { phone: string; code: string }) => {
     setError(null);

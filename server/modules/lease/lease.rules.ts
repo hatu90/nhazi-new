@@ -1,7 +1,10 @@
 import type { IRentVersion, LeaseStatus } from "./lease.schema";
 
 /** Pure domain rules (no I/O) shared by the lease usecases. Dates are `YYYY-MM-DD`. */
-export const today = (now = new Date()) => now.toISOString().slice(0, 10);
+/** Business timezone: the calendar day a landlord and tenant mean by "today" (UTC would be a day behind from 00:00 to 07:00). */
+export const BUSINESS_TZ = "Asia/Ho_Chi_Minh";
+const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+export const today = (now = new Date()) => dayFmt.format(now);
 
 /** Latest rent version whose effectiveDate <= `on`; null when none applies yet. */
 export const resolveRent = (versions: IRentVersion[], on: string): number | null => {

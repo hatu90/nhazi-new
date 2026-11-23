@@ -155,21 +155,23 @@ export class PrismaNotificationRepository implements INotificationRepository {
   }
 
   // ── scheduled jobs ───────────────────────────────────────────────────────────────
-  async periodsEndingBy(until: string, limit: number) {
+  async periodsEndingBy(until: string, limit: number, afterId?: string) {
     const rows = await this.db.billingPeriod.findMany({
       where: { status: "active", endDate: { lte: new Date(until) }, lease: { deletedAt: null, activatedAt: { not: null }, terminatedAt: null } },
       select: { id: true, endDate: true },
-      orderBy: { endDate: "asc" },
+      orderBy: [{ endDate: "asc" }, { id: "asc" }],
       take: limit,
+      ...(afterId && { cursor: { id: afterId }, skip: 1 }),
     });
     return rows.map((r) => ({ id: r.id, endDate: isoDate(r.endDate) }));
   }
-  async overdueInvoices(today: string, limit: number) {
+  async overdueInvoices(today: string, limit: number, afterId?: string) {
     const rows = await this.db.invoice.findMany({
       where: { deletedAt: null, status: { in: ["pending", "partial"] }, dueDate: { lt: new Date(today) }, lease: { deletedAt: null } },
       select: { id: true, dueDate: true },
-      orderBy: { dueDate: "asc" },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
       take: limit,
+      ...(afterId && { cursor: { id: afterId }, skip: 1 }),
     });
     return rows.map((r) => ({ id: r.id, dueDate: isoDate(r.dueDate) }));
   }

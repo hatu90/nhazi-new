@@ -14,7 +14,7 @@ import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IAdminPropertyListResponse, IDashboardResponse } from "@/client/lib/types";
 import { useEnum } from "@/client/lib/use-enum";
-import { CardGridSkeleton, Empty, ErrorBox, Kpi, Section, Tag } from "@/client/ui";
+import { CardGridSkeleton, Empty, ErrorBox, Section, Tag } from "@/client/ui";
 import { ListCard, Row } from "./home-parts";
 
 // the admin app is a separate SPA, so these are full navigations
@@ -26,21 +26,10 @@ export function ManagementSection({ data, onCreate }: { data: IDashboardResponse
   const en = useEnum();
   const [page, setPage] = useState(1);
   const properties = useGet<IAdminPropertyListResponse>("/api/admin/properties", { page, pageSize: 6 }, { keepPrevious: true });
-  const first = data.properties.total === 1 && properties.data?.items[0];
-  // a single property: the KPI cards jump straight into it; with several there is no one place to go
-  const go = (path: string) => () => (first ? admin(first.id, path) : document.getElementById("dashboard-properties")?.scrollIntoView({ behavior: "smooth" }));
 
   return (
     <Section title={t("management")} action={<Button icon={<Plus size={16} />} label={t("newProperty")} variant="primary" onClick={onCreate} />}>
       <VStack gap={5}>
-        <Grid columns={{ minWidth: 200 }} gap={3}>
-          <Kpi title={t("properties")} value={data.properties.total} detail={t("occupiedUnits", { occupied: data.properties.occupiedUnits, total: data.properties.units })} onClick={go("")} />
-          <Kpi title={t("periodsToClose")} value={data.periodsToClose.total} detail={t("periodsToCloseHint")} onClick={go("/leases")} />
-          <Kpi title={t("requests")} value={data.requests.total} detail={t("requestsDetail", { maintenance: data.requests.maintenance, closeLease: data.requests.closeLease })} onClick={go("/requests")} />
-          <Kpi title={t("overdueInvoices")} value={data.overdueInvoices.total} detail={t("outstanding", { amount: formatMoney(data.overdueInvoices.outstanding) })} onClick={go("/invoices")} />
-          <Kpi title={t("payments")} value={data.payments.total} detail={t("collectedMonth", { amount: formatMoney(data.payments.collectedThisMonth) })} onClick={go("/invoices")} />
-        </Grid>
-
         <Grid columns={{ minWidth: 300 }} gap={4}>
           <ListCard title={t("periodsToClose")} total={data.periodsToClose.total} items={data.periodsToClose.items} empty={t("noPeriodsToClose")}
             row={(p) => <Row key={p.id} title={`${p.propertyName} · ${p.unitName}`} detail={t("endedOn", { date: formatDate(p.endDate) })} onClick={() => admin(p.propertyId, `/leases/${p.leaseId}`)} />} />

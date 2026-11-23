@@ -5,7 +5,6 @@ import type {
   IAdminPropertySummaryResponse,
   ICreatePropertyCommand,
   IUpdatePropertyCommand,
-  IPropertyDetailResponse,
   IPropertySearchQuery,
   IPublicPropertyDetail,
   IPropertySummaryResponse,

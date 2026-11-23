@@ -24,6 +24,7 @@
     "@prisma/client": "^7.10.1",
     "@puckeditor/core": "^0.24.0",
     "@tanstack/react-query": "^5.108.0",
+    "dayjs": "^1.11.23",
     "firebase": "^13.4.0",
     "firebase-admin": "^14.5.1",
     "lucide-react": "^1.75.0",

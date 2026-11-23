@@ -34,8 +34,12 @@ export class RegisterUseCase implements IUseCase<IRegisterCommand, IAccountRespo
 
   async execute(command: IRegisterCommand): Promise<IAccountResponse> {
     const { identity } = command;
-    // A phone-provider token already proves the phone number: the payload must agree with it.
-    if (identity.phoneNumber && identity.phoneNumber !== command.phoneNumber) {
+    // The phone number is the credential for invitations and tenancy, so only a verified one may be claimed:
+    // the token must carry a verified phone, and the payload must agree with it (other providers prove no phone).
+    if (!identity.phoneNumber) {
+      throw new ForbiddenError("Sign in with a verified phone number to register", "PHONE_NOT_VERIFIED");
+    }
+    if (identity.phoneNumber !== command.phoneNumber) {
       throw new ValidationError("Phone number does not match the verified phone", {
         fieldErrors: { phoneNumber: ["Does not match the verified phone number"] },
       });

@@ -76,7 +76,7 @@ export interface INotificationRepository {
 
   // ── scheduled jobs ───────────────────────────────────────────────────────────────
   /** Active billing periods of started, not ended leases whose end date is on or before `until`. */
-  periodsEndingBy(until: string, limit: number): Promise<{ id: string; endDate: string }[]>;
+  periodsEndingBy(until: string, limit: number, afterId?: string): Promise<{ id: string; endDate: string }[]>;
   /** Pending / partial invoices with a due date before `today`. */
-  overdueInvoices(today: string, limit: number): Promise<{ id: string; dueDate: string }[]>;
+  overdueInvoices(today: string, limit: number, afterId?: string): Promise<{ id: string; dueDate: string }[]>;
 }

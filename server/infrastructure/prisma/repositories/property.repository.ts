@@ -19,6 +19,7 @@ import { slugify } from "@/server/modules/reference-address/reference-address.sc
 import { pricesSchema } from "@/server/modules/service/service.schema";
 import { deriveStatus } from "@/server/modules/verification/verification.rules";
 import { toUnit } from "./unit.repository";
+import { today as todayStr } from "@/server/modules/lease/lease.rules";
 
 const unitWhere = { deletedAt: null } as const;
 
@@ -157,7 +158,8 @@ export class PrismaPropertyRepository implements IPropertyRepository {
   async findPublicById(propertyId: string) {
     const row = await this.db.property.findFirst({ where: { id: propertyId, deletedAt: null }, select: detailSelect });
     if (!row) return null;
-    const today = new Date(new Date().toISOString().slice(0, 10));
+    const todayIso = todayStr();
+    const today = new Date(todayIso);
     const [occupied, items, services] = await Promise.all([
       this.db.lease.findMany({
         where: {
@@ -176,7 +178,6 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     ]);
     const occupiedIds = new Set(occupied.map((l) => l.unitId));
     const emptyUnitIds = row.units.filter((u) => !occupiedIds.has(u.id)).map((u) => u.id);
-    const todayIso = today.toISOString().slice(0, 10);
     return {
       ...toDetail(row),
       emptyUnitCount: emptyUnitIds.length,

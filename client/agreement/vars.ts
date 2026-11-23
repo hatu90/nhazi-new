@@ -1,4 +1,4 @@
-import { formatDate, formatMoney } from "@/client/lib/format";
+import { formatDate, formatMoney, todayIso } from "@/client/lib/format";
 
 /** Lease facts any Text block can use as {{key}}. Everything else in an agreement is a form field (TextInput). */
 export interface LeaseFacts {
@@ -21,7 +21,7 @@ export const buildVars = (f: LeaseFacts, words: { openEnded: string; billingDay:
   rent: formatMoney(f.rent),
   deposit: formatMoney(f.deposit),
   billingDay: words.billingDay(f.billingDay),
-  today: formatDate(new Date().toISOString().slice(0, 10)),
+  today: formatDate(todayIso()),
 });
 
 /** Replaces known {{keys}}; unknown ones stay visible so a typo is obvious. */

@@ -22,6 +22,8 @@ ARG NEXT_PUBLIC_FIREBASE_APP_ID
 ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ARG NEXT_PUBLIC_FIREBASE_VAPID_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
+# A production image must never ship the client-side auth bypass.
+RUN test -z "$NEXT_PUBLIC_AUTH_DEV_BYPASS" || (echo "NEXT_PUBLIC_AUTH_DEV_BYPASS must be empty in a production build" && exit 1)
 RUN npx prisma generate && npm run build
 
 FROM base AS runner

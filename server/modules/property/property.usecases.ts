@@ -11,7 +11,6 @@ import type {
   IAdminPropertyResponse,
   ICreatePropertyCommand,
   IUpdatePropertyCommand,
-  IPropertyDetailResponse,
   IPropertySearchQuery,
   IPublicPropertyDetail,
   IPropertySearchResponse,

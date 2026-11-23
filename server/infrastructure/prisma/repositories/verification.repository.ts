@@ -106,7 +106,8 @@ export class PrismaVerificationRepository implements IVerificationRepository {
   }
 
   async updateCriterion(command: IUpdateCriterionCommand): Promise<ICriterionResponse | null> {
-    const { criterionId, actor: _, ...data } = command;
+    const { criterionId, actor, ...data } = command;
+    void actor;
     return this.db.$transaction(async (tx) => {
       if (!(await tx.verificationCriterion.findUnique({ where: { id: criterionId }, select: { id: true } }))) return null;
       const updated = await tx.verificationCriterion.update({ where: { id: criterionId }, data, select: criterionSelect });

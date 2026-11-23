@@ -11,7 +11,7 @@ import { useNavigate } from "react-router";
 import { formatDate, formatMoney } from "@/client/lib/format";
 import { useGet } from "@/client/lib/hooks";
 import type { IDashboardResponse, ILeaseListResponse } from "@/client/lib/types";
-import { CardGridSkeleton, Empty, ErrorBox, Kpi, Section, StatusBadge } from "@/client/ui";
+import { CardGridSkeleton, Empty, ErrorBox, Section, StatusBadge } from "@/client/ui";
 import { ListCard, Row } from "./home-parts";
 
 /** Leases the account rents: the numbers that need attention, then the leases themselves. */
@@ -19,20 +19,10 @@ export function TenantSection({ data }: { data: IDashboardResponse["tenant"] }) 
   const t = useTranslations("Dashboard");
   const navigate = useNavigate();
   const leases = useGet<ILeaseListResponse>("/api/lease", { pageSize: 50 });
-  // one lease: the KPI cards open it directly; several: scroll to the list
-  const only = leases.data?.items.length === 1 ? leases.data.items[0] : undefined;
-  const go = (path: string) => () => (only ? navigate(`/leases/${only.id}${path}`) : document.getElementById("dashboard-leases")?.scrollIntoView({ behavior: "smooth" }));
 
   return (
     <Section title={t("tenant")} action={<Button label={t("findProperty")} variant="primary" onClick={() => window.location.assign("/find-property")} />}>
       <VStack gap={5}>
-        <Grid columns={{ minWidth: 200 }} gap={3}>
-          <Kpi title={t("leases")} value={data.leases.total} detail={t("activeLeases", { n: data.leases.active })} onClick={go("")} />
-          <Kpi title={t("periodsToClose")} value={data.periodsToClose.total} detail={t("periodsToCloseHint")} onClick={go("")} />
-          <Kpi title={t("overdueInvoices")} value={data.overdueInvoices.total} detail={t("outstanding", { amount: formatMoney(data.overdueInvoices.outstanding) })} onClick={go("/invoices")} />
-          <Kpi title={t("payments")} value={data.payments.total} detail={t("paidMonth", { amount: formatMoney(data.payments.paidThisMonth) })} onClick={go("/invoices")} />
-        </Grid>
-
         <Grid columns={{ minWidth: 300 }} gap={4}>
           <ListCard title={t("periodsToClose")} total={data.periodsToClose.total} items={data.periodsToClose.items} empty={t("noPeriodsToClose")}
             row={(p) => <Row key={p.id} title={`${p.propertyName} · ${p.unitName}`} detail={t("endedOn", { date: formatDate(p.endDate) })} onClick={() => navigate(`/leases/${p.leaseId}`)} />} />

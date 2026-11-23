@@ -17,7 +17,11 @@ export class FirebaseTokenVerifier implements ITokenVerifier {
     let decoded;
     try {
       decoded = await getAuth(getFirebaseApp()).verifyIdToken(token);
-    } catch {
+    } catch (err) {
+      // Bad tokens are routine; anything else (credentials, network) is a server problem that must not hide as a 401.
+      const { code = "", message = "" } = err as { code?: string; message?: string };
+      // "auth/argument-error" also covers a wrong audience/issuer (token from another Firebase project), so it is logged too.
+      if (!code.startsWith("auth/id-token-expired")) console.error(`[auth] token verification failed: ${code} ${message}`);
       throw new UnauthorizedError("Invalid or expired token");
     }
     const provider = PROVIDERS[decoded.firebase.sign_in_provider];
