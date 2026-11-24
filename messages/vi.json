@@ -7,7 +7,7 @@
     "audiences": [
       {
         "title": "Dành cho chủ nhà và người quản lý",
-        "body": "Thiết lập từng căn nhà, phòng, dịch vụ và đồng hồ. Tạo hợp đồng, ghi chỉ số, chốt kỳ thanh toán và phát hành hóa đơn. Mời nhóm của bạn và phân quyền phù hợp cho từng người."
+        "body": "Thiết lập từng nhà, phòng, dịch vụ và đồng hồ. Tạo hợp đồng, ghi chỉ số, chốt kỳ thanh toán và phát hành hóa đơn. Mời nhóm của bạn và phân quyền phù hợp cho từng người."
       },
       {
         "title": "Dành cho người thuê",
@@ -33,7 +33,7 @@
         "body": "Chủ nhà quyết định thu gì và khi nào. Nhazi chỉ ghi lại hóa đơn và các khoản thanh toán được báo. Nhazi không bao giờ chuyển tiền thay bạn."
       }
     ],
-    "ctaTitle": "Thử với căn nhà đầu tiên của bạn."
+    "ctaTitle": "Thử với nhà đầu tiên của bạn."
   },
   "AdminNav": {
     "quickLinks": "Lối tắt",
@@ -47,8 +47,8 @@
     "invoices": "Hóa đơn",
     "agreements": "Mẫu thỏa thuận",
     "settings": "Cài đặt",
-    "property": "Căn nhà",
-    "otherProperties": "Căn nhà khác",
+    "property": "Nhà",
+    "otherProperties": "Nhà khác",
     "verification": "Xác minh",
     "platform": "Nền tảng",
     "verificationQueue": "Xác minh"
@@ -169,7 +169,7 @@
     "changeNumber": "Dùng số khác",
     "phoneExample": "Nhập số điện thoại hợp lệ, ví dụ 0912 345 678",
     "notConfigured": "Chưa cấu hình đăng nhập.",
-    "welcome": "Chào mừng! Chúng tôi nên gọi bạn là gì?",
+    "welcome": "Chào mừng",
     "creating": "Đang tạo tài khoản cho {phone}.",
     "yourName": "Tên của bạn",
     "createAccount": "Tạo tài khoản",
@@ -219,6 +219,7 @@
     "search": "Tìm kiếm",
     "selectAtLeastOne": "Chọn ít nhất một mục",
     "select": "Chọn…",
+    "selectedCount": "Đã chọn {count}",
     "required": "Bắt buộc",
     "moreActions": "Thêm thao tác",
     "accountMenu": "Menu tài khoản",
@@ -301,11 +302,11 @@
     "noLeases": "Chưa có hợp đồng",
     "from": "Từ {date}",
     "perMonth": "{amount} / tháng",
-    "properties": "Căn nhà",
-    "newProperty": "Thêm căn nhà",
-    "noProperties": "Chưa có căn nhà",
+    "properties": "Nhà",
+    "newProperty": "Thêm nhà",
+    "noProperties": "Chưa có nhà",
     "units": "{count} phòng",
-    "createProperty": "Tạo căn nhà",
+    "createProperty": "Tạo nhà",
     "management": "Quản lý",
     "tenant": "Người thuê",
     "occupiedUnits": "{occupied}/{total} phòng đang có người thuê",
@@ -331,8 +332,8 @@
     "activeLeases": "{n} đang hiệu lực",
     "noAgreement": "Chưa có thỏa thuận",
     "agreementTitle": "Thỏa thuận · {name}",
-    "propertyUnit": "Căn nhà & phòng",
-    "property": "Căn nhà",
+    "propertyUnit": "Nhà & phòng",
+    "property": "Nhà",
     "term": "Thời hạn",
     "openEnded": "không thời hạn",
     "currentPeriod": "Kỳ thanh toán hiện tại",
@@ -460,7 +461,7 @@
   "Home": {
     "badge": "Dành cho chủ nhà, người quản lý và người thuê",
     "title": "Nền tảng trọn gói để quản lý nhà cho thuê.",
-    "subtitle": "Nhazi giúp bạn quản lý căn nhà, hợp đồng, chỉ số điện nước và hóa đơn ở cùng một nơi.",
+    "subtitle": "Nhazi giúp bạn quản lý nhà, hợp đồng, chỉ số điện nước và hóa đơn ở cùng một nơi.",
     "landlordPrompt": "Bạn có nhà cho thuê?",
     "ctaLandlord": "Bắt đầu",
     "or": "hoặc",
@@ -469,7 +470,7 @@
     "featuresSubtitle": "Từ hợp đồng đầu tiên đến hóa đơn cuối cùng, mọi việc nằm ở một nơi.",
     "features": [
       {
-        "title": "Căn nhà & phòng",
+        "title": "Nhà & phòng",
         "body": "Thiết lập tòa nhà, phòng, dịch vụ và đồng hồ một lần, dùng cho mọi hợp đồng."
       },
       {
@@ -496,7 +497,7 @@
     "stepsTitle": "Bắt đầu chỉ với ba bước",
     "steps": [
       {
-        "title": "Thêm căn nhà",
+        "title": "Thêm nhà",
         "body": "Tạo nhà, phòng, dịch vụ và đồng hồ."
       },
       {
@@ -509,7 +510,7 @@
       }
     ],
     "ctaTitle": "Quản lý nhà cho thuê dễ hơn bạn nghĩ.",
-    "ctaSubtitle": "Thiết lập căn nhà đầu tiên trong vài phút.",
+    "ctaSubtitle": "Thiết lập nhà đầu tiên trong vài phút.",
     "getStarted": "Bắt đầu",
     "learnMore": "Tìm hiểu thêm",
     "mockInvoice": "Hóa đơn · Phòng 204",
@@ -681,7 +682,7 @@
     "meter": "Đồng hồ",
     "noMeter": "Phòng này chưa có đồng hồ cho dịch vụ đó.",
     "startReading": "Chỉ số đầu",
-    "startReadingHint": "Để trống nếu đã có chỉ số cho ngày bắt đầu.",
+    "startReadingHint": "Chỉ số của công tơ vào ngày bắt đầu dịch vụ.",
     "addPeopleFirst": "Hãy thêm người vào hợp đồng trước.",
     "noItemsLeft": "Đã hết vật dụng. Thêm ở mục Vật dụng.",
     "priceBase": "Giá · {base}",
@@ -720,7 +721,7 @@
   },
   "Meta": {
     "appTitle": "Nhazi — quản lý nhà cho thuê",
-    "appDescription": "Quản lý căn nhà, hợp đồng, điện nước và hóa đơn, và cho người thuê một nơi để xem tất cả.",
+    "appDescription": "Quản lý nhà, hợp đồng, điện nước và hóa đơn, và cho người thuê một nơi để xem tất cả.",
     "about": "Giới thiệu",
     "terms": "Điều khoản sử dụng",
     "signIn": "Đăng nhập",
@@ -802,7 +803,7 @@
     "cover": "Ảnh bìa",
     "coverImage": "Ảnh bìa",
     "setCover": "Đặt làm ảnh bìa",
-    "image": "Ảnh căn nhà",
+    "image": "Ảnh nhà",
     "moveUp": "Lên",
     "moveDown": "Xuống",
     "removeImage": "Xóa ảnh",
@@ -870,7 +871,7 @@
     "addTier": "Thêm bậc"
   },
   "Settings": {
-    "property": "Căn nhà",
+    "property": "Nhà",
     "edit": "Sửa thông tin",
     "category": "Loại hình",
     "address": "Địa chỉ",
@@ -894,7 +895,7 @@
     "findTitle": "Tìm nhà thuê",
     "findSubtitle": "Tìm nơi để thuê.",
     "invalidFilters": "Bộ lọc không hợp lệ",
-    "noResults": "Không tìm thấy căn nhà",
+    "noResults": "Không tìm thấy nhà",
     "negotiable": "Thương lượng",
     "previous": "Trước",
     "next": "Sau",
@@ -935,7 +936,7 @@
     "you": "(bạn)",
     "roleOf": "Vai trò của {name}",
     "removeTitle": "Xóa {name}?",
-    "removeBody": "Họ sẽ mất quyền truy cập căn nhà này.",
+    "removeBody": "Họ sẽ mất quyền truy cập nhà này.",
     "invitations": "Lời mời",
     "sent": "Đã gửi",
     "revoke": "Thu hồi lời mời",
@@ -964,7 +965,7 @@
       {
         "title": "Dữ liệu và quyền riêng tư",
         "body": [
-          "Chủ nhà kiểm soát dữ liệu căn nhà của mình, gồm hợp đồng, chỉ số và hóa đơn. Chúng tôi chỉ dùng dữ liệu cá nhân như số điện thoại và họ tên để vận hành dịch vụ, và không bán chúng.",
+          "Chủ nhà kiểm soát dữ liệu nhà của mình, gồm hợp đồng, chỉ số và hóa đơn. Chúng tôi chỉ dùng dữ liệu cá nhân như số điện thoại và họ tên để vận hành dịch vụ, và không bán chúng.",
           "Bạn có thể yêu cầu chúng tôi sửa hoặc xóa dữ liệu cá nhân, trừ các hồ sơ mà chủ nhà và người thuê cần lưu giữ cho hợp đồng."
         ]
       },
@@ -1056,9 +1057,9 @@
     "criteria": "Tiêu chí",
     "empty": "Chưa có tiêu chí xác minh.",
     "intro": {
-      "none": "Hãy khai báo các tiêu chí mà căn nhà đáp ứng. Khi khai báo ít nhất một tiêu chí, căn nhà sẽ ở trạng thái Đã đăng ký.",
-      "registered": "Khai báo của bạn đang chờ đội ngũ duyệt. Khi mọi tiêu chí bắt buộc được xác nhận, căn nhà sẽ được Xác minh.",
-      "verified": "Mọi tiêu chí bắt buộc đã được xác nhận. Người thuê thấy huy hiệu Đã xác minh trên căn nhà này. Xác minh có hiệu lực 1 hoặc 2 năm, sau đó cần gia hạn."
+      "none": "Hãy khai báo các tiêu chí mà nhà đáp ứng. Khi khai báo ít nhất một tiêu chí, nhà sẽ ở trạng thái Đã đăng ký.",
+      "registered": "Khai báo của bạn đang chờ đội ngũ duyệt. Khi mọi tiêu chí bắt buộc được xác nhận, nhà sẽ được Xác minh.",
+      "verified": "Mọi tiêu chí bắt buộc đã được xác nhận. Người thuê thấy huy hiệu Đã xác minh trên nhà này. Xác minh có hiệu lực 1 hoặc 2 năm, sau đó cần gia hạn."
     },
     "progress": "{done}/{total} tiêu chí đã được xác nhận",
     "optional": "Không bắt buộc",
@@ -1076,7 +1077,7 @@
     "redeclare": "Khai báo lại",
     "withdraw": "Rút lại",
     "withdrawTitle": "Rút lại \"{name}\"?",
-    "withdrawBody": "Khai báo sẽ bị xóa và căn nhà có thể mất trạng thái hiện tại.",
+    "withdrawBody": "Khai báo sẽ bị xóa và nhà có thể mất trạng thái hiện tại.",
     "declareHint": "Cho chúng tôi biết tiêu chí này được đáp ứng thế nào (ví dụ số đăng ký). Đội ngũ sẽ xem xét.",
     "noteLabel": "Ghi chú",
     "submitForReview": "Gửi duyệt",
@@ -1094,7 +1095,7 @@
     }
   },
   "VerificationStaff": {
-    "title": "Xác minh căn nhà",
+    "title": "Xác minh nhà",
     "queue": "Chờ duyệt ({count})",
     "queueEmpty": "Không có gì cần duyệt.",
     "declaredOn": "Khai báo ngày {date}",
@@ -1113,12 +1114,12 @@
     "sortOrder": "Thứ tự",
     "required": "Bắt buộc",
     "optional": "Không bắt buộc",
-    "requiredHint": "Căn nhà phải được xác nhận mọi tiêu chí bắt buộc mới là Đã xác minh.",
+    "requiredHint": "Nhà phải được xác nhận mọi tiêu chí bắt buộc mới là Đã xác minh.",
     "active": "Đang dùng",
     "activeHint": "Tiêu chí ngừng dùng sẽ bị ẩn với chủ nhà và không được tính.",
     "inactive": "Ngừng dùng",
     "deleteTitle": "Xóa \"{name}\"?",
-    "deleteBody": "Thao tác này cũng xóa khai báo của mọi căn nhà. Hãy ngừng dùng để giữ lại.",
+    "deleteBody": "Thao tác này cũng xóa khai báo của mọi nhà. Hãy ngừng dùng để giữ lại.",
     "confirmFor": "Xác nhận · {years} năm"
   },
   "Pricing": {
@@ -1165,7 +1166,7 @@
         "cta": "Chọn gói Quản lý",
         "features": [
           "Mọi tính năng của gói Chủ nhà",
-          "Huy hiệu xác minh căn nhà",
+          "Huy hiệu xác minh nhà",
           "Thiết lập hàng loạt phòng, đồng hồ, dịch vụ",
           "Hỗ trợ 24/7"
         ]

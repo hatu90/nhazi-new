@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { endOfMonthIso, formatDate, formatMoney } from "@/client/lib/format";
 import { useEnum } from "@/client/lib/use-enum";
+import { useInvoiceTitle } from "@/client/lib/use-invoice-title";
 import { useGet, useSend } from "@/client/lib/hooks";
 import type { IServiceListResponse, ITenancyDetailResponse } from "@/client/lib/types";
 import { ErrorBox, Section } from "@/client/ui";
@@ -56,6 +57,7 @@ export function StartFields({ x: { form, lease, services, invoice, startDate, pe
   const t = useTranslations("LeaseDetail");
   const c = useTranslations("Common");
   const en = useEnum();
+  const it = useInvoiceTitle();
   if (!lease) return null;
   return (
     <VStack gap={4}>
@@ -84,7 +86,7 @@ export function StartFields({ x: { form, lease, services, invoice, startDate, pe
         {services.error ? <ErrorBox error={services.error} /> : !invoice ? <Text size="sm">{t("calculating")}</Text> : invoice.error ? <ErrorBox error={invoice.error} /> : (
           <VStack gap={1}>
             {invoice.lines.map((ln) => (
-              <HStack key={ln.key} justify="between"><Text size="sm">{ln.title}</Text><Text size="sm">{formatMoney(ln.amount)}</Text></HStack>
+              <HStack key={ln.key} justify="between"><Text size="sm">{it(ln.title)}</Text><Text size="sm">{formatMoney(ln.amount)}</Text></HStack>
             ))}
             <HStack justify="between"><Text weight="semibold">{t("total")}</Text><Text weight="semibold">{formatMoney(invoice.total)}</Text></HStack>
           </VStack>

@@ -36,7 +36,7 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
   const endSub = useSend<{ id: string; endDate: string }>("PATCH", (b) => `${path}/subscriptions/${b.id}`, [path]);
   const done = () => setDialog(null);
   const people = peopleOf(l);
-  const subscribeForm = useSubscriptionForm({ path, unitId: l.unitId, people: people.filter((p) => !p.leftAt), open: dialog === "service", onDone: done });
+  const subscribeForm = useSubscriptionForm({ path, unitId: l.unitId, draft: l.status === "draft", people: people.filter((p) => !p.leftAt), open: dialog === "service", onDone: done });
   const editHandover = useHandoverForm({ path, handover: editingHandover ?? undefined, taken: [], open: editingHandover !== null, onDone: () => setEditingHandover(null) });
   const addHandover = useHandoverForm({ path, taken: l.handovers.map((h) => h.itemId), open: dialog === "handover", onDone: done });
   const memberForm = useMemberForm({ path, open: dialog === "member", onDone: done });

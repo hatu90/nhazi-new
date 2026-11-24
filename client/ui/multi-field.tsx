@@ -11,5 +11,5 @@ export function MultiField({ label, error, hint, required, disabled, width, valu
   placeholder?: string;
 }) {
   const t = useTranslations("Common");
-  return <MultiSelector label={label} description={hint} options={options} value={value} onChange={(v) => onChange(v)} placeholder={placeholder ?? t("select")} hasSelectAll isRequired={required} isDisabled={disabled} status={fieldStatus(error)} width={width} />;
+  return <MultiSelector label={label} description={hint} options={options} value={value} onChange={(v) => onChange(v)} placeholder={placeholder ?? t("select")} hasSelectAll formatValue={(items) => t("selectedCount", { count: items.length })} isRequired={required} isDisabled={disabled} status={fieldStatus(error)} width={width} />;
 }

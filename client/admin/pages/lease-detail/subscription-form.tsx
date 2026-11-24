@@ -36,7 +36,7 @@ interface Values {
   personIds: string[];
 }
 
-export function useSubscriptionForm({ path, unitId, people, open, onDone }: { path: string; unitId: string; people: PersonRow[]; open: boolean; onDone: () => void }) {
+export function useSubscriptionForm({ path, unitId, draft, people, open, onDone }: { path: string; unitId: string; draft: boolean; people: PersonRow[]; open: boolean; onDone: () => void }) {
   const t = useTranslations("LeaseDetail");
   const { apiPath } = useProperty();
   const services = useGet<IServiceListResponse>(apiPath("/services"), { pageSize: 100 }, { enabled: open });
@@ -61,21 +61,21 @@ export function useSubscriptionForm({ path, unitId, people, open, onDone }: { pa
         const chosen = people.filter((p) => v.personIds.includes(p.id));
         return { serviceId: v.serviceId, quantity: Math.min(Math.max(chosen.length, 1), 100), details: chosen.map((p) => p.name).join(", ") || undefined };
       }
-      return { serviceId: v.serviceId, meterId: service?.usageBase === "meter" ? v.meterId : undefined, reading: service?.usageBase === "meter" ? num(v.reading) : undefined, quantity: service?.usageBase === "device" ? (num(v.quantity) ?? 1) : 1 };
+      return { serviceId: v.serviceId, meterId: service?.usageBase === "meter" ? v.meterId : undefined, reading: service?.usageBase === "meter" && !draft ? num(v.reading) : undefined, quantity: service?.usageBase === "device" ? (num(v.quantity) ?? 1) : 1 };
     },
     onDone,
   );
-  return { form, submit, error: save.error, busy: save.isPending, services, service, unitMeters, prices, people };
+  return { form, submit, draft, error: save.error, busy: save.isPending, services, service, unitMeters, prices, people };
 }
 
-export function SubscriptionFields({ x: { form, services, service, unitMeters, prices, people } }: { x: ReturnType<typeof useSubscriptionForm> }) {
+export function SubscriptionFields({ x: { form, draft, services, service, unitMeters, prices, people } }: { x: ReturnType<typeof useSubscriptionForm> }) {
   const t = useTranslations("LeaseDetail");
   const en = useEnum();
   return (
     <VStack gap={4}>
       <FSelect control={form.control} name="serviceId" label={t("service")} required options={(services.data?.items ?? []).map((s) => ({ value: s.id, label: s.name }))} onValueChange={() => form.setValue("meterId", "")} width="100%" />
       {service?.usageBase === "meter" && <FSelect control={form.control} name="meterId" label={t("meter")} required options={unitMeters.map((m) => ({ value: m.id, label: m.name }))} hint={unitMeters.length === 0 ? t("noMeter") : undefined} width="100%" />}
-      {service?.usageBase === "meter" && <FNumber control={form.control} name="reading" label={t("startReading")} hint={t("startReadingHint")} width="100%" />}
+      {service?.usageBase === "meter" && !draft && <FNumber control={form.control} name="reading" label={t("startReading")} required hint={t("startReadingHint")} width="100%" />}
       {service?.usageBase === "member" && <FMulti control={form.control} name="personIds" label={t("people")} required options={people.map((p) => ({ value: p.id, label: p.name }))} hint={people.length === 0 ? t("addPeopleFirst") : undefined} width="100%" />}
       {service?.usageBase === "device" && <FNumber control={form.control} name="quantity" label={t("quantity")} required width="100%" />}
       {service && (
