@@ -240,7 +240,8 @@
     "due": "Hạn",
     "description": "Mô tả",
     "open": "Mở",
-    "pricing": "Bảng giá"
+    "pricing": "Bảng giá",
+    "feedback": "Góp ý"
   },
   "Dashboard": {
     "backToLeases": "Về hợp đồng của tôi",
@@ -448,6 +449,13 @@
       "declared": "Chờ duyệt",
       "confirmed": "Đã xác nhận",
       "rejected": "Bị từ chối"
+    },
+    "feedbackCategory": {
+      "bug": "Báo lỗi",
+      "feature": "Đề xuất tính năng",
+      "improvement": "Ý tưởng cải thiện",
+      "question": "Câu hỏi",
+      "other": "Khác"
     }
   },
   "Errors": {
@@ -728,7 +736,8 @@
     "findProperty": "Tìm nhà thuê",
     "admin": "Quản trị",
     "dashboardTitle": "Bảng điều khiển",
-    "pricing": "Bảng giá"
+    "pricing": "Bảng giá",
+    "feedbacks": "Góp ý"
   },
   "Meters": {
     "unit": "Phòng",
@@ -1199,5 +1208,31 @@
       }
     ],
     "ctaTitle": "Sẵn sàng làm việc cho thuê đơn giản hơn?"
+  },
+  "Feedbacks": {
+    "title": "Góp ý",
+    "subtitle": "Mọi người đều xem được góp ý và phản hồi của chúng tôi.",
+    "formTitle": "Gửi góp ý",
+    "category": "Phân loại",
+    "name": "Tên của bạn",
+    "contact": "Liên hệ (số điện thoại hoặc email)",
+    "contactHint": "Chỉ đội ngũ Nhazi xem được, để chúng tôi liên lạc với bạn.",
+    "message": "Nội dung góp ý",
+    "submit": "Gửi góp ý",
+    "sent": "Cảm ơn bạn! Góp ý của bạn đã được hiển thị bên dưới.",
+    "all": "Tất cả",
+    "none": "Chưa có góp ý nào. Hãy là người đầu tiên!",
+    "invalidFilters": "Bộ lọc không hợp lệ",
+    "answerFrom": "Phản hồi từ đội ngũ Nhazi",
+    "pageOf": "Trang {page}/{total}",
+    "previous": "Trước",
+    "next": "Sau",
+    "answer": "Phản hồi",
+    "reply": "Phản hồi",
+    "editAnswer": "Sửa phản hồi",
+    "saveAnswer": "Lưu phản hồi",
+    "cancel": "Hủy",
+    "showContact": "Xem liên hệ",
+    "contactOf": "Liên hệ: {contact}"
   }
 }

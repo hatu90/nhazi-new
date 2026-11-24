@@ -15,6 +15,11 @@ export class AccessPolicy {
     if (!(await this.access.isPlatformAdmin(actor.accountId))) throw new ForbiddenError();
   }
 
+  /** The super admin only (the account whose phone is `SUPER_ADMIN_PHONE`). Anyone else gets 403. */
+  async assertSuperAdmin(actor: IActor): Promise<void> {
+    if (!(await this.access.isSuperAdmin(actor.accountId))) throw new ForbiddenError();
+  }
+
   async assertPropertyRole(actor: IActor, propertyId: string, allowed: readonly PropertyRole[]): Promise<PropertyRole> {
     const role = await this.access.findPropertyRole(actor.accountId, propertyId);
     if (!role) throw new NotFoundError("Property");

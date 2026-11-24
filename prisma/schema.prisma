@@ -233,6 +233,7 @@ model Account {
   notifications           Notification[]        @relation("Notification_receiver")
   notificationsCaused     Notification[]        @relation("Notification_actor")
   pushTokens              PushToken[]           @relation("PushToken_account")
+  feedbacksAnswered       Feedback[]            @relation("Feedback_answeredBy")
 
   @@map("accounts")
 }
@@ -999,4 +1000,33 @@ model PushToken {
 
   @@index([accountId])
   @@map("push_tokens")
+}
+
+enum FeedbackCategory {
+  bug
+  feature
+  improvement
+  question
+  other
+
+  @@map("feedback_category")
+}
+
+/// Public feedback from anyone (signed in or not). Readable by everyone except `contact`; answered only by the super admin.
+model Feedback {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  authorName   String           @map("author_name")
+  /// phone or email of the author, shown to the super admin only
+  contact      String           @map("contact")
+  category     FeedbackCategory @map("category")
+  message      String           @map("message")
+  answer       String?          @map("answer")
+  answeredAt   DateTime?        @map("answered_at") @db.Timestamptz(6)
+  answeredById String?          @map("answered_by_id") @db.Uuid
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  answeredBy   Account?         @relation("Feedback_answeredBy", fields: [answeredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@map("feedbacks")
 }

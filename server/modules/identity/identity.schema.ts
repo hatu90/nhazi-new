@@ -49,4 +49,6 @@ export interface IMeResponse extends IAccountResponse {
   properties: { propertyId: string; propertyName: string; role: PropertyRole }[];
   leaseCount: number;
   isPlatformAdmin: boolean;
+  /** may answer feedbacks */
+  isSuperAdmin: boolean;
 }

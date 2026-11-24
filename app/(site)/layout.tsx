@@ -23,6 +23,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
               <Button label={t("pricing")} variant="ghost" href="/pricing" />
               <Button label={t("about")} variant="ghost" href="/about" />
               <Button label={t("terms")} variant="ghost" href="/term" />
+              <Button label={t("feedback")} variant="ghost" href="/feedbacks" />
             </span>
             <AccountMenu />
           </HStack>
@@ -38,6 +39,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
             <Button label={t("pricing")} variant="ghost" size="sm" href="/pricing" />
             <Button label={t("about")} variant="ghost" size="sm" href="/about" />
             <Button label={t("terms")} variant="ghost" size="sm" href="/term" />
+            <Button label={t("feedback")} variant="ghost" size="sm" href="/feedbacks" />
           </HStack>
         </HStack>
       </footer>

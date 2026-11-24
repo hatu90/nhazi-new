@@ -65,6 +65,8 @@ import { CreateReferenceAddressUseCase, SearchReferenceAddressesUseCase } from "
 import { PrismaReferenceAddressRepository } from "./infrastructure/prisma/repositories/reference-address.repository";
 import { CreateCriterionUseCase, DeclareAllCriteriaUseCase, DeleteCriterionUseCase, GetPropertyVerificationUseCase, ListCriteriaUseCase, ListReviewsUseCase, RefreshVerificationUseCase, ReviewDeclarationUseCase, UpdateCriterionUseCase, WithdrawCriterionUseCase } from "./modules/verification/verification.usecases";
 import { PrismaVerificationRepository } from "./infrastructure/prisma/repositories/verification.repository";
+import { AnswerFeedbackUseCase, CreateFeedbackUseCase, GetFeedbackContactUseCase, ListFeedbacksUseCase } from "./modules/feedback/feedback.usecases";
+import { PrismaFeedbackRepository } from "./infrastructure/prisma/repositories/feedback.repository";
 import { PrismaPropertyRepository } from "./infrastructure/prisma/repositories/property.repository";
 
 /**
@@ -82,6 +84,7 @@ function build() {
   const leases = new PrismaLeaseRepository(db);
   const verification = new PrismaVerificationRepository(db);
   
+  const feedbacks = new PrismaFeedbackRepository(db);
   const units = new PrismaUnitRepository(db);
   const services = new PrismaServiceRepository(db);
   const meters = new PrismaMeterRepository(db);
@@ -141,6 +144,11 @@ function build() {
     listVerificationReviews: new ListReviewsUseCase(verification, policy),
     refreshVerification: new RefreshVerificationUseCase(verification),
     reviewDeclaration: new ReviewDeclarationUseCase(verification, policy),
+    // feedback: public read + write, super admin answers
+    listFeedbacks: new ListFeedbacksUseCase(feedbacks),
+    createFeedback: new CreateFeedbackUseCase(feedbacks),
+    answerFeedback: new AnswerFeedbackUseCase(feedbacks, policy),
+    getFeedbackContact: new GetFeedbackContactUseCase(feedbacks, policy),
     // units
     listUnits: new ListUnitsUseCase(units, policy),
     getUnit: new GetUnitUseCase(units, policy),

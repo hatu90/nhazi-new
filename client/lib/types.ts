@@ -4,6 +4,7 @@
  */
 export type { IPaginated } from "@/server/shared/pagination";
 export type { PropertyRole, PropertyCategory, InvoiceStatus, InvoiceKind, ServiceUsageBase, ItemCondition, InvitationStatus } from "@/server/shared/schema";
+export type { IFeedbackResponse, IFeedbackListResponse, FeedbackCategory } from "@/server/modules/feedback/feedback.schema";
 export type { IMeResponse, IAccountResponse } from "@/server/modules/identity/identity.schema";
 export type {
   IPropertySummaryResponse,

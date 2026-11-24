@@ -240,7 +240,8 @@
     "due": "Due",
     "description": "Description",
     "open": "Open",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "feedback": "Feedback"
   },
   "Dashboard": {
     "backToLeases": "Back to my leases",
@@ -448,6 +449,13 @@
       "declared": "Awaiting review",
       "confirmed": "Confirmed",
       "rejected": "Rejected"
+    },
+    "feedbackCategory": {
+      "bug": "Report a bug",
+      "feature": "Request a feature",
+      "improvement": "Idea for improvement",
+      "question": "Question",
+      "other": "Other"
     }
   },
   "Errors": {
@@ -728,7 +736,8 @@
     "findProperty": "Find a property",
     "admin": "Admin",
     "dashboardTitle": "Dashboard",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "feedbacks": "Feedback"
   },
   "Meters": {
     "unit": "Unit",
@@ -1199,5 +1208,31 @@
       }
     ],
     "ctaTitle": "Ready to simplify your rentals?"
+  },
+  "Feedbacks": {
+    "title": "Feedback",
+    "subtitle": "Report a bug, request a feature or share an idea. Everyone can read the feedback and our answers.",
+    "formTitle": "Leave feedback",
+    "category": "Category",
+    "name": "Your name",
+    "contact": "Contact (phone or email)",
+    "contactHint": "Only the Nhazi team can see this, so we can reach you.",
+    "message": "Your feedback",
+    "submit": "Send feedback",
+    "sent": "Thank you! Your feedback is now listed below.",
+    "all": "All",
+    "none": "No feedback yet. Be the first!",
+    "invalidFilters": "Invalid filters",
+    "answerFrom": "Answer from the Nhazi team",
+    "pageOf": "Page {page} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "answer": "Answer",
+    "reply": "Answer",
+    "editAnswer": "Edit answer",
+    "saveAnswer": "Save answer",
+    "cancel": "Cancel",
+    "showContact": "Show contact",
+    "contactOf": "Contact: {contact}"
   }
 }

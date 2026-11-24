@@ -9,6 +9,7 @@ import type { AuthProvider } from "@/server/shared/auth";
 import type { PrismaClient } from "../client";
 import { ConflictError } from "@/server/shared/errors";
 import { isoDateTime, orConflict } from "../mappers";
+import { superAdminPhone } from "./access.repository";
 
 const accountSelect = { id: true, phoneNumber: true, displayName: true, status: true, createdAt: true } as const;
 
@@ -93,6 +94,7 @@ export class PrismaAccountRepository implements IAccountRepository {
       properties: row.accountProperties.map((m) => ({ propertyId: m.property.id, propertyName: m.property.propertyName, role: m.role })),
       leaseCount: row._count.accountLeases,
       isPlatformAdmin: row.isPlatformAdmin,
+      isSuperAdmin: row.phoneNumber === superAdminPhone(),
     };
   }
 
