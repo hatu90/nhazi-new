@@ -47,13 +47,15 @@ export function MetersPage() {
           { key: "service", header: t("service"), render: (m) => m.serviceName },
           { key: "serial", header: t("serial"), render: (m) => m.serialNumber ?? "—" },
           { key: "installed", header: t("installed"), render: (m) => formatDate(m.installedAt) },
-          { key: "go", header: "", align: "end", render: (m) => (
-            <RowActions actions={[
-                { id: "readings", label: t("readingsAction"), icon: Gauge, onClick: () => setViewing(m) },
-                canManage && { id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(m) },
-                canManage && { id: "remove", label: c("remove"), icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: t("removeTitle", { name: m.name }), description: t("removeBody"), actionLabel: c("remove"), onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
-              ]} />
+          { key: "readings", header: t("readingsAction"), render: (m) => (
+            <Button icon={<Gauge size={16} />} label={t("readingsAction")} variant="secondary" onClick={() => setViewing(m)} />
           ) },
+          ...(canManage ? [{ key: "go", header: "", align: "end" as const, render: (m: IMeterResponse) => (
+            <RowActions actions={[
+                { id: "edit", label: c("edit"), icon: Pencil, onClick: () => setEditing(m) },
+                { id: "remove", label: c("remove"), icon: Trash2, destructive: true, onClick: () => confirm.ask({ title: t("removeTitle", { name: m.name }), description: t("removeBody"), actionLabel: c("remove"), onConfirm: () => remove.mutateAsync({ id: m.id }) }) },
+              ]} />
+          ) }] : []),
         ]}
       />
       <Modal open={bulk} onClose={() => setBulk(false)}>

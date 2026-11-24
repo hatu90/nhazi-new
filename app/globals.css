@@ -33,3 +33,36 @@ h1, h2, h3, h4 {
 img, video {
   max-width: 100%;
 }
+
+/* Font-size scale. The Astryx theme sizes everything from tokens (base 14px, supporting 12px, caption 10px),
+   each multiplied by a --_dynamic-type-* hook. Desktop keeps the compact 14px scale; phones get a larger,
+   more readable one (base 15px, supporting 13px, captions ~11.5px) while headings keep their size so they
+   don't wrap. */
+@media (max-width: 639.98px) {
+  :root {
+    --_dynamic-type-body: 1.0714;
+    --_dynamic-type-footnote: 1.0833;
+    --_dynamic-type-caption1: 1.15;
+    --_dynamic-type-caption2: 1.2;
+    --_dynamic-type-title3: 1;
+    --_dynamic-type-title2: 0.95;
+    --_dynamic-type-title1: 0.92;
+  }
+}
+
+/* Touch devices: iOS Safari zooms the page when a focused field is under 16px, so keep fields at 16px. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Larger desktop screens get a touch more room. */
+@media (min-width: 1280px) {
+  :root {
+    --_dynamic-type-body: 1.0357;
+    --_dynamic-type-footnote: 1.0417;
+  }
+}
