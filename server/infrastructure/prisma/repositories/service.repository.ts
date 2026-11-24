@@ -45,19 +45,11 @@ export class PrismaServiceRepository implements IServiceRepository {
   createMany(c: IBulkServicesCommand) {
     return orConflict(
       () =>
-        this.db.$transaction(async (tx) => {
-          const out: IServiceResponse[] = [];
-          for (const v of c.items) {
-            out.push(
-              toService(
-                await tx.service.create({
-                  data: { propertyId: c.propertyId, serviceName: v.name, usageBase: v.usageBase, unitOfMeasure: v.unitOfMeasure, description: v.description, prices: v.prices },
-                }),
-              ),
-            );
-          }
-          return out;
-        }),
+        this.db.service
+          .createManyAndReturn({
+            data: c.items.map((v) => ({ propertyId: c.propertyId, serviceName: v.name, usageBase: v.usageBase, unitOfMeasure: v.unitOfMeasure, description: v.description, prices: v.prices })),
+          })
+          .then((rows) => rows.map(toService)),
       "A service with this name already exists in the property",
       "SERVICE_NAME_TAKEN",
     );

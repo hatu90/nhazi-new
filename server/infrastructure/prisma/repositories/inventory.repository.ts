@@ -48,11 +48,9 @@ export class PrismaInventoryRepository implements IInventoryRepository {
   createItems(c: IBulkItemsCommand) {
     return orConflict(
       () =>
-        this.db.$transaction(async (tx) => {
-          const out: IItemResponse[] = [];
-          for (const it of c.items) out.push(toItem(await tx.inventoryItem.create({ data: { propertyId: c.propertyId, inventoryName: it.name } })));
-          return out;
-        }),
+        this.db.inventoryItem
+          .createManyAndReturn({ data: c.items.map((it) => ({ propertyId: c.propertyId, inventoryName: it.name })) })
+          .then((rows) => rows.map(toItem)),
       ...NAME,
     );
   }

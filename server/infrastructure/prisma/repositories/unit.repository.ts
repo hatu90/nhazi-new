@@ -45,29 +45,21 @@ export class PrismaUnitRepository implements IUnitRepository {
   createMany(c: IBulkUnitsCommand) {
     return orConflict(
       () =>
-        this.db.$transaction(async (tx) => {
-          const out: IUnitResponse[] = [];
-          for (const u of c.items) {
-            out.push(
-              toUnit(
-                await tx.unit.create({
-                  data: {
-                    propertyId: c.propertyId,
-                    unitName: u.name,
-                    area: u.area,
-                    floor: u.floor,
-                    bathrooms: u.bathrooms,
-                    bedrooms: u.bedrooms,
-                    rentPrice: u.rentPrice,
-                    rentNegotiable: u.rentNegotiable,
-                    description: u.description,
-                  },
-                }),
-              ),
-            );
-          }
-          return out;
-        }),
+        this.db.unit
+          .createManyAndReturn({
+            data: c.items.map((u) => ({
+              propertyId: c.propertyId,
+              unitName: u.name,
+              area: u.area,
+              floor: u.floor,
+              bathrooms: u.bathrooms,
+              bedrooms: u.bedrooms,
+              rentPrice: u.rentPrice,
+              rentNegotiable: u.rentNegotiable,
+              description: u.description,
+            })),
+          })
+          .then((rows) => rows.map(toUnit)),
       ...NAME_TAKEN,
     );
   }

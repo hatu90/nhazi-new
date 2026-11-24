@@ -46,30 +46,22 @@ export class PrismaMeterRepository implements IMeterRepository {
     return r ? toMeter(r) : null;
   }
 
-  createMany(c: IBulkMetersCommand) {
-    return this.db.$transaction(async (tx) => {
-      const out: IMeterResponse[] = [];
-      for (const m of c.items) {
-        out.push(
-          toMeter(
-            await tx.meter.create({
-              data: {
-                propertyId: c.propertyId,
-                unitId: m.unitId,
-                serviceId: m.serviceId,
-                meterName: m.name,
-                serialNumber: m.serialNumber,
-                installedAt: day(m.installedAt),
-                maxValue: m.maxValue,
-                description: m.description,
-              },
-              include,
-            }),
-          ),
-        );
-      }
-      return out;
+  /** One INSERT statement (atomic, all or nothing). A per-row interactive transaction exceeds Prisma's 5 s limit on a remote DB. */
+  async createMany(c: IBulkMetersCommand) {
+    const rows = await this.db.meter.createManyAndReturn({
+      data: c.items.map((m) => ({
+        propertyId: c.propertyId,
+        unitId: m.unitId,
+        serviceId: m.serviceId,
+        meterName: m.name,
+        serialNumber: m.serialNumber,
+        installedAt: day(m.installedAt),
+        maxValue: m.maxValue,
+        description: m.description,
+      })),
+      include,
     });
+    return rows.map(toMeter);
   }
 
   async create(c: ICreateMeterCommand) {
