@@ -221,9 +221,9 @@ export class PrismaTenancyRepository implements ITenancyRepository {
               actor: c.actor,
               kind: "other",
               billingPeriodId: undefined,
-              title: "Deposit",
+              title: "Tiền cọc",
               dueDate: c.startDate,
-              items: [{ kind: "deposit", title: "Deposit", amount: c.depositAmount, usageId: undefined, detail: null }],
+              items: [{ kind: "deposit", title: "Tiền cọc", amount: c.depositAmount, usageId: undefined, detail: null }],
             });
           }
           return lease.id;

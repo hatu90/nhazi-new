@@ -14,8 +14,10 @@ const compact = (n: number, locale: string) => new Intl.NumberFormat(locale === 
 export function MonthChart({ months }: { months: IMonthBreakdown[] }) {
   const t = useTranslations("Dashboard");
   const locale = useLocale();
+  // The server sends English labels for the fixed segments; service segments carry the service's own name.
+  const fixed: Record<string, string> = { deposit: t("segmentDeposit"), rent: t("segmentRent"), other: t("segmentOther") };
   const keys: { key: string; label: string }[] = [];
-  for (const p of months) for (const s of p.segments) if (!keys.some((k) => k.key === s.key)) keys.push({ key: s.key, label: s.label });
+  for (const p of months) for (const s of p.segments) if (!keys.some((k) => k.key === s.key)) keys.push({ key: s.key, label: fixed[s.key] ?? s.label });
   const data = months.map((p) => ({ name: monthLabel(p.month, locale), ...Object.fromEntries(p.segments.map((s) => [s.key, s.amount])) }));
 
   return (

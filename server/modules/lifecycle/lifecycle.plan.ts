@@ -12,13 +12,13 @@ const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const label = (a: string, b: string) => `${dmy(a)}–${dmy(b)}`;
 
 // ── invoice lines (suggestions) ─────────────────────────────────────────────────────
-export const depositLine = (amount: number): IPlanLine => ({ key: "deposit", kind: "deposit", title: "Deposit", amount, detail: null });
+export const depositLine = (amount: number): IPlanLine => ({ key: "deposit", kind: "deposit", title: "Tiền cọc", amount, detail: null });
 
 /** Rent of a period: the monthly rent prorated by the billing months the period covers. */
 export const rentLine = (monthly: number, start: string, end: string): IPlanLine => ({
   key: "rent",
   kind: "rent",
-  title: `Rent ${label(start, end)}`,
+  title: `Tiền thuê ${label(start, end)}`,
   amount: suggestAmount(monthly, start, end),
   detail: null,
 });
@@ -90,7 +90,7 @@ export function creditLines(billed: IBilledLine[], start: string, plannedEnd: st
     out.push({
       key: b.role === "rent" ? "credit:rent" : `credit:service:${b.subscriptionId}`,
       kind: "credit",
-      title: `Credit: ${b.title} (${unused}/${total} days unused)`,
+      title: `Trừ: ${b.title} (${unused}/${total} ngày chưa dùng)`,
       amount: -credit,
       detail: null,
     });
@@ -143,7 +143,7 @@ export function planRefund(
       invoiceId: b.invoiceId,
       invoiceItemId: b.invoiceItemId,
       kind: b.role === "deposit" ? "deposit" : b.role === "rent" ? "unused_rent" : "unused_service",
-      title: b.role === "deposit" ? "Deposit" : b.title,
+      title: b.role === "deposit" ? "Tiền cọc" : b.title,
       chargedAmount: b.amount,
       ...(partial && { unusedDays, totalDays }),
       amount,

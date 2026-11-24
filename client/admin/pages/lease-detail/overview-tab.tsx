@@ -50,8 +50,6 @@ export function OverviewTab({ lease: l, path }: { lease: ITenancyDetailResponse;
         <DefList items={[
           [t("currentRent"), formatMoney(l.currentRent)],
           [t("deposit"), formatMoney(l.depositAmount)],
-          [t("billingDay"), t("billingDayValue", { n: l.billingCycleDay })],
-          [t("firstPeriodEnds"), formatDate(l.firstPeriodEnd)],
           ...(l.terminatedAt ? ([[t("endedOn"), `${formatDate(l.terminatedAt)}${l.terminationReason ? ` — ${l.terminationReason}` : ""}`]] as [string, string][]) : []),
         ]} />
       </Section>

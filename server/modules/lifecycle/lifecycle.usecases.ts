@@ -183,7 +183,7 @@ export class StartLeaseUseCase extends Base implements IUseCase<IStartLeaseComma
       rentAmount: items[lines.findIndex((l) => l.key === "rent")].amount,
       usages,
     };
-    const invoice: IInvoicePlan = { kind: "move_in", period: "new", title: c.title ?? `Move-in ${dmy(start)}`, dueDate: c.dueDate ?? start, items };
+    const invoice: IInvoicePlan = { kind: "move_in", period: "new", title: c.title ?? `Hóa đơn nhận phòng ${dmy(start)}`, dueDate: c.dueDate ?? start, items };
     const r = await this.life.applyStart({ propertyId: c.propertyId, leaseId: c.leaseId, actor: c.actor, readings: this.writes(c.readings, start), period, invoice, moveStart });
     await this.notifier.publish({ event: "lease.started", targetType: "lease", targetId: c.leaseId, actorId: c.actor.accountId });
     await this.notifier.publish({ event: "invoice.created", targetType: "invoice", targetId: r.invoiceId, actorId: c.actor.accountId });
@@ -281,7 +281,7 @@ export class ClosePeriodUseCase extends Base implements IUseCase<IClosePeriodCom
       rentAmount: items[lines.findIndex((l) => l.key === "rent")].amount,
       usages,
     };
-    const invoice: IInvoicePlan = { kind: "transition", period: "new", title: c.title ?? `Invoice ${dmy(nextStart)}`, dueDate: c.dueDate ?? nextStart, items };
+    const invoice: IInvoicePlan = { kind: "transition", period: "new", title: c.title ?? `Hóa đơn ${dmy(nextStart)}`, dueDate: c.dueDate ?? nextStart, items };
     return { ctx, active, base, close, next, invoice };
   }
 }
@@ -362,7 +362,7 @@ export class CloseLeaseUseCase extends Base implements IUseCase<ICloseLeaseComma
         .map((u) => meterLine(u, quantities.get(u.id)!, "closed"));
       const items = finalize(lines, invoiceOverrides, c.extraItems);
       if (items.length > 0) {
-        invoice = { kind: "closing", period: "closed", title: c.title ?? `Closing ${dmy(t)}`, dueDate: c.dueDate ?? t, items };
+        invoice = { kind: "closing", period: "closed", title: c.title ?? `Hóa đơn trả phòng ${dmy(t)}`, dueDate: c.dueDate ?? t, items };
       }
     } else if (Object.keys(invoiceOverrides).length || c.extraItems.length) {
       throw invalid("extraItems", "Nothing to invoice: the last period is already closed");
@@ -380,7 +380,7 @@ export class CloseLeaseUseCase extends Base implements IUseCase<ICloseLeaseComma
       const lines = (held.refund?.items ?? []).map((i, n) => ({ key: held.itemKeys[n], amount: i.amount }));
       const heldTotal = lines.reduce((sum, l) => sum + l.amount, 0);
       if (owed > heldTotal) {
-        if (invoice && heldTotal > 0) invoice.items.push({ kind: "credit", title: "Taken from the deposit / unused rent / services", amount: -heldTotal, detail: null });
+        if (invoice && heldTotal > 0) invoice.items.push({ kind: "credit", title: "Trừ vào tiền cọc / tiền thuê và dịch vụ chưa dùng", amount: -heldTotal, detail: null });
       } else {
         invoice = null;
         let left = owed;

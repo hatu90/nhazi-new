@@ -36,7 +36,6 @@ export function LeaseOverviewPage() {
             [t("term"), `${formatDate(l.startDate)} → ${l.endDate ? formatDate(l.endDate) : t("openEnded")}`],
             [d("monthlyRent"), formatMoney(l.currentRent)],
             [d("deposit"), formatMoney(l.depositAmount)],
-            [d("billingDay"), d("billingDayValue", { n: l.billingCycleDay })],
             ...(l.terminatedAt ? ([[d("endedOn"), formatDate(l.terminatedAt)]] as [string, string][]) : []),
           ]} />
         </Section>
