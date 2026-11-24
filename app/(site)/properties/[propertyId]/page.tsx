@@ -73,7 +73,7 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
   const available = p.units.filter((u) => empty.has(u.id));
 
   return (
-    <div className="mx-auto w-full max-w-5xl min-w-0 px-4 py-6 sm:px-5 sm:py-8">
+    <div className="mx-auto w-full max-w-5xl min-w-0 px-2 py-4 sm:px-5 sm:py-8">
       <VStack gap={5}>
         <Link href="/find-property" className="text-sm text-[var(--text-secondary,#71717a)] hover:underline">{t("backToSearch")}</Link>
 

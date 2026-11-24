@@ -7,5 +7,5 @@ import type { ReactNode } from "react";
  * surface, so these take the lighter card background instead of drawing a second border.
  */
 export function Raised({ children }: { children: ReactNode }) {
-  return <div className="min-w-0 rounded-[var(--radius-container)] bg-[var(--color-background-card)] p-3">{children}</div>;
+  return <div className="min-w-0 rounded-[var(--radius-container)] bg-[var(--color-background-card)] p-2 sm:p-3">{children}</div>;
 }

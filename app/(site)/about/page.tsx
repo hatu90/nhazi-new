@@ -17,7 +17,7 @@ export default async function AboutPage() {
   const principles = t.raw("principles") as Item[];
   const audiences = t.raw("audiences") as Item[];
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 sm:px-5">
+    <div className="mx-auto w-full max-w-4xl px-2 sm:px-5">
       <VStack gap={4} maxWidth={680} paddingBlock={10}>
         <Text size="sm" color="secondary">{t("eyebrow")}</Text>
         <Heading level={1} type="display-2">{t("heading")}</Heading>
@@ -26,7 +26,7 @@ export default async function AboutPage() {
 
       <div className="grid gap-4 pb-12 md:grid-cols-2">
         {audiences.map((a) => (
-          <div key={a.title} className="rounded-2xl border border-[#357d9d]/25 bg-[#357d9d]/5 p-6">
+          <div key={a.title} className="rounded-2xl border border-[#357d9d]/25 bg-[#357d9d]/5 p-4 sm:p-6">
             <VStack gap={2}>
               <Heading level={2}>{a.title}</Heading>
               <Text color="secondary">{a.body}</Text>
@@ -47,7 +47,7 @@ export default async function AboutPage() {
         </div>
       </VStack>
 
-      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-6 py-12 text-center">
+      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-4 py-10 text-center sm:px-6 sm:py-12">
         <VStack gap={4} align="center">
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <HStack gap={3} wrap="wrap" justify="center">

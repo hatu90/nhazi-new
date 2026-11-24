@@ -13,7 +13,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
   return (
     <AuthProvider>
       <header>
-        <HStack align="center" justify="between" paddingInline={3} paddingBlock={3} gap={2} className="sm:px-5">
+        <HStack align="center" justify="between" paddingInline={2} paddingBlock={3} gap={2} className="sm:px-5">
           <Link href="/" aria-label="Nhazi" className="inline-flex items-center gap-2.5 rounded-lg px-2 py-1 text-2xl font-bold hover:bg-black/5">
             <Logo size={40} />
             <span>Nhazi</span>
@@ -32,7 +32,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       <main className="flex flex-1 flex-col">{children}</main>
       <footer>
         <Divider />
-        <HStack justify="between" align="center" paddingInline={3} paddingBlock={4} wrap="wrap" gap={3} className="sm:px-5">
+        <HStack justify="between" align="center" paddingInline={2} paddingBlock={4} wrap="wrap" gap={3} className="sm:px-5">
           <Text color="secondary" size="sm">© Nhazi</Text>
           <HStack gap={1}>
             <Button label={t("pricing")} variant="ghost" size="sm" href="/pricing" />

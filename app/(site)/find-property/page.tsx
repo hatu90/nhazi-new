@@ -151,7 +151,7 @@ export default async function FindPropertyPage({
 }: PageProps<"/find-property">) {
   const t = await getTranslations("Site");
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-5 sm:py-10">
+    <div className="mx-auto w-full max-w-4xl px-2 py-4 sm:px-5 sm:py-10">
       <VStack gap={5}>
         <VStack gap={1}>
           <Heading level={1}>{t("findTitle")}</Heading>

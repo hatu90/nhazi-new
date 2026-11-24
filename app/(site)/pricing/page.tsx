@@ -28,7 +28,7 @@ export default async function PricingPage() {
   const includes = t.raw("includes") as Item[];
   const faqs = t.raw("faqs") as Item[];
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-5">
+    <div className="mx-auto w-full max-w-6xl px-2 sm:px-5">
       <VStack gap={4} maxWidth={680} paddingBlock={10}>
         <Text size="sm" color="secondary">{t("eyebrow")}</Text>
         <Heading level={1} type="display-2">{t("heading")}</Heading>
@@ -41,7 +41,7 @@ export default async function PricingPage() {
           return (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-2xl border p-6 ${
+              className={`relative flex flex-col rounded-2xl border p-4 sm:p-6 ${
                 p.highlight
                   ? "border-[#357d9d] bg-[#357d9d]/5 shadow-xl shadow-[#357d9d]/10"
                   : "border-current/15"
@@ -110,7 +110,7 @@ export default async function PricingPage() {
         </div>
       </VStack>
 
-      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-6 py-12 text-center">
+      <section className="my-12 rounded-3xl border border-[#357d9d]/25 bg-gradient-to-br from-[#357d9d]/15 via-cyan-400/10 to-emerald-500/15 px-4 py-10 text-center sm:px-6 sm:py-12">
         <VStack gap={4} align="center">
           <Heading level={2} type="display-3">{t("ctaTitle")}</Heading>
           <Button variant="primary" size="lg" label={t("plans.0.cta")} href="/auth?next=/dashboard" />

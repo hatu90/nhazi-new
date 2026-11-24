@@ -57,7 +57,7 @@ export default async function HomePage() {
   const features = t.raw("features") as Item[];
   const steps = t.raw("steps") as Item[];
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-5">
+    <div className="mx-auto w-full max-w-6xl px-2 sm:px-5">
       {/* Hero */}
       <section className="relative grid items-center gap-8 py-10 md:grid-cols-2 md:gap-12 md:py-24">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-96 bg-gradient-to-br from-[#357d9d]/15 via-transparent to-emerald-500/10 blur-2xl" />
@@ -77,7 +77,7 @@ export default async function HomePage() {
           {features.map(({ title, body }, i) => {
             const Icon = featureIcons[i];
             return (
-            <div key={title} className="rounded-2xl border border-current/10 p-6 transition hover:-translate-y-0.5 hover:border-[#357d9d]/40 hover:shadow-lg">
+            <div key={title} className="rounded-2xl border border-current/10 p-4 sm:p-6 transition hover:-translate-y-0.5 hover:border-[#357d9d]/40 hover:shadow-lg">
               <VStack gap={3}>
                 <span className={`flex size-11 items-center justify-center rounded-xl ${tints[i]}`}>
                   <Icon size={22} aria-hidden />

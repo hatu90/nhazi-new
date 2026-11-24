@@ -15,7 +15,7 @@ export default async function TermPage() {
   const t = await getTranslations("Terms");
   const sections = t.raw("sections") as Section[];
   return (
-    <VStack gap={6} maxWidth={680} paddingBlock={10} paddingInline={5} className="mx-auto w-full">
+    <VStack gap={6} maxWidth={680} paddingBlock={10} paddingInline={2} className="mx-auto w-full sm:px-5">
       <VStack gap={2}>
         <Heading level={1} type="display-3">{t("title")}</Heading>
         <Text color="secondary">{t("lead")}</Text>
