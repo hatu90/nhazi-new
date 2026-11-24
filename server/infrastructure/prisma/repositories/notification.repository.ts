@@ -87,7 +87,7 @@ export class PrismaNotificationRepository implements INotificationRepository {
   }
 
   async contextOf(targetType: NotificationTargetType, targetId: string): Promise<ITargetContext | null> {
-    const empty = { label: "", status: null, amount: null, date: null, startDate: null, creatorId: null, creatorName: null, requesterId: null, assigneeId: null, inviteeId: null, role: null, parentId: null } as const;
+    const empty = { label: "", detail: null, status: null, amount: null, date: null, startDate: null, creatorId: null, creatorName: null, requesterId: null, assigneeId: null, inviteeId: null, role: null, parentId: null } as const;
     const base = async (part: Partial<ITargetContext> & { propertyId: string; propertyName: string; leaseId: string | null; unitName: string | null; leaseStarted: boolean }): Promise<ITargetContext> =>
       ({ ...empty, targetType, targetId, ...part, ...(await this.people(part.propertyId, part.leaseId)) });
     const unitOf = { select: { unit: { select: { unitName: true } } } } as const;
@@ -117,9 +117,9 @@ export class PrismaNotificationRepository implements INotificationRepository {
         return base({ propertyId: i.propertyId, propertyName: i.property.propertyName, leaseId: i.leaseId, unitName: i.lease.unit.unitName, leaseStarted: i.lease.activatedAt !== null, label: invoiceLabel(i.title), status: p.status, amount: num(p.amount), creatorId: p.createdBy, creatorName: p.createdByRef.displayName, parentId: p.invoiceId });
       }
       case "request": {
-        const r = await this.db.request.findFirst({ where: { id: targetId, deletedAt: null }, select: { propertyId: true, leaseId: true, title: true, status: true, requestedBy: true, assignedTo: true, property: { select: { propertyName: true } }, unit: { select: { unitName: true } }, lease: { select: { activatedAt: true } }, requestedByRef: { select: { displayName: true } } } });
+        const r = await this.db.request.findFirst({ where: { id: targetId, deletedAt: null }, select: { propertyId: true, leaseId: true, title: true, description: true, status: true, requestedBy: true, assignedTo: true, property: { select: { propertyName: true } }, unit: { select: { unitName: true } }, lease: { select: { activatedAt: true } }, requestedByRef: { select: { displayName: true } } } });
         if (!r) return null;
-        return base({ propertyId: r.propertyId, propertyName: r.property.propertyName, leaseId: r.leaseId, unitName: r.unit?.unitName ?? null, leaseStarted: r.lease?.activatedAt != null, label: r.title, status: r.status, creatorId: r.requestedBy, creatorName: r.requestedByRef.displayName, requesterId: r.requestedBy, assigneeId: r.assignedTo });
+        return base({ propertyId: r.propertyId, propertyName: r.property.propertyName, leaseId: r.leaseId, unitName: r.unit?.unitName ?? null, leaseStarted: r.lease?.activatedAt != null, label: r.title, detail: r.description, status: r.status, creatorId: r.requestedBy, creatorName: r.requestedByRef.displayName, requesterId: r.requestedBy, assigneeId: r.assignedTo });
       }
       case "request_comment": {
         const c = await this.db.requestComment.findUnique({ where: { id: targetId }, select: { requestId: true, authorId: true, author: { select: { displayName: true } }, request: { select: { propertyId: true, leaseId: true, title: true, status: true, requestedBy: true, assignedTo: true, property: { select: { propertyName: true } }, unit: { select: { unitName: true } }, lease: { select: { activatedAt: true } } } } } });

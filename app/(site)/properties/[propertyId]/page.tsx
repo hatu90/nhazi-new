@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { formatMoney } from "@/client/lib/format";
 import { getTranslations } from "next-intl/server";
+import { AvailableUnits } from "@/client/site/available-units";
 import { EnquiryButton } from "@/client/site/enquiry-button";
 import { PageSkeleton, Tag } from "@/client/ui";
 import { Divider } from "@astryxdesign/core/Divider";
@@ -99,24 +100,14 @@ async function PropertyPage({ params }: Pick<PageProps<"/properties/[propertyId]
               {available.length === 0 ? (
                 <Text color="secondary">{t("noAvailable")}</Text>
               ) : (
-                <VStack gap={0}>
-                  {available.map((u, i) => (
-                    <div key={u.id}>
-                      {i > 0 && <Divider />}
-                      <HStack justify="between" align="center" gap={3} paddingBlock={2}>
-                        <VStack gap={0}>
-                          <Text>{u.name}</Text>
-                          <Text size="sm" color="secondary">
-                            {t("floorArea", { floor: u.floor, area: u.area })}
-                            {u.bedrooms != null && t("bed", { n: u.bedrooms })}
-                            {u.bathrooms != null && t("bath", { n: u.bathrooms })}
-                          </Text>
-                        </VStack>
-                        <Text>{rentText(t, u.rentNegotiable, u.rentPrice, null)}</Text>
-                      </HStack>
-                    </div>
-                  ))}
-                </VStack>
+                <AvailableUnits
+                  units={available.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    meta: `${t("floorArea", { floor: u.floor, area: u.area })}${u.bedrooms != null ? t("bed", { n: u.bedrooms }) : ""}${u.bathrooms != null ? t("bath", { n: u.bathrooms }) : ""}`,
+                    rent: rentText(t, u.rentNegotiable, u.rentPrice, null),
+                  }))}
+                />
               )}
             </Panel>
 

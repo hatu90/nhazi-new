@@ -32,6 +32,7 @@ const money = (n: number | null) => `${new Intl.NumberFormat("vi-VN").format(n ?
 /** yyyy-mm-dd -> dd/mm/yyyy */
 const dmy = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : "");
 const where = (c: ITargetContext) => [c.propertyName, c.unitName].filter(Boolean).join(" · ");
+const excerpt = (s: string, n = 140) => { const t = s.replace(/\s+/g, " ").trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
 const uniq = (ids: (string | null | undefined)[]) => [...new Set(ids.filter((x): x is string => !!x))];
 const ROLE: Record<string, string> = { owner: "chủ nhà", admin: "quản trị viên", technician: "kỹ thuật viên", viewer: "người xem" };
 const STATUS: Record<string, string> = { open: "đang mở", in_progress: "đang xử lý", resolved: "đã giải quyết", rejected: "bị từ chối", cancelled: "đã hủy" };
@@ -132,7 +133,7 @@ export function plan(event: NotificationEvent, c: ITargetContext, x: IEventExtra
 
     // ── requests ──
     case "request.created":
-      return out(staff(c.label, where(c), c.fieldIds, "warning"));
+      return out(staff(c.label, [where(c), c.detail && excerpt(c.detail)].filter(Boolean).join(" · "), c.fieldIds, "warning"));
     case "request.status_changed":
       // the requester hears every change; staff only hear that the requester withdrew it
       return out(

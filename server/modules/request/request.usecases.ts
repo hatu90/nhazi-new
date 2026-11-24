@@ -151,7 +151,7 @@ export class CreateEnquiryUseCase implements IUseCase<ICreateEnquiryCommand, { i
     if (await this.requests.hasOpenEnquiry(c.actor.accountId, c.propertyId)) {
       throw new ConflictError("You already have an open enquiry for this property", "ENQUIRY_EXISTS");
     }
-    const id = await this.requests.createEnquiry(c, `Enquiry: ${target.unitName ?? target.propertyName}`);
+    const id = await this.requests.createEnquiry(c, `Hỏi thuê: ${target.unitName ?? target.propertyName}`);
     await this.notifier.publish({ event: "request.created", targetType: "request", targetId: id, actorId: c.actor.accountId });
     return { id };
   }

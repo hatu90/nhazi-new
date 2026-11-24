@@ -18,6 +18,8 @@ export interface ITargetContext {
   leaseStarted: boolean;
   /** Invoice / request title, template name, ... */
   label: string;
+  /** request: the description / message the requester wrote. */
+  detail: string | null;
   /** Request / payment / invoice / lease status when relevant. */
   status: string | null;
   amount: number | null;

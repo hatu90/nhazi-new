@@ -52,7 +52,8 @@ export class NotificationPublisher implements INotifier {
     const rows: INewNotification[] = [];
     for (const g of groups) {
       for (const receiverId of g.ids) {
-        if (receiverId === actorId || seen.has(receiverId)) continue; // one message per person per event
+        // the actor is never told about their own action, except a new request/enquiry: the team always gets it, even when the sender is on the team
+        if ((receiverId === actorId && event !== "request.created") || seen.has(receiverId)) continue; // one message per person per event
         seen.add(receiverId);
         rows.push({
           receiverId, actorId, event, targetType, targetId,
